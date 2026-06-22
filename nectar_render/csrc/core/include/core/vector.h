@@ -2,6 +2,7 @@
 
 #include <cuda_runtime.h>
 #include <iostream>
+#include "core/include/core/random.h"
 
 //=============================================================================
 // VECTOR2
@@ -109,6 +110,26 @@ public:
     __host__ __device__ float length_squared() const {
         return e[0]*e[0] + e[1]*e[1] + e[2]*e[2];
     }
+
+    static __device__ Vector3 random(Generator& gen) {
+        return Vector3(
+            gen.random_in_range(),
+            gen.random_in_range(), 
+            gen.random_in_range()
+        );
+    }
+
+    static __device__ Vector3 random(
+        float      min, 
+        float      max,
+        Generator& gen
+    ) {
+        return Vector3(
+            gen.random_in_range(min, max), 
+            gen.random_in_range(min, max), 
+            gen.random_in_range(min, max)
+        );
+    }
 };
 
 /* ALIASING */
@@ -119,41 +140,68 @@ using Color  = Vector3;
 
 /* UTILITIES */
 
+// INSPECTION
+
 // inline __host__ __device__ std::ostream& operator<<(
 //     std::ostream& out, const Vector3& v
 // ) {
 //     return out << v.e[0] << ' ' << v.e[1] << ' ' << v.e[2];
 // }
 
+// DEFAULT OPERATORS
+
 inline __host__ __device__ Vector3 operator+(
     const Vector3& u, const Vector3& v
 ) {
     return Vector3(u.e[0] + v.e[0], u.e[1] + v.e[1], u.e[2] + v.e[2]);
 }
+inline __host__ __device__ Vector3 operator+(const Vector3& u, float t) {
+    return Vector3(u.e[0] + t, u.e[1] + t, u.e[2] + t);
+}
+inline __host__ __device__ Vector3 operator+(float t, const Vector3& u) {
+    return u + t;
+}
+
 
 inline __host__ __device__ Vector3 operator-(
     const Vector3& u, const Vector3& v
 ) {
     return Vector3(u.e[0] - v.e[0], u.e[1] - v.e[1], u.e[2] - v.e[2]);
 }
+inline __host__ __device__ Vector3 operator-(const Vector3& u, float t) {
+    return Vector3(u.e[0] - t, u.e[1] - t, u.e[2] - t);
+}
+inline __host__ __device__ Vector3 operator-(float t, const Vector3& u) {
+    return u - t;
+}
+
 
 inline __host__ __device__ Vector3 operator*(
     const Vector3& u, const Vector3& v
 ) {
     return Vector3(u.e[0] * v.e[0], u.e[1] * v.e[1], u.e[2] * v.e[2]);
 }
-
-inline __host__ __device__ Vector3 operator*(float t, const Vector3& v) {
-    return Vector3(t*v.e[0], t*v.e[1], t*v.e[2]);
+inline __host__ __device__ Vector3 operator*(const Vector3& u, float t) {
+    return Vector3(u.e[0] * t, u.e[1] * t, u.e[2] * t);
+}
+inline __host__ __device__ Vector3 operator*(float t, const Vector3& u) {
+    return u * t;
 }
 
-inline __host__ __device__ Vector3 operator*(const Vector3& v, float t) {
-    return t * v;
+
+inline __host__ __device__ Vector3 operator/(
+    const Vector3& u, const Vector3& v
+) {
+    return Vector3(u.e[0] / v.e[0], u.e[1] / v.e[1], u.e[2] / v.e[2]); 
+}
+inline __host__ __device__ Vector3 operator/(const Vector3& u, float t) {
+    return (1 / t) * u;
+}
+inline __host__ __device__ Vector3 operator/(float t, const Vector3& u) {
+    return Vector3(t / u.e[0], t / u.e[1], t / u.e[2]);
 }
 
-inline __host__ __device__ Vector3 operator/(const Vector3& v, float t) {
-    return (1/t) * v;
-}
+// MATH
 
 inline __host__ __device__ float dot(const Vector3& u, const Vector3& v) {
     return u.e[0] * v.e[0]
@@ -169,8 +217,17 @@ inline __host__ __device__ Vector3 cross(const Vector3& u, const Vector3& v) {
     );
 }
 
-inline __host__ __device__ Vector3 unit_vector(const Vector3& v) {
+// CREATION
+
+inline __device__ Vector3 unit_vector(const Vector3& v) {
     return v / v.length();
 }
 
-
+inline __device__ Vector3 random_unit_vector(Generator& gen) {
+    while (true) {
+        auto p = Vector3::random(-1.0f, 1.0f, gen);
+        auto lensq = p.length_squared();
+        if (lensq <= 1)
+            return p / sqrt(lensq);
+    }
+}

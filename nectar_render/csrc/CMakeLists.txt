@@ -46,13 +46,13 @@ set_target_properties(_pathtracer PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHITECT
 install(TARGETS _pathtracer DESTINATION .)
 
 # Generate pybind11 stubs
-find_program(STUBGEN_EXECUTABLE pybind11-stubgen)
-add_custom_command(
-    TARGET _pathtracer
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E env
-            "PYTHONPATH=$<TARGET_FILE_DIR:_pathtracer>"
-            ${STUBGEN_EXECUTABLE} _pathtracer --output-dir ${CMAKE_SOURCE_DIR}/stubs
-    COMMENT "Generating pybind11 stubs for _pathtracer"
-    VERBATIM
-)
+# find_program(STUBGEN_EXECUTABLE pybind11-stubgen)
+# add_custom_command(
+#     TARGET _pathtracer
+#     POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E env
+#             "PYTHONPATH=$<TARGET_FILE_DIR:_pathtracer>"
+#             ${STUBGEN_EXECUTABLE} _pathtracer --output-dir ${CMAKE_SOURCE_DIR}/stubs
+#     COMMENT "Generating pybind11 stubs for _pathtracer"
+#     VERBATIM
+# )

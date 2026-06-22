@@ -4,5 +4,11 @@
 #include <vector>
 
 #include "engine/include/engine/data.h"
+#include "hittable/include/hittable/hittable.h"
 
-void trace(DataObject data, unsigned int seed, unsigned int frame);
+void trace(
+    const HittablesList world,
+    DataObject   data, 
+    unsigned int seed, 
+    unsigned int frame
+);

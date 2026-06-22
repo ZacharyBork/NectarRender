@@ -23,9 +23,13 @@ public:
         return curand_normal(&state);
     }
 
-private:
+    __device__ float random_in_range(float min = 0.0, float max = 1.0) {
+        return uniform() * (max - min) + min;
+    }
+
+protected:
     unsigned int seed_;
     unsigned int pixel_idx_;
     unsigned int draw_id_;
+    
 };
-

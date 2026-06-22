@@ -4,7 +4,9 @@
 
 class Ray {
 public:
-    Ray() { }
+    __host__ __device__ Ray() { 
+        Ray(Point3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f));
+    }
 
     __host__ __device__ Ray(
         const Point3& origin, const Vector3& direction
