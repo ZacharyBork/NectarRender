@@ -1,7 +1,12 @@
 #pragma once
 
+#include "core/include/core/utils.h"
 #include "core/include/core/vector.h"
+#include "core/include/core/matrix.h"
 #include "core/include/core/constants.h"
+#include "core/include/core/random.h"
+
+#include "engine/include/engine/ray.h"
 
 struct CameraParams {
     Vector2 resolution = Vector2(512, 512);
@@ -48,6 +53,13 @@ public:
         uvw = Vector3(sensor_width, -sensor_width * aspect_ratio, 0.0);
     }
 
+    Ray spawn_rays(Generator& gen) {
+        float ray_time = build_ray_times(gen);
+
+
+        
+    }
+
 private:
 
     float shutter_time;
@@ -61,7 +73,9 @@ private:
     Vector3 defocus_disk_u;
     Vector3 defocus_disk_v;
 
-    void update_defocus_disk()
+    float build_ray_times(Generator& gen) {
+        return gen.uniform() * shutter_time;
+    }
 
 
 };

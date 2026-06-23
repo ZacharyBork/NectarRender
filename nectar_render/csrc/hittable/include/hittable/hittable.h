@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "core/include/core/vector.h"
+#include "core/include/core/interval.h"
 #include "engine/include/engine/ray.h"
 
 template<typename T, typename... Args>
@@ -39,8 +40,7 @@ public:
 
     __device__ virtual bool hit(
         const Ray& ray, 
-        float      ray_tmin, 
-        float      ray_tmax, 
+        Interval   ray_t,
         HitRecord& rec
     ) const = 0;
 
@@ -58,8 +58,7 @@ public:
 
     __device__ bool hit(
         const Ray& ray, 
-        float      ray_tmin, 
-        float      ray_tmax, 
+        Interval   ray_t,
         HitRecord& rec
     ) const override {
         Vector3 oc = center - ray.origin();
@@ -73,9 +72,9 @@ public:
         auto sqrtd = sqrtf(discriminant);
 
         auto root = (h - sqrtd) / a;
-        if (root <= ray_tmin || ray_tmax <= root) {
+        if (!ray_t.surrounds(root)) {
             root = (h + sqrtd) / a;
-            if (root <= ray_tmin || ray_tmax <= root)
+            if (!ray_t.surrounds(root))
                 return false;
         }
 
@@ -107,16 +106,15 @@ struct HittablesList {
 
     __device__ bool hit(
         const Ray& ray,
-        float      tmin,
-        float      tmax,
+        Interval   ray_t,
         HitRecord& rec
     ) const {
         HitRecord temp_rec;
         bool  hit_anything = false;
-        float closest      = tmax;
+        float closest      = ray_t.max;
 
         for (int i = 0; i < n_objects; i++) {
-            if (objects[i]->hit(ray, tmin, closest, temp_rec)) {
+            if (objects[i]->hit(ray, Interval(ray_t.min, closest), temp_rec)) {
                 hit_anything = true;
                 closest      = temp_rec.t;
                 rec          = temp_rec;

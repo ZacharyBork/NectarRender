@@ -1,3 +1,7 @@
+##############################################################################
+# INIT CMAKE PROJECT
+##############################################################################
+
 cmake_minimum_required(VERSION 3.18)
 find_program(CMAKE_CUDA_COMPILER nvcc
     HINTS
@@ -7,45 +11,92 @@ find_program(CMAKE_CUDA_COMPILER nvcc
 )
 project(nectar_render LANGUAGES CXX CUDA)
 
-# C++ and CUDA standards
+##############################################################################
+# C++ / CUDA STANDARDS
+##############################################################################
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Find dependencies
+##############################################################################
+# CLI OVERRIDE FOR CUDA ARCHITECTURE
+##############################################################################
+# pip install . --config-settings=cmake.args="-DCUDA_ARCHITECTURES=70;75;80;"
+
+set(CUDA_ARCHITECTURES "75" CACHE STRING "CUDA architectures to target")
+
+##############################################################################
+# FIND DEPENDENCIES
+##############################################################################
+
 find_package(pybind11 REQUIRED)
 find_package(CUDAToolkit REQUIRED)
+find_package(CUDA REQUIRED)
 
-# Gather sources
-file(GLOB_RECURSE SOURCES "*.cpp" "*.cu")
+##############################################################################
+# GATHER SOURCES
+##############################################################################
 
-# Build extension module
-pybind11_add_module(_pathtracer
-    bindings/bindings.cpp
-    ${SOURCES}
+file(GLOB_RECURSE CUDA_SOURCES "*.cu")
+file(GLOB_RECURSE CXX_SOURCES "*.cpp")
+
+##############################################################################
+# ADD LIBRARIES / MODULES
+##############################################################################
+
+add_library(nectar_cuda STATIC ${CUDA_SOURCES})
+pybind11_add_module(_pathtracer bindings/bindings.cpp ${CXX_SOURCES})
+
+##############################################################################
+# SET PACKAGE PROPERTIES
+##############################################################################
+
+set_target_properties(nectar_cuda PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES}
+    POSITION_INDEPENDENT_CODE ON
 )
 
-# Link CUDA runtime
-target_link_libraries(_pathtracer PRIVATE CUDA::cudart)
+set_target_properties(_pathtracer 
+    PROPERTIES CUDA_ARCHITECTURES 
+    ${CUDA_ARCHITECTURES}
+)
 
-# cuBLAS
-find_package(CUDA REQUIRED)
-target_link_libraries(_pathtracer PRIVATE cublas)
+##############################################################################
+# LINK LIBRARIES
+##############################################################################
 
-# Include csrc/ as root for includes
+target_link_libraries(nectar_cuda PRIVATE CUDA::cudart cublas)
+target_link_libraries(_pathtracer PRIVATE
+    nectar_cuda
+    CUDA::cudart
+    cublas
+)
+
+##############################################################################
+# SETUP PACKAGE INCLUDES
+##############################################################################
+
 target_include_directories(_pathtracer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(nectar_cuda PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${pybind11_INCLUDE_DIRS}
+)
 
-# CLI override for CUDA architecture:
-# pip install . --config-settings=cmake.args="-DCUDA_ARCHITECTURES=70;75;80;86;89;90"
-set(CUDA_ARCHITECTURES "75" CACHE STRING "CUDA architectures to target")
-set_target_properties(_pathtracer PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES})
+##############################################################################
+# INSTALL PACKAGE
+##############################################################################
 
-# Install package
 install(TARGETS _pathtracer DESTINATION .)
 
-# Generate pybind11 stubs
+##############################################################################
+# GENERATE PYBIND11 STUBS
+##############################################################################
+
 # find_program(STUBGEN_EXECUTABLE pybind11-stubgen)
 # add_custom_command(
 #     TARGET _pathtracer

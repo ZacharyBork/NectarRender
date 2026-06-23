@@ -5,10 +5,16 @@
 #include "core/include/core/random.h"
 
 //=============================================================================
+// ABSTRACT PARENT
+//=============================================================================
+
+class Vector { };
+
+//=============================================================================
 // VECTOR2
 //=============================================================================
 
-class Vector2 {
+class Vector2 : public Vector {
 public:
     float e[2];
 
@@ -58,7 +64,7 @@ using Point2 = Vector2;
 // VECTOR3
 //=============================================================================
 
-class Vector3 {
+class Vector3 : public Vector {
 public:
     float e[3];
 
@@ -111,7 +117,7 @@ public:
         return e[0]*e[0] + e[1]*e[1] + e[2]*e[2];
     }
 
-    static __device__ Vector3 random(Generator& gen) {
+    __device__ static Vector3 random(Generator& gen) {
         return Vector3(
             gen.random_in_range(),
             gen.random_in_range(), 
@@ -119,7 +125,7 @@ public:
         );
     }
 
-    static __device__ Vector3 random(
+    __device__ static Vector3 random(
         float      min, 
         float      max,
         Generator& gen
@@ -150,54 +156,54 @@ using Color  = Vector3;
 
 // DEFAULT OPERATORS
 
-inline __host__ __device__ Vector3 operator+(
+__host__ __device__ inline Vector3 operator+(
     const Vector3& u, const Vector3& v
 ) {
     return Vector3(u.e[0] + v.e[0], u.e[1] + v.e[1], u.e[2] + v.e[2]);
 }
-inline __host__ __device__ Vector3 operator+(const Vector3& u, float t) {
+__host__ __device__ inline Vector3 operator+(const Vector3& u, float t) {
     return Vector3(u.e[0] + t, u.e[1] + t, u.e[2] + t);
 }
-inline __host__ __device__ Vector3 operator+(float t, const Vector3& u) {
+__host__ __device__ inline Vector3 operator+(float t, const Vector3& u) {
     return u + t;
 }
 
 
-inline __host__ __device__ Vector3 operator-(
+__host__ __device__ inline Vector3 operator-(
     const Vector3& u, const Vector3& v
 ) {
     return Vector3(u.e[0] - v.e[0], u.e[1] - v.e[1], u.e[2] - v.e[2]);
 }
-inline __host__ __device__ Vector3 operator-(const Vector3& u, float t) {
+__host__ __device__ inline Vector3 operator-(const Vector3& u, float t) {
     return Vector3(u.e[0] - t, u.e[1] - t, u.e[2] - t);
 }
-inline __host__ __device__ Vector3 operator-(float t, const Vector3& u) {
+__host__ __device__ inline Vector3 operator-(float t, const Vector3& u) {
     return u - t;
 }
 
 
-inline __host__ __device__ Vector3 operator*(
+__host__ __device__ inline Vector3 operator*(
     const Vector3& u, const Vector3& v
 ) {
     return Vector3(u.e[0] * v.e[0], u.e[1] * v.e[1], u.e[2] * v.e[2]);
 }
-inline __host__ __device__ Vector3 operator*(const Vector3& u, float t) {
+__host__ __device__ inline Vector3 operator*(const Vector3& u, float t) {
     return Vector3(u.e[0] * t, u.e[1] * t, u.e[2] * t);
 }
-inline __host__ __device__ Vector3 operator*(float t, const Vector3& u) {
+__host__ __device__ inline Vector3 operator*(float t, const Vector3& u) {
     return u * t;
 }
 
 
-inline __host__ __device__ Vector3 operator/(
+__host__ __device__ inline Vector3 operator/(
     const Vector3& u, const Vector3& v
 ) {
     return Vector3(u.e[0] / v.e[0], u.e[1] / v.e[1], u.e[2] / v.e[2]); 
 }
-inline __host__ __device__ Vector3 operator/(const Vector3& u, float t) {
+__host__ __device__ inline Vector3 operator/(const Vector3& u, float t) {
     return (1 / t) * u;
 }
-inline __host__ __device__ Vector3 operator/(float t, const Vector3& u) {
+__host__ __device__ inline Vector3 operator/(float t, const Vector3& u) {
     return Vector3(t / u.e[0], t / u.e[1], t / u.e[2]);
 }
 

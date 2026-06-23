@@ -31,19 +31,22 @@ void free_cuda_memory(uintptr_t device_ptr) {
     cudaFree(reinterpret_cast<void*>(device_ptr));
 }
 
-/* DATA TRANSFER */
+/* CUDA PROCESS UTILS */
 
-py::array to_numpy(
-    uintptr_t           device_ptr, 
-    std::vector<size_t> shape
-) {
-    size_t n_elements = 1;
-    for (auto s : shape) n_elements *= s;
-
-    auto result = py::array_t<float>(shape);
-    auto buf = result.request();
-    cudaMemcpy(buf.ptr, reinterpret_cast<void*>(device_ptr),
-        n_elements * sizeof(float), cudaMemcpyDeviceToHost);
-    return result;
+__device__ ProcessIndex get_process_index() {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    return ProcessIndex(x, y, blockIdx.z);
 }
+
+/* VALUE CONVERSION */
+
+__host__ __device__ float deg2rad(float degrees) {
+    return degrees * 0.01745329; 
+}
+
+__host__ __device__ float rad2deg(float radians) {
+    return radians * 57.29578;
+}
+
 

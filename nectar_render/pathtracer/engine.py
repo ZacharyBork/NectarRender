@@ -29,7 +29,7 @@ class RenderEngine:
         object.__setattr__(self, 'DEVICE_PTR', _pathtracer.engine.render())
         
     def get_data(self: Self) -> ndarray:
-        data = _pathtracer.core.to_numpy(self.DEVICE_PTR, self.OUTPUT_SHAPE)
+        data = _pathtracer.host.to_numpy(self.DEVICE_PTR, self.OUTPUT_SHAPE)
         return (data.transpose(1, 2, 0) * 255).astype(np.uint8)
     
     def save_image(self: Self, path: PathLike) -> None:

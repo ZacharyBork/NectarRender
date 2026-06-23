@@ -4,6 +4,7 @@
 
 #include "core/include/core/constants.h"
 #include "core/include/core/vector.h"
+#include "core/include/core/interval.h"
 #include "core/include/core/random.h"
 
 // ============================================================================
@@ -33,7 +34,7 @@ template Sphere* device_build<Sphere, Point3, float>(Point3, float);
 __device__ Color ray_color(const Ray& ray, const HittablesList world) {
     HitRecord rec;
 
-    if (world.hit(ray, 0, FMAX, rec)) {
+    if (world.hit(ray, Interval(EPS, FMAX), rec)) {
         return 0.5 * (rec.normal + Color(1.0f, 1.0f, 1.0f));
     }
 

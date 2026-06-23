@@ -3,15 +3,20 @@
 #include <stdint.h>
 #include <cuda_runtime.h>
 #include <vector>
+#include <optional>
 
+#include "core/include/core/utils.h"
 #include "engine/include/engine/data.h"
 #include "hittable/include/hittable/hittable.h"
 
 class RenderEngine {
 public:
-    DataObject color;
-    HittablesList scene;
     std::vector<size_t> output_shape;
+    std::optional<RenderLayers> render_layers;
+    HittablesList scene;
+
+    unsigned int samples_per_pixel = 10;
+    unsigned int max_depth = 8;
     
     void initialize(
         std::vector<size_t> _output_shape, 

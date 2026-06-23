@@ -9,9 +9,10 @@ void RenderEngine::initialize(
     unsigned int seed
 ) {
     output_shape = _output_shape;
-    color        = DataObject(output_shape);
     random_seed  = seed;
-    initialized  = true;
+    render_layers.emplace(RenderLayers(output_shape));
+    
+    initialized = true;
 }
 
 void RenderEngine::build_scene(
@@ -38,15 +39,23 @@ uintptr_t RenderEngine::render() {
             "RenderEngine::render called before initialization."
         );
     }
+
     std::vector<std::shared_ptr<Hittable>> world = {
-        std::make_shared<Sphere>(Point3(0,0,-1), 0.5),
-        std::make_shared<Sphere>(Point3(0,-100.5,-1), 100)
+        std::make_shared<Sphere>(Point3(0.0f,    0.0f, -1.0f),   0.5f),
+        std::make_shared<Sphere>(Point3(0.0f, -100.5f, -1.0f), 100.0f)
     };
     build_scene(world);
 
-    frame_idx++;
-    trace(scene, color, random_seed, frame_idx);
-    return reinterpret_cast<uintptr_t>(color.device_ptr);
+    for (int sample = 0; sample < samples_per_pixel; sample++) {
+        frame_idx++;
+
+        DataObject color(output_shape);
+        trace(scene, color, random_seed, frame_idx);
+        render_layers->beauty.combine(color);
+    }
+
+    render_layers->normalize_by_samples(samples_per_pixel);
+    return reinterpret_cast<uintptr_t>(render_layers->beauty.device_ptr);
 }
 
 
