@@ -55,6 +55,20 @@ public:
     __host__ __device__ float length_squared() const {
         return e[0]*e[0] + e[1]*e[1];
     }
+
+    __device__ static Vector2 sample_square(Generator& gen) {
+        return Vector2(gen.random_in_range()-0.5, gen.random_in_range()-0.5);
+    }
+
+    __device__ static Vector2 random_in_unit_disk(Generator& gen) {
+        while (true) {
+            Vector2 p = Vector2(
+                gen.random_in_range(-1.0f, 1.0f), 
+                gen.random_in_range(-1.0f, 1.0f)
+            );
+            if (p.length_squared() < 1.0f) return p;
+        }
+    }
 };
 
 using Vec2   = Vector2;

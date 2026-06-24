@@ -1,4 +1,4 @@
-from nectar_render.pathtracer import ENGINE
+from nectar_render.python import RenderEngine
 
 import sys
 from typing  import Self
@@ -9,6 +9,8 @@ from PySide6.QtCore    import QFile, QObject
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtGui import QPixmap
 from qimage2ndarray import array2qimage
+
+ENGINE = RenderEngine()
 
 class Interface(QObject):    
     def __init__(self: Self) -> None:

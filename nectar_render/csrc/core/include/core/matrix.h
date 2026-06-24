@@ -39,9 +39,19 @@ public:
                 result.m[i][j] = m[j][i];
         return result;
     }
+
+    __host__ __device__ Vector3 right() const { 
+        return Vector3(m[0][0], m[1][0], m[2][0]); 
+    }
+    __host__ __device__ Vector3 up() const { 
+        return Vector3(m[0][1], m[1][1], m[2][1]); 
+    }
+    __host__ __device__ Vector3 forward() const { 
+        return Vector3(m[0][2], m[1][2], m[2][2]); 
+    }
 };
 
-__host__ __device__ Matrix3 rotation_x(float angle_rad) {
+__host__ __device__ inline Matrix3 rotation_x(float angle_rad) {
     float c = cosf(angle_rad);
     float s = sinf(angle_rad);
     Matrix3 r;
@@ -51,7 +61,7 @@ __host__ __device__ Matrix3 rotation_x(float angle_rad) {
     return r;
 }
 
-__host__ __device__ Matrix3 rotation_y(float angle_rad) {
+__host__ __device__ inline Matrix3 rotation_y(float angle_rad) {
     float c = cosf(angle_rad);
     float s = sinf(angle_rad);
     Matrix3 r;
@@ -61,7 +71,7 @@ __host__ __device__ Matrix3 rotation_y(float angle_rad) {
     return r;
 }
 
-__host__ __device__ Matrix3 rotation_z(float angle_rad) {
+__host__ __device__ inline Matrix3 rotation_z(float angle_rad) {
     float c = cosf(angle_rad);
     float s = sinf(angle_rad);
     Matrix3 r;
@@ -71,10 +81,7 @@ __host__ __device__ Matrix3 rotation_z(float angle_rad) {
     return r;
 }
 
-__host__ __device__ Matrix3 rotation_from_euler(
-    float pitch, 
-    float yaw, 
-    float roll
-) {
-    return rotation_y(yaw) * rotation_x(pitch) * rotation_z(roll);
+__host__ __device__ inline Matrix3 rotation_from_euler(Vector3 r) {
+    return rotation_y(r.x()) * rotation_x(r.y()) * rotation_z(r.z());
 }
+

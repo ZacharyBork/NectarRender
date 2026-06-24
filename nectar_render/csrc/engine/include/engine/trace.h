@@ -5,9 +5,11 @@
 
 #include "engine/include/engine/data.h"
 #include "hittable/include/hittable/hittable.h"
+#include "engine/include/engine/camera.h"
 
 void trace(
     const HittablesList world,
+    Camera       camera,
     DataObject   data, 
     unsigned int seed, 
     unsigned int frame

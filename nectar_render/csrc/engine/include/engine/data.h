@@ -42,12 +42,6 @@ public:
         device_ptr = allocate_cuda_memory(n_elements, 0.0f);
     }
 
-    DataObject(std::vector<size_t> shape) {
-        C = shape[0]; H = shape[1]; W = shape[2];
-        n_elements = C * H * W;
-        device_ptr = allocate_cuda_memory(n_elements, 0.0f);
-    }
-
     DataObject(
         uintptr_t d_ptr,
         size_t    n_channels, 
@@ -55,6 +49,12 @@ public:
         size_t    w
     ) : device_ptr(d_ptr), C(n_channels), H(h), W(w) {
         n_elements = n_channels * H * W;
+    }
+
+    DataObject(
+        DataObject* data
+    ) : C(data->C), H(data->H), W(data->W), n_elements(data->n_elements) {
+        device_ptr = allocate_cuda_memory(n_elements, 0.0f);
     }
 
     __host__ __device__ bool is_enabled() { return enabled; }
@@ -121,15 +121,8 @@ public:
     RenderLayers(
         size_t h, 
         size_t w,
-        RenderLayersConfig cfg = {}
+        const RenderLayersConfig& cfg = {}
     ) : H(h), W(w) {
-        build_layers(cfg);
-    }
-
-    RenderLayers(
-        std::vector<size_t> shape,
-        RenderLayersConfig cfg = {}
-    ) : H(shape[1]), W(shape[2]) {
         build_layers(cfg);
     }
 
@@ -147,8 +140,7 @@ public:
     }
 
     __host__ void normalize_by_samples(unsigned int samples) {
-        std::vector<DataObject> objects = get_data();
-        for (DataObject object : objects) 
+        for (DataObject object : get_data()) 
             object.normalize_by_samples(samples);
     }
 
@@ -158,7 +150,7 @@ private:
         return DataObject(channels, H, W);
     }
 
-    __host__ void build_layers(RenderLayersConfig cfg) {
+    __host__ void build_layers(const RenderLayersConfig& cfg) {
         if (cfg.beauty)    beauty    = construct_data_object(3);
         if (cfg.diffuse)   diffuse   = construct_data_object(3);
         if (cfg.specular)  specular  = construct_data_object(3);

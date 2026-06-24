@@ -7,29 +7,33 @@ from typing  import Self
 from PIL     import Image
 from numpy   import ndarray
 
+from nectar_render.python.camera import Camera
+
 class RenderEngine:
-    DEVICE_PTR:   int = None
-    OUTPUT_SHAPE: tuple[int, int, int] = None
+    DEVICE_PTR: int = None
+    CAMERA:     Camera = None
     
-    def init(
+    def __init__(
         self:       Self,
-        channels:   int = 3, 
-        resolution: tuple[int, int] = (512, 512),
+        camera:     Camera = Camera(),
+        samples:    int = 10,
+        max_depth:  int = 8,
         seed:       int | None = None
     ) -> None:
-        object.__setattr__(self, 'OUTPUT_SHAPE', (channels,) + resolution)
+        object.__setattr__(self, 'CAMERA', camera)
         
-        seed = (
-            seed if seed is not None 
-            else np.random.random_integers(0, 999999)
+        _pathtracer.engine.initialize(
+            self.CAMERA.cdata, samples, max_depth, 
+            seed if seed is not None else np.random.random_integers(0, 999999)
         )
-        _pathtracer.engine.initialize(self.OUTPUT_SHAPE, seed)
 
     def render(self: Self) -> None: 
         object.__setattr__(self, 'DEVICE_PTR', _pathtracer.engine.render())
         
     def get_data(self: Self) -> ndarray:
-        data = _pathtracer.host.to_numpy(self.DEVICE_PTR, self.OUTPUT_SHAPE)
+        data = _pathtracer.host.to_numpy(
+            self.DEVICE_PTR, (3,) + self.CAMERA.resolution
+        )
         return (data.transpose(1, 2, 0) * 255).astype(np.uint8)
     
     def save_image(self: Self, path: PathLike) -> None:
@@ -41,4 +45,3 @@ class RenderEngine:
         output = self.get_data()
         Image.fromarray(output).save(path)
 
-ENGINE = RenderEngine()

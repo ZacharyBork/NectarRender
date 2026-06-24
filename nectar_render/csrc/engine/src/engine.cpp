@@ -5,13 +5,21 @@
 #include "core/include/core/random.h"
 
 void RenderEngine::initialize(
-    std::vector<size_t> _output_shape,
-    unsigned int seed
+    const CameraParams& camera_params,
+    unsigned int samples   = 10,
+    unsigned int ray_depth = 8,
+    unsigned int seed      = 54321
 ) {
-    output_shape = _output_shape;
-    random_seed  = seed;
-    render_layers.emplace(RenderLayers(output_shape));
-    
+    cam_params.emplace(camera_params);
+    render_layers.emplace(
+        RenderLayers(
+            cam_params->resolution[1], 
+            cam_params->resolution[0]
+        )
+    );
+    num_samples = samples;
+    max_depth   = ray_depth;
+    random_seed = seed;
     initialized = true;
 }
 
@@ -40,21 +48,23 @@ uintptr_t RenderEngine::render() {
         );
     }
 
+    Camera camera(*cam_params);
+
     std::vector<std::shared_ptr<Hittable>> world = {
         std::make_shared<Sphere>(Point3(0.0f,    0.0f, -1.0f),   0.5f),
         std::make_shared<Sphere>(Point3(0.0f, -100.5f, -1.0f), 100.0f)
     };
     build_scene(world);
 
-    for (int sample = 0; sample < samples_per_pixel; sample++) {
+    for (int sample = 0; sample < num_samples; sample++) {
         frame_idx++;
 
-        DataObject color(output_shape);
-        trace(scene, color, random_seed, frame_idx);
+        DataObject color(&render_layers->beauty);
+        trace(scene, camera, color, random_seed, frame_idx);
         render_layers->beauty.combine(color);
     }
 
-    render_layers->normalize_by_samples(samples_per_pixel);
+    render_layers->normalize_by_samples(num_samples);
     return reinterpret_cast<uintptr_t>(render_layers->beauty.device_ptr);
 }
 
