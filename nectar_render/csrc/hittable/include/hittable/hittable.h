@@ -16,7 +16,7 @@ T* device_build(Args... args);
 
 class HitRecord {
 public:
-    Point3  position;
+    Vector3  position;
     Vector3 normal;
     float   t;
     bool    front_face;
@@ -53,7 +53,7 @@ public:
 
 class Sphere : public Hittable {
 public:
-    __host__ __device__ Sphere(const Point3& center, float radius) 
+    __host__ __device__ Sphere(const Vector3& center, float radius) 
         : center(center), radius(fmax(0.0f, radius)) {}
 
     __device__ bool hit(
@@ -88,11 +88,11 @@ public:
     }
 
     Hittable* build() const override {
-        return device_build<Sphere, Point3, float>(center, radius);
+        return device_build<Sphere, Vector3, float>(center, radius);
     }
 
 private:
-    Point3 center;
+    Vector3 center;
     float  radius;
 };
 

@@ -82,7 +82,7 @@ public:
         float focus_scale = focus_distance / focal_length;
         Vector3 focus_points = position + centers * focus_scale;
 
-        Point3 origin;
+        Vector3 origin;
         if (defocus_angle <= 0.0f) {
             origin = position;
         } else {

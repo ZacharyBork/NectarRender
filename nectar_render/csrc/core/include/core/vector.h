@@ -1,68 +1,209 @@
 #pragma once
 
+#include <type_traits>
+
 #include <cuda_runtime.h>
 #include <iostream>
 #include "core/include/core/random.h"
+#include "core/include/core/constants.h"
 
 //=============================================================================
 // ABSTRACT PARENT
 //=============================================================================
 
-class Vector { };
+template <typename T>
+constexpr std::size_t component_count = std::extent_v<decltype(T::e)>;
+
+template<typename VecType>
+class Vector {
+public:
+
+    __host__ __device__ float   operator[](int i) const { 
+        auto& self = derived();
+        return self.e[i]; 
+    }
+    __host__ __device__ float&  operator[](int i) { 
+        auto& self = derived();
+        return self.e[i]; 
+    }
+
+    __host__ __device__ VecType operator-() const { 
+        VecType result = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = -result.e[i];
+        return result;
+    }
+
+    __host__ __device__ VecType& operator+=(const VecType& v) {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] += v.e[i];
+        return self;
+    }
+
+    __host__ __device__ VecType operator-=(const VecType& v) { 
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] -= v.e[i];
+        return self;
+    }
+
+    __host__ __device__ VecType& operator*=(const VecType& v) {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] *= v.e[i];
+        return self;
+    }
+
+    __host__ __device__ VecType& operator/=(float t) {
+        return *this *= 1.0f / (t + FMAX);
+    }
+
+    __host__ __device__ float length() const {
+        return sqrtf(length_squared());
+    }
+
+    __host__ __device__ float length_squared() const {
+        auto& self = derived();
+        float out = self.e[0] * self.e[0] + self.e[1] * self.e[1];
+        if constexpr (component_count<VecType> >= 3) 
+            out += self.e[2] * self.e[2];
+        if constexpr (component_count<VecType> >= 4) 
+            out += self.e[3] * self.e[3];
+        return out;
+    }
+
+private:
+
+    __host__ __device__ VecType& derived() { 
+        return static_cast<VecType&>(*this); 
+    }
+
+    __host__ __device__ const VecType& derived() const { 
+        return static_cast<const VecType&>(*this); 
+    }
+
+};
+
+template<typename T>
+using is_vector = std::enable_if_t<std::is_base_of_v<Vector<T>, T>>;
+
+//=============================================================================
+// OPERATORS
+//=============================================================================
+
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator+(const T& u, const T& v) {
+    T result = u;
+    result += v;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator+(const T& u, float t) {
+    T result = u;
+    #pragma unroll
+    for (size_t i = 0; i < component_count<T>; ++i)
+        result.e[i] += t;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator+(float t, const T& u) { return u + t; }
+
+
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator-(const T& u, const T& v) {
+    T result = u;
+    result -= v;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator-(const T& u, float t) {
+    T result = u;
+    #pragma unroll
+    for (size_t i = 0; i < component_count<T>; ++i)
+        result.e[i] -= t;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator-(float t, const T& u) { return u - t; }
+
+
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator*(const T& u, const T& v) {
+    T result = u;
+    result *= v;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator*(const T& u, float t) {
+    T result = u;
+    #pragma unroll
+    for (size_t i = 0; i < component_count<T>; ++i)
+        result.e[i] *= t;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator*(float t, const T& u) { return u * t; }
+
+
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator/(const T& u, const T& v) {
+    T result = u;
+    result /= v;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator/(const T& u, float t) {
+    return (1.0f / t) * u;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator/(float t, const T& u) {
+    T result = u;
+    #pragma unroll
+    for (size_t i = 0; i < component_count<T>; ++i)
+        result.e[i] = t / u.e[i];
+    return result;
+}
+
+//=============================================================================
+// UTILITIES
+//=============================================================================
+
+template <typename T, typename = is_vector<T>>
+__device__ inline T normalize(const T& v) { return v / v.length(); }
 
 //=============================================================================
 // VECTOR2
 //=============================================================================
 
-class Vector2 : public Vector {
+template<typename VecType>
+class Vec2Core : public Vector<VecType> {
 public:
     float e[2];
 
-    __host__ __device__ Vector2() : e{ 0, 0 } {}
-    __host__ __device__ Vector2(float e0, float e1) : e{ e0, e1 } {}
+    __host__ __device__ Vec2Core() : e{ 0, 0 } {}
+    __host__ __device__ Vec2Core(float e0, float e1) : e{ e0, e1 } {}
+
+    template <typename OtherType>
+    __host__ __device__ explicit Vec2Core(const Vec2Core<OtherType>& other)
+        : e{other.e[0], other.e[1]} {}
 
     __host__ __device__ float x() const { return e[0]; }
     __host__ __device__ float y() const { return e[1]; }
     __host__ __device__ float u() const { return e[0]; }
     __host__ __device__ float v() const { return e[1]; }
 
-    __host__ __device__ Vector2 operator-() const { 
-        return Vector2(-e[0], -e[1]); 
-    }
-    __host__ __device__ float   operator[](int i) const { return e[i]; }
-    __host__ __device__ float&  operator[](int i) { return e[i]; }
-
-    __host__ __device__ Vector2& operator+=(const Vector2& v) {
-        e[0] += v.e[0];
-        e[1] += v.e[1];
-        return *this;
+    __device__ static VecType sample_square(Generator& gen) {
+        return VecType(gen.random_in_range()-0.5, gen.random_in_range()-0.5);
     }
 
-    __host__ __device__ Vector2& operator*=(float t) {
-        e[0] *= t;
-        e[1] *= t;
-        return *this;
-    }
-
-    __host__ __device__ Vector2& operator/=(float t) {
-        return *this *= 1/t;
-    }
-
-    __host__ __device__ float length() const {
-        return std::sqrt(length_squared());
-    }
-
-    __host__ __device__ float length_squared() const {
-        return e[0]*e[0] + e[1]*e[1];
-    }
-
-    __device__ static Vector2 sample_square(Generator& gen) {
-        return Vector2(gen.random_in_range()-0.5, gen.random_in_range()-0.5);
-    }
-
-    __device__ static Vector2 random_in_unit_disk(Generator& gen) {
+    __device__ static VecType random_in_unit_disk(Generator& gen) {
         while (true) {
-            Vector2 p = Vector2(
+            VecType p = VecType(
                 gen.random_in_range(-1.0f, 1.0f), 
                 gen.random_in_range(-1.0f, 1.0f)
             );
@@ -71,21 +212,26 @@ public:
     }
 };
 
-using Vec2   = Vector2;
-using Point2 = Vector2;
+class Vector2 : public Vec2Core<Vector2> { using Vec2Core::Vec2Core; };
+class Point2  : public Vec2Core<Point2>  { using Vec2Core::Vec2Core; };
 
 //=============================================================================
 // VECTOR3
 //=============================================================================
 
-class Vector3 : public Vector {
+template<typename VecType>
+class Vec3Core : public Vector<VecType> {
 public:
     float e[3];
 
-    __host__ __device__ Vector3() : e{ 0, 0, 0 } {}
-    __host__ __device__ Vector3(
+    __host__ __device__ Vec3Core() : e{ 0, 0, 0 } {}
+    __host__ __device__ Vec3Core(
         float e0, float e1, float e2
     ) : e{ e0, e1, e2 } {}
+
+    template <typename OtherType>
+    __host__ __device__ explicit Vec3Core(const Vec3Core<OtherType>& other)
+        : e{other.e[0], other.e[1], other.e[2]} {}
 
     __host__ __device__ float x() const { return e[0]; }
     __host__ __device__ float y() const { return e[1]; }
@@ -95,56 +241,20 @@ public:
     __host__ __device__ float v() const { return e[1]; }
     __host__ __device__ float w() const { return e[2]; }
 
-    __host__ __device__ float r() const { return e[0]; }
-    __host__ __device__ float g() const { return e[1]; }
-    __host__ __device__ float b() const { return e[2]; }
-
-    __host__ __device__ Vector3 operator-() const { 
-        return Vector3(-e[0], -e[1], -e[2]); 
-    }
-    __host__ __device__ float   operator[](int i) const { return e[i]; }
-    __host__ __device__ float&  operator[](int i) { return e[i]; }
-
-    __host__ __device__ Vector3& operator+=(const Vector3& v) {
-        e[0] += v.e[0];
-        e[1] += v.e[1];
-        e[2] += v.e[2];
-        return *this;
-    }
-
-    __host__ __device__ Vector3& operator*=(float t) {
-        e[0] *= t;
-        e[1] *= t;
-        e[2] *= t;
-        return *this;
-    }
-
-    __host__ __device__ Vector3& operator/=(float t) {
-        return *this *= 1/t;
-    }
-
-    __host__ __device__ float length() const {
-        return std::sqrt(length_squared());
-    }
-
-    __host__ __device__ float length_squared() const {
-        return e[0]*e[0] + e[1]*e[1] + e[2]*e[2];
-    }
-
-    __device__ static Vector3 random(Generator& gen) {
-        return Vector3(
+    __device__ static VecType random(Generator& gen) {
+        return VecType(
             gen.random_in_range(),
             gen.random_in_range(), 
             gen.random_in_range()
         );
     }
 
-    __device__ static Vector3 random(
+    __device__ static VecType random(
         float      min, 
         float      max,
         Generator& gen
     ) {
-        return Vector3(
+        return VecType(
             gen.random_in_range(min, max), 
             gen.random_in_range(min, max), 
             gen.random_in_range(min, max)
@@ -152,84 +262,23 @@ public:
     }
 };
 
-/* ALIASING */
+class Vector3 : public Vec3Core<Vector3> { using Vec3Core::Vec3Core; };
+class Color   : public Vec3Core<Color>   { using Vec3Core::Vec3Core; 
+public:
+    __host__ __device__ float r() const { return e[0]; }
+    __host__ __device__ float g() const { return e[1]; }
+    __host__ __device__ float b() const { return e[2]; }
+};
 
-using Vec3   = Vector3;
-using Point3 = Vector3;
-using Color  = Vector3;
+// MATH =======================================================================
 
-/* UTILITIES */
-
-// INSPECTION
-
-// inline __host__ __device__ std::ostream& operator<<(
-//     std::ostream& out, const Vector3& v
-// ) {
-//     return out << v.e[0] << ' ' << v.e[1] << ' ' << v.e[2];
-// }
-
-// DEFAULT OPERATORS
-
-__host__ __device__ inline Vector3 operator+(
-    const Vector3& u, const Vector3& v
-) {
-    return Vector3(u.e[0] + v.e[0], u.e[1] + v.e[1], u.e[2] + v.e[2]);
-}
-__host__ __device__ inline Vector3 operator+(const Vector3& u, float t) {
-    return Vector3(u.e[0] + t, u.e[1] + t, u.e[2] + t);
-}
-__host__ __device__ inline Vector3 operator+(float t, const Vector3& u) {
-    return u + t;
-}
-
-
-__host__ __device__ inline Vector3 operator-(
-    const Vector3& u, const Vector3& v
-) {
-    return Vector3(u.e[0] - v.e[0], u.e[1] - v.e[1], u.e[2] - v.e[2]);
-}
-__host__ __device__ inline Vector3 operator-(const Vector3& u, float t) {
-    return Vector3(u.e[0] - t, u.e[1] - t, u.e[2] - t);
-}
-__host__ __device__ inline Vector3 operator-(float t, const Vector3& u) {
-    return u - t;
-}
-
-
-__host__ __device__ inline Vector3 operator*(
-    const Vector3& u, const Vector3& v
-) {
-    return Vector3(u.e[0] * v.e[0], u.e[1] * v.e[1], u.e[2] * v.e[2]);
-}
-__host__ __device__ inline Vector3 operator*(const Vector3& u, float t) {
-    return Vector3(u.e[0] * t, u.e[1] * t, u.e[2] * t);
-}
-__host__ __device__ inline Vector3 operator*(float t, const Vector3& u) {
-    return u * t;
-}
-
-
-__host__ __device__ inline Vector3 operator/(
-    const Vector3& u, const Vector3& v
-) {
-    return Vector3(u.e[0] / v.e[0], u.e[1] / v.e[1], u.e[2] / v.e[2]); 
-}
-__host__ __device__ inline Vector3 operator/(const Vector3& u, float t) {
-    return (1 / t) * u;
-}
-__host__ __device__ inline Vector3 operator/(float t, const Vector3& u) {
-    return Vector3(t / u.e[0], t / u.e[1], t / u.e[2]);
-}
-
-// MATH
-
-inline __host__ __device__ float dot(const Vector3& u, const Vector3& v) {
+__host__ __device__ inline float dot(const Vector3& u, const Vector3& v) {
     return u.e[0] * v.e[0]
          + u.e[1] * v.e[1]
          + u.e[2] * v.e[2];
 }
 
-inline __host__ __device__ Vector3 cross(const Vector3& u, const Vector3& v) {
+__host__ __device__ inline Vector3 cross(const Vector3& u, const Vector3& v) {
     return Vector3(
         u.e[1] * v.e[2] - u.e[2] * v.e[1],
         u.e[2] * v.e[0] - u.e[0] * v.e[2],
@@ -237,17 +286,24 @@ inline __host__ __device__ Vector3 cross(const Vector3& u, const Vector3& v) {
     );
 }
 
-// CREATION
+// CREATION ===================================================================
 
-inline __device__ Vector3 unit_vector(const Vector3& v) {
-    return v / v.length();
-}
-
-inline __device__ Vector3 random_unit_vector(Generator& gen) {
+__device__ inline Vector3 random_unit_vector(Generator& gen) {
     while (true) {
         auto p = Vector3::random(-1.0f, 1.0f, gen);
         auto lensq = p.length_squared();
-        if (lensq <= 1)
+        if (1e-160 < lensq && lensq <= 1)
             return p / sqrt(lensq);
     }
+}
+
+__device__ inline Vector3 random_on_hemisphere(
+    const Vector3& normal,
+    Generator& gen
+) {
+    Vector3 on_unit_sphere = random_unit_vector(gen);
+    if (dot(on_unit_sphere, normal) > 0.0f)
+        return on_unit_sphere;
+    else
+        return -on_unit_sphere;
 }

@@ -51,8 +51,8 @@ uintptr_t RenderEngine::render() {
     Camera camera(*cam_params);
 
     std::vector<std::shared_ptr<Hittable>> world = {
-        std::make_shared<Sphere>(Point3(0.0f,    0.0f, -1.0f),   0.5f),
-        std::make_shared<Sphere>(Point3(0.0f, -100.5f, -1.0f), 100.0f)
+        std::make_shared<Sphere>(Vector3(0.0f,    0.0f, -1.0f),   0.5f),
+        std::make_shared<Sphere>(Vector3(0.0f, -100.5f, -1.0f), 100.0f)
     };
     build_scene(world);
 
@@ -60,7 +60,7 @@ uintptr_t RenderEngine::render() {
         frame_idx++;
 
         DataObject color(&render_layers->beauty);
-        trace(scene, camera, color, random_seed, frame_idx);
+        trace(scene, camera, color, max_depth, random_seed, frame_idx);
         render_layers->beauty.combine(color);
     }
 

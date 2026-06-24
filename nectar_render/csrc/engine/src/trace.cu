@@ -24,24 +24,34 @@ T* device_build(Args... args) {
     return d_ptr;
 }
 
-template Sphere* device_build<Sphere, Point3, float>(Point3, float);
+template Sphere* device_build<Sphere, Vector3, float>(Vector3, float);
 
 // ============================================================================
 // RAY COLORING
 // ============================================================================
 
-__device__ Color ray_color(const Ray& ray, const HittablesList world) {
-    HitRecord rec;
-
-    if (world.hit(ray, Interval(EPS, FMAX), rec)) {
-        return 0.5 * (rec.normal + Color(1.0f, 1.0f, 1.0f));
-    }
-
-    Vector3 unit_direction = unit_vector(ray.direction());
+__device__ Color sample_skylight_kernel(const Ray& ray) {
+    Vector3 unit_direction = normalize(ray.direction());
     float a = 0.5 * (unit_direction.y() + 1.0);
     return (1.0 - a) 
          * Color(1.0, 1.0, 1.0) 
          + a * Color(0.5, 0.7, 1.0);
+}
+
+__device__ Color ray_color_kernel(
+    const Ray& ray, 
+    const HittablesList world,
+    Generator& gen
+) {
+    HitRecord rec;
+
+    if (world.hit(ray, Interval(EPS, FMAX), rec)) {
+        // Vector3 direction = random_on_hemisphere(rec.normal, gen);
+        // return 0.5 * ray_color(Ray(rec.position, direction), world, gen);
+        return 0.5 * (Color(rec.normal) + Color(1.0f, 1.0f, 1.0f));
+    }
+
+    return sample_skylight_kernel(ray);
 }
 
 // ============================================================================
@@ -52,6 +62,7 @@ __global__ void trace_kernel(
     const HittablesList world,
     Camera       camera,
     DataObject   data, 
+    unsigned int max_depth,
     unsigned int seed,
     unsigned int frame
 ) {
@@ -62,7 +73,15 @@ __global__ void trace_kernel(
     Generator gen(seed, pixel_idx + frame * (data.W * data.H));
 
     Ray ray = camera.spawn_rays(p_idx.x, p_idx.y, gen);
-    Color col = ray_color(ray, world);
+    
+    
+    Color col = ray_color_kernel(ray, world, gen);
+
+
+    for (int bounce = 0; bounce < max_depth; bounce++) {
+
+    }
+
 
     data.set_color(p_idx.x, p_idx.y, p_idx.z, col);
 }
@@ -71,13 +90,86 @@ void trace(
     const HittablesList world,
     Camera       camera,
     DataObject   data, 
+    unsigned int max_depth,
     unsigned int seed, 
     unsigned int frame
 ) {
     int BS2D = 16;
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
-    trace_kernel<<<grid, block>>>(world, camera, data, seed, frame);
+    trace_kernel<<<grid, block>>>(world, camera, data, max_depth, seed, frame);
 }
+
+
+
+// // ============================================================================
+// // RAY COLORING
+// // ============================================================================
+
+// __device__ Color ray_color(
+//     const Ray& ray, 
+//     const HittablesList world,
+//     Generator& gen
+// ) {
+//     HitRecord rec;
+
+//     if (world.hit(ray, Interval(EPS, FMAX), rec)) {
+//         // Vector3 direction = random_on_hemisphere(rec.normal, gen);
+//         // return 0.5 * ray_color(Ray(rec.position, direction), world, gen);
+//         return 0.5 * (rec.normal + Color(1.0f, 1.0f, 1.0f));
+//     }
+
+//     Vector3 unit_direction = unit_vector(ray.direction());
+//     float a = 0.5 * (unit_direction.y() + 1.0);
+//     return (1.0 - a) 
+//          * Color(1.0, 1.0, 1.0) 
+//          + a * Color(0.5, 0.7, 1.0);
+// }
+
+// __device__ Color sample_skylight_kernel(const Ray& ray) {
+//     Vector3 unit_direction = unit_vector(ray.direction());
+//     float a = 0.5 * (unit_direction.y() + 1.0);
+//     return (1.0 - a) 
+//          * Color(1.0, 1.0, 1.0) 
+//          + a * Color(0.5, 0.7, 1.0);
+// }
+
+// // ============================================================================
+// // RAY TRACING FUNCTION
+// // ============================================================================
+
+// __global__ void trace_kernel(
+//     const HittablesList world,
+//     Camera       camera,
+//     DataObject   data, 
+//     unsigned int max_depth,
+//     unsigned int seed,
+//     unsigned int frame
+// ) {
+//     ProcessIndex p_idx = get_process_index();
+//     if (p_idx.x >= data.W || p_idx.y >= data.H) return;
+    
+//     unsigned int pixel_idx = p_idx.y * data.W + p_idx.x;
+//     Generator gen(seed, pixel_idx + frame * (data.W * data.H));
+
+//     Ray ray = camera.spawn_rays(p_idx.x, p_idx.y, gen);
+//     Color col = ray_color(ray, world, gen);
+
+//     data.set_color(p_idx.x, p_idx.y, p_idx.z, col);
+// }
+
+// void trace(
+//     const HittablesList world,
+//     Camera       camera,
+//     DataObject   data, 
+//     unsigned int max_depth,
+//     unsigned int seed, 
+//     unsigned int frame
+// ) {
+//     int BS2D = 16;
+//     dim3 block(BS2D, BS2D, 1);
+//     dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
+//     trace_kernel<<<grid, block>>>(world, camera, data, max_depth, seed, frame);
+// }
 
 
