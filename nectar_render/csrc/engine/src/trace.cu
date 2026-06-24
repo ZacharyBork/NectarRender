@@ -6,6 +6,7 @@
 #include "core/include/core/interval.h"
 #include "core/include/core/random.h"
 
+
 // ============================================================================
 // DEVICE
 // ============================================================================
@@ -24,34 +25,24 @@ T* device_build(Args... args) {
     return d_ptr;
 }
 
-template Sphere* device_build<Sphere, Vector3, float>(Vector3, float);
+/* HITTABLES */
+
+template Sphere* device_build<Sphere>(Vector3, float, Material*);
+
+/* MATERIALS */
+
+template Lambertian* device_build<Lambertian>(Color);
 
 // ============================================================================
 // RAY COLORING
 // ============================================================================
 
-__device__ Color sample_skylight_kernel(const Ray& ray) {
+__device__ Color sample_skylight(const Ray& ray) {
     Vector3 unit_direction = normalize(ray.direction());
     float a = 0.5 * (unit_direction.y() + 1.0);
     return (1.0 - a) 
          * Color(1.0, 1.0, 1.0) 
          + a * Color(0.5, 0.7, 1.0);
-}
-
-__device__ Color ray_color_kernel(
-    const Ray& ray, 
-    const HittablesList world,
-    Generator& gen
-) {
-    HitRecord rec;
-
-    if (world.hit(ray, Interval(EPS, FMAX), rec)) {
-        // Vector3 direction = random_on_hemisphere(rec.normal, gen);
-        // return 0.5 * ray_color(Ray(rec.position, direction), world, gen);
-        return 0.5 * (Color(rec.normal) + Color(1.0f, 1.0f, 1.0f));
-    }
-
-    return sample_skylight_kernel(ray);
 }
 
 // ============================================================================
@@ -72,18 +63,28 @@ __global__ void trace_kernel(
     unsigned int pixel_idx = p_idx.y * data.W + p_idx.x;
     Generator gen(seed, pixel_idx + frame * (data.W * data.H));
 
-    Ray ray = camera.spawn_rays(p_idx.x, p_idx.y, gen);
+    Ray ray = camera.get_ray(p_idx.x, p_idx.y, gen);
     
-    
-    Color col = ray_color_kernel(ray, world, gen);
-
+    Color color = Color::black();
+    Color atten = Color::white();
 
     for (int bounce = 0; bounce < max_depth; bounce++) {
+        HitRecord rec;
+        bool hit = world.hit(ray, Interval(EPS, FMAX), rec);
+        
+        if (!hit) {
+            color += atten * sample_skylight(ray);
+            break;
+        }
 
+        rec.material->scatter(rec, ray, atten, gen);
+
+        // atten *= 0.8f * Color(1.0f);
+        // Vector3 direction = rec.normal + random_unit_vector(gen);
+        // ray = Ray(rec.position, direction);
     }
 
-
-    data.set_color(p_idx.x, p_idx.y, p_idx.z, col);
+    data.set_color(p_idx.x, p_idx.y, p_idx.z, color);
 }
 
 void trace(

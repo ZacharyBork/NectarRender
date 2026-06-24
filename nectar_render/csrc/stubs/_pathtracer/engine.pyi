@@ -4,9 +4,13 @@ Engine module.
 from __future__ import annotations
 import collections.abc
 import typing
-__all__: list[str] = ['CameraParams', 'initialize', 'render']
+__all__: list[str] = ['CameraParams', 'RenderEngine']
 class CameraParams:
+    @typing.overload
     def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, resolution: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(2)"] = [512, 512], position: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], rotation: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], focal_length: typing.SupportsFloat | typing.SupportsIndex = 5.0, focus_distance: typing.SupportsFloat | typing.SupportsIndex = 10.0, aperture: typing.SupportsFloat | typing.SupportsIndex = 0.009999999776482582, sensor_width: typing.SupportsFloat | typing.SupportsIndex = 2.0, shutter_speed: typing.SupportsFloat | typing.SupportsIndex = 1.0) -> None:
         ...
     @property
     def aperture(self) -> float:
@@ -56,7 +60,11 @@ class CameraParams:
     @shutter_speed.setter
     def shutter_speed(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
-def initialize(arg0: CameraParams, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsInt | typing.SupportsIndex, arg3: typing.SupportsInt | typing.SupportsIndex) -> None:
-    ...
-def render() -> int:
-    ...
+class RenderEngine:
+    on_sample: collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex, typing.SupportsInt | typing.SupportsIndex, typing.SupportsFloat | typing.SupportsIndex], None]
+    def __init__(self) -> None:
+        ...
+    def initialize(self, arg0: CameraParams, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsInt | typing.SupportsIndex, arg3: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def render(self) -> int:
+        ...

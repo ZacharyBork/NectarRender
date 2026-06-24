@@ -77,6 +77,10 @@ public:
         return out;
     }
 
+    __host__ __device__ bool near_zero(float eps = 1e-8) const {
+        return derived().length() < eps;
+    }
+
 private:
 
     __host__ __device__ VecType& derived() { 
@@ -186,6 +190,7 @@ public:
     float e[2];
 
     __host__ __device__ Vec2Core() : e{ 0, 0 } {}
+    __host__ __device__ Vec2Core(float e) : e{ e, e } {}
     __host__ __device__ Vec2Core(float e0, float e1) : e{ e0, e1 } {}
 
     template <typename OtherType>
@@ -225,6 +230,7 @@ public:
     float e[3];
 
     __host__ __device__ Vec3Core() : e{ 0, 0, 0 } {}
+    __host__ __device__ Vec3Core(float e) : e{ e, e, e } {}
     __host__ __device__ Vec3Core(
         float e0, float e1, float e2
     ) : e{ e0, e1, e2 } {}
@@ -268,6 +274,12 @@ public:
     __host__ __device__ float r() const { return e[0]; }
     __host__ __device__ float g() const { return e[1]; }
     __host__ __device__ float b() const { return e[2]; }
+
+    __host__ __device__ static Color black() {return Color(0.0f, 0.0f, 0.0f);}
+    __host__ __device__ static Color white() {return Color(1.0f, 1.0f, 1.0f);}
+    __host__ __device__ static Color red()   {return Color(1.0f, 0.0f, 0.0f);}
+    __host__ __device__ static Color green() {return Color(0.0f, 1.0f, 0.0f);}
+    __host__ __device__ static Color blue()  {return Color(0.0f, 0.0f, 1.0f);}
 };
 
 // MATH =======================================================================

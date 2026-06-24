@@ -14,7 +14,21 @@
 struct ColorIndex { 
     int r, g, b; 
 
-    __host__ __device__ ColorIndex(int r, int g, int b) : r(r), g(g), b(b) { }
+    __host__ __device__ ColorIndex(int r, int g, int b) 
+        : r(r), g(g), b(b) { }
+};
+
+struct ColorValues { 
+    float r, g, b; 
+
+    __host__ __device__ ColorValues(float r, float g, float b) 
+        : r(r), g(g), b(b) { }
+
+    __host__ __device__ ColorValues(float* data_ptr, ColorIndex index) {
+        r = data_ptr[index.r];
+        g = data_ptr[index.g];
+        b = data_ptr[index.b];
+    }
 };
 
 // ============================================================================
@@ -64,6 +78,7 @@ public:
 
     __host__ void combine(DataObject other);
     __host__ void normalize_by_samples(unsigned int samples);
+    __host__ void linear_to_gamma();
 
     __device__ void set_color(int x, int y, int z, Color color) {
         int r = z * (C * H * W) + 0 * (H * W) + y * W + x;
@@ -76,17 +91,24 @@ public:
         d_ptr[b] = color.z();
     }
 
+    
+
 };
 
-void combine_data(DataObject a, DataObject b);
-void norm_by_samples(DataObject data, unsigned int samples);
+void run_combine_data(DataObject a, DataObject b);
+void run_norm_by_samples(DataObject data, unsigned int samples);
+void run_linear_to_gamma(DataObject data);
 
 inline void DataObject::combine(DataObject other) { 
-    combine_data(*this, other); 
+    run_combine_data(*this, other); 
 }
 
 inline void DataObject::normalize_by_samples(unsigned int samples) {
-    norm_by_samples(*this, samples);
+    run_norm_by_samples(*this, samples);
+}
+
+inline void DataObject::linear_to_gamma() {
+    run_linear_to_gamma(*this);
 }
 
 // ============================================================================

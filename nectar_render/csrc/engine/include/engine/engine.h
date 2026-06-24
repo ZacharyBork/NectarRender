@@ -4,6 +4,7 @@
 #include <cuda_runtime.h>
 #include <vector>
 #include <optional>
+#include <pybind11/functional.h>
 
 #include "core/include/core/utils.h"
 #include "engine/include/engine/data.h"
@@ -19,6 +20,8 @@ public:
 
     unsigned int num_samples = 10;
     unsigned int max_depth = 8;
+
+    std::function<void(int, int, float)> on_sample;
     
     void initialize(
         const CameraParams& camera_params,
@@ -27,10 +30,7 @@ public:
         unsigned int seed
     );
 
-    void build_scene(
-        const std::vector<std::shared_ptr<Hittable>>& host_scene
-    );
-
+    void build_scene(const std::vector<Hittable*>& host_scene);
     uintptr_t render();
 
 private:

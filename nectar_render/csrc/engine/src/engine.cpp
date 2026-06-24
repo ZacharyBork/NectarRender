@@ -4,6 +4,8 @@
 #include "core/include/core/utils.h"
 #include "core/include/core/random.h"
 
+#include "material/include/material/material.h"
+
 void RenderEngine::initialize(
     const CameraParams& camera_params,
     unsigned int samples   = 10,
@@ -24,7 +26,7 @@ void RenderEngine::initialize(
 }
 
 void RenderEngine::build_scene(
-    const std::vector<std::shared_ptr<Hittable>>& host_scene
+    const std::vector<Hittable*>& host_scene
 ) {
     int n = host_scene.size();
 
@@ -50,13 +52,16 @@ uintptr_t RenderEngine::render() {
 
     Camera camera(*cam_params);
 
-    std::vector<std::shared_ptr<Hittable>> world = {
-        std::make_shared<Sphere>(Vector3(0.0f,    0.0f, -1.0f),   0.5f),
-        std::make_shared<Sphere>(Vector3(0.0f, -100.5f, -1.0f), 100.0f)
-    };
-    build_scene(world);
+    Lambertian mat1 = Lambertian(Color(1.0f, 0.5f, 0.2f));
+    Lambertian mat2 = Lambertian(Color(0.8f, 0.8f, 0.8f));
+
+    Sphere s1(Vector3(0.0f,    0.0f, -1.0f),   0.5f, mat1.build());
+    Sphere s2(Vector3(0.0f, -100.5f, -1.0f), 100.0f, mat2.build());
+    build_scene({ &s1, &s2 });
 
     for (int sample = 0; sample < num_samples; sample++) {
+        float prog = (float)(sample+1) / (float)num_samples;
+        on_sample(sample+1, num_samples, prog);
         frame_idx++;
 
         DataObject color(&render_layers->beauty);
@@ -65,6 +70,7 @@ uintptr_t RenderEngine::render() {
     }
 
     render_layers->normalize_by_samples(num_samples);
+    render_layers->beauty.linear_to_gamma();
     return reinterpret_cast<uintptr_t>(render_layers->beauty.device_ptr);
 }
 

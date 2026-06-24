@@ -7,6 +7,8 @@
 #include "core/include/core/interval.h"
 #include "engine/include/engine/ray.h"
 
+class Material;
+
 template<typename T, typename... Args>
 T* device_build(Args... args);
 
@@ -16,10 +18,12 @@ T* device_build(Args... args);
 
 class HitRecord {
 public:
-    Vector3  position;
+    Vector3 position;
     Vector3 normal;
     float   t;
     bool    front_face;
+
+    Material* material = nullptr;
 
     __device__ void set_face_normal(
         const Ray& ray, 
@@ -36,6 +40,7 @@ public:
 
 class Hittable {
 public:
+
     __host__ __device__ virtual ~Hittable() = default;
 
     __device__ virtual bool hit(
@@ -53,8 +58,11 @@ public:
 
 class Sphere : public Hittable {
 public:
-    __host__ __device__ Sphere(const Vector3& center, float radius) 
-        : center(center), radius(fmax(0.0f, radius)) {}
+    __host__ __device__ Sphere(
+        const Vector3& center, 
+        float          radius,
+        Material*      material
+    ): center(center), radius(radius + FMIN), mat(material) { }
 
     __device__ bool hit(
         const Ray& ray, 
@@ -80,20 +88,21 @@ public:
 
         rec.t        = root;
         rec.position = ray.at(rec.t);
-        rec.normal   = (rec.position - center) / radius;
-        Vector3 norm = (rec.position - center) / radius;
+        rec.material = mat;
+        Vector3 norm = (rec.position - center) / (radius + FMIN);
         rec.set_face_normal(ray, norm);
 
         return true;
     }
 
     Hittable* build() const override {
-        return device_build<Sphere, Vector3, float>(center, radius);
+        return device_build<Sphere>(center, radius, mat);
     }
 
 private:
-    Vector3 center;
-    float  radius;
+    Vector3   center;
+    float     radius;
+    Material* mat;
 };
 
 // ============================================================================

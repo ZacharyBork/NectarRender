@@ -4,8 +4,9 @@
 #include <vector>
 
 #include "engine/include/engine/data.h"
-#include "hittable/include/hittable/hittable.h"
 #include "engine/include/engine/camera.h"
+#include "hittable/include/hittable/hittable.h"
+#include "material/include/material/material.h"
 
 void trace(
     const HittablesList world,
