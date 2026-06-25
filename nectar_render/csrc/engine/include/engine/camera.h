@@ -2,12 +2,7 @@
 
 #include <array>
 
-#include "core/include/core/utils.h"
-#include "core/include/core/vector.h"
-#include "core/include/core/matrix.h"
-#include "core/include/core/constants.h"
-#include "core/include/core/random.h"
-
+#include "core/include/core.h"
 #include "engine/include/engine/ray.h"
 
 struct CameraParams {
@@ -76,7 +71,7 @@ public:
         }
 
         float time = shutter_time > 0.0f ? gen.uniform() * shutter_time : 0.0f;
-        return Ray(origin, focus_point - origin, gen.random_in_range());
+        return Ray(origin, focus_point - origin, time);
     }
 
 private:

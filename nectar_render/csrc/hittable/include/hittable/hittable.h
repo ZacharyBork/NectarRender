@@ -3,44 +3,53 @@
 #include <memory>
 #include <vector>
 
-#include "core/include/core/vector.h"
-#include "core/include/core/interval.h"
-#include "engine/include/engine/ray.h"
+#include "hittable/include/bvh/aabb.h"
 #include "hittable/include/hittable/hit_record.h"
 #include "material/include/material/material.h"
-
-template<typename T, typename... Args>
-T* device_build(Args... args);
 
 // ============================================================================
 // ABSTRACT PARENT
 // ============================================================================
 
-#include <iostream>
-
 class Hittable {
 public:
 
-    Vector3   position, delta_position;
-    Material* material;
+    Vector3   position, delta_pos;
+    Material* material = nullptr;
+    AABB      bbox;
+
+    __host__ __device__ virtual ~Hittable() = default;
 
     __host__ Hittable()
         : position(Vector3(0.0f, 0.0f, 0.0f)), 
-          material(Lambertian(Color(1.0f, 0.0f, 1.0f)).build()) 
+          material(Lambertian(Color(1.0f, 0.0f, 1.0f)).build())
     { }
 
     template <typename M>
-    __host__ Hittable(const Vector3& position, const M& material)
-        : position(position), material(material.build()) 
+    __host__ Hittable(
+        const Vector3& position, 
+        const M& material
+    ) : position(position), 
+        material(material.build())
     { }
 
-    __device__ Hittable(const Vector3& pos, Material* mat) {
-        position = pos;
-        material = mat;
+    __device__ Hittable(
+        const Vector3& pos, 
+        const Vector3& delta, 
+        Material* mat
+    ) {
+        position  = pos;
+        delta_pos = delta;
+        material  = mat;
     }
 
-    __host__ __device__ virtual ~Hittable() = default;    
     __host__ virtual Hittable* build() const = 0;
+    __host__ virtual const AABB build_bbox() const = 0;
+
+    __host__ const AABB bounding_box() { 
+        if (!bbox.bbox_empty) return bbox;
+        return build_bbox(); 
+    }
 
     __device__ virtual bool hit(
         const Ray& ray, 
@@ -49,12 +58,12 @@ public:
     ) const = 0;
 
     __host__ void set_motion_vector(const Vector3& offset) {
-        delta_position = offset;
+        delta_pos = offset;
     }
 
     __device__ Vector3 position_at_time(float time) const {
-        // if (delta_position.length() < 1e-16) return position;
-        Ray motion(position, delta_position);
+        if (delta_pos.length() < 1e-16) return position;
+        Ray motion(position, delta_pos);
         return motion.at(time);
     }
 };
@@ -70,11 +79,22 @@ public:
     __host__ Sphere(const Vector3& position, float radius, const M& material) 
         : Hittable(position, material), radius(radius + FMIN) { }
 
-    __device__ Sphere(const Vector3& pos, float rad, Material* mat) 
-        : Hittable(pos, mat), radius(rad) {}
+    __device__ Sphere(
+        const Vector3& pos, 
+        const Vector3& delta,  
+        float rad, 
+        Material* mat
+    ) : Hittable(pos, delta, mat), radius(rad) {}
 
     __host__ Hittable* build() const override {
-        return device_build<Sphere>(position, radius, material);
+        return device_build<Sphere>(
+            position, delta_pos, radius, material
+        );
+    }
+
+    __host__ const AABB build_bbox() const override {
+        Vector3 rvec = Vector3(radius, radius, radius);
+        return AABB(position - rvec, position + rvec);
     }
 
     __device__ bool hit(
@@ -82,9 +102,7 @@ public:
         Interval   ray_t,
         HitRecord& rec
     ) const override {
-        Ray motion(position, delta_position);
-        Vector3 current_position =  motion.at(ray.time());
-        // Vector3 current_position = position_at_time(ray.time());
+        Vector3 current_position = position_at_time(ray.time());
 
         Vector3 oc = current_position - ray.origin();
         float a = ray.direction().length_squared();
@@ -115,33 +133,5 @@ public:
 private:
 
     float radius;
-};
-
-// ============================================================================
-// HITTABLES LIST
-// ============================================================================
-
-struct HittablesList {
-    Hittable** objects;
-    int        n_objects;
-
-    __device__ bool hit(
-        const Ray& ray,
-        Interval   ray_t,
-        HitRecord& rec
-    ) const {
-        HitRecord temp_rec;
-        bool  hit_anything = false;
-        float closest      = ray_t.max;
-
-        for (int i = 0; i < n_objects; i++) {
-            if (objects[i]->hit(ray, Interval(ray_t.min, closest), temp_rec)) {
-                hit_anything = true;
-                closest      = temp_rec.t;
-                rec          = temp_rec;
-            }
-        }
-        return hit_anything;
-    }
 };
 

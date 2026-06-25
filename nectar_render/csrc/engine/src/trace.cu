@@ -1,10 +1,4 @@
 #include "engine/include/engine/trace.h"
-#include "engine/include/engine/ray.h"
-
-#include "core/include/core/constants.h"
-#include "core/include/core/vector.h"
-#include "core/include/core/interval.h"
-#include "core/include/core/random.h"
 
 // ============================================================================
 // DEVICE
@@ -26,7 +20,9 @@ T* device_build(Args... args) {
 
 /* HITTABLES */
 
-template Sphere* device_build<Sphere>(Vector3, float, Material*);
+template Sphere* device_build<Sphere>(
+    Vector3, Vector3, float, Material*
+);
 
 /* MATERIALS */
 
@@ -51,7 +47,7 @@ __device__ Color sample_skylight(const Ray& ray) {
 // ============================================================================
 
 __global__ void trace_kernel(
-    const HittablesList world,
+    const Scene  scene,
     Camera       camera,
     DataObject   data, 
     unsigned int max_depth,
@@ -71,7 +67,7 @@ __global__ void trace_kernel(
 
     for (int bounce = 0; bounce < max_depth; bounce++) {
         HitRecord rec;
-        bool hit = world.hit(ray, Interval(EPS, FMAX), rec);
+        bool hit = scene.hit(ray, Interval(EPS, FMAX), rec);
         
         if (!hit) {
             color += atten * sample_skylight(ray);
@@ -85,7 +81,7 @@ __global__ void trace_kernel(
 }
 
 void trace(
-    const HittablesList world,
+    const Scene  scene,
     Camera       camera,
     DataObject   data, 
     unsigned int max_depth,
@@ -94,5 +90,5 @@ void trace(
 ) {
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
-    trace_kernel<<<grid, block>>>(world, camera, data, max_depth, seed, frame);
+    trace_kernel<<<grid, block>>>(scene, camera, data, max_depth, seed, frame);
 }

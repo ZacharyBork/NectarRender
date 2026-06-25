@@ -10,6 +10,11 @@ public:
     __host__ __device__ Interval(float min, float max) 
         : min(min), max(max) { }
 
+    __host__ __device__ Interval(const Interval& a, const Interval& b) {
+        min = a.min <= b.min ? a.min : b.min;
+        max = a.max >= b.max ? a.max : b.max;
+    }
+
     __host__ __device__ static Interval empty() {
         return Interval(FMAX, -FMAX);
     }
@@ -26,6 +31,11 @@ public:
         if (x < min) return min;
         if (x > max) return max;
         return x;
+    }
+
+    __device__ Interval expand(float delta) const {
+        float padding = delta / 2.0f;
+        return Interval(min - padding, max + padding);
     }
 
 };

@@ -1,9 +1,6 @@
 #include "engine/include/engine/engine.h"
 #include "engine/include/engine/trace.h"
 
-#include "core/include/core/utils.h"
-#include "core/include/core/random.h"
-
 #include "material/include/material/material.h"
 
 void RenderEngine::initialize(
@@ -25,25 +22,30 @@ void RenderEngine::initialize(
     initialized = true;
 }
 
-void RenderEngine::build_scene(
-    const std::vector<Hittable*>& host_scene
-) {
+void RenderEngine::build_scene(std::vector<Hittable*>& host_scene) {
     int n = host_scene.size();
 
-    std::vector<Hittable*> device_ptrs(n);
-    for (int i = 0; i < n; i++) {
-        device_ptrs[i] = host_scene[i]->build();
-    }
+    BVH bvh;
+    bvh.build(host_scene);
+
+    std::vector<Hittable*> device_obj_ptrs(n);
+    for (int i = 0; i < n; i++)
+        device_obj_ptrs[i] = host_scene[i]->build();
 
     cudaMalloc(&d_objects, n * sizeof(Hittable*));
-    cudaMemcpy(d_objects, device_ptrs.data(),
-               n * sizeof(Hittable*),
-               cudaMemcpyHostToDevice);
+    cudaMemcpy(d_objects, device_obj_ptrs.data(),
+               n * sizeof(Hittable*), cudaMemcpyHostToDevice);
 
-    device_scene = HittablesList{ d_objects, n };
+    int n_nodes = bvh.nodes.size();
+    BVHNode* d_bvh_nodes;
+    cudaMalloc(&d_bvh_nodes, n_nodes * sizeof(BVHNode));
+    cudaMemcpy(d_bvh_nodes, bvh.nodes.data(),
+               n_nodes * sizeof(BVHNode), cudaMemcpyHostToDevice);
+
+    device_scene = Scene{ d_bvh_nodes, d_objects, n_nodes, n };
 }
 
-void RenderEngine::render(const std::vector<Hittable*>& scene) {
+void RenderEngine::render(std::vector<Hittable*>& scene) {
     if (!initialized) {
         throw std::runtime_error(
             "RenderEngine::render called before initialization."

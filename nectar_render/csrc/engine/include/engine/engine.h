@@ -6,15 +6,16 @@
 #include <optional>
 #include <pybind11/functional.h>
 
-#include "core/include/core/utils.h"
+#include "core/include/core.h"
 #include "engine/include/engine/data.h"
+#include "engine/include/engine/scene.h"
 #include "engine/include/engine/camera.h"
 #include "hittable/include/hittable/hittable.h"
 
 class RenderEngine {
 public:
     size_t H, W;
-    HittablesList device_scene;
+    Scene device_scene;
     std::optional<CameraParams> cam_params;
     std::optional<RenderLayers> render_layers;
 
@@ -30,7 +31,7 @@ public:
         unsigned int seed
     );
 
-    void render(const std::vector<Hittable*>& scene);
+    void render(std::vector<Hittable*>& scene);
     RenderLayers get_render_layers();
 
 private:
@@ -40,7 +41,7 @@ private:
     unsigned int frame_idx = 0;
     bool initialized = false;
 
-    void build_scene(const std::vector<Hittable*>& host_scene);
+    void build_scene(std::vector<Hittable*>& host_scene);
 };
 
 static RenderEngine engine;

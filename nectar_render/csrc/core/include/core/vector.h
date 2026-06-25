@@ -203,14 +203,14 @@ public:
     __host__ __device__ float v() const { return e[1]; }
 
     __device__ static VecType sample_square(Generator& gen) {
-        return VecType(gen.random_in_range()-0.5, gen.random_in_range()-0.5);
+        return VecType(gen.random_float()-0.5, gen.random_float()-0.5);
     }
 
     __device__ static VecType random_in_unit_disk(Generator& gen) {
         while (true) {
             VecType p = VecType(
-                gen.random_in_range(-1.0f, 1.0f), 
-                gen.random_in_range(-1.0f, 1.0f)
+                gen.random_float(-1.0f, 1.0f), 
+                gen.random_float(-1.0f, 1.0f)
             );
             if (p.length_squared() < 1.0f) return p;
         }
@@ -249,9 +249,9 @@ public:
 
     __device__ static VecType random(Generator& gen) {
         return VecType(
-            gen.random_in_range(),
-            gen.random_in_range(), 
-            gen.random_in_range()
+            gen.random_float(),
+            gen.random_float(), 
+            gen.random_float()
         );
     }
 
@@ -261,9 +261,9 @@ public:
         Generator& gen
     ) {
         return VecType(
-            gen.random_in_range(min, max), 
-            gen.random_in_range(min, max), 
-            gen.random_in_range(min, max)
+            gen.random_float(min, max), 
+            gen.random_float(min, max), 
+            gen.random_float(min, max)
         );
     }
 };

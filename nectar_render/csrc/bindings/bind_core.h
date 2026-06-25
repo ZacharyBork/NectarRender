@@ -2,10 +2,9 @@
 
 #include <pybind11/pybind11.h>
 
+#include "core/include/core.h"
 #include "core/include/core/cublas_context.h"
-#include "core/include/core/vector.h"
-#include "core/include/core/utils.h"
-#include "core/include/core/random.h"
+
 
 namespace py = pybind11;
 

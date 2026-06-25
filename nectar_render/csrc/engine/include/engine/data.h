@@ -7,9 +7,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
-#include "core/include/core/utils.h"
-#include "core/include/core/vector.h"
-#include "core/include/core/constants.h"
+#include "core/include/core.h"
 
 namespace py = pybind11;
 
