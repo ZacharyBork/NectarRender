@@ -19,7 +19,7 @@ T* device_build(Args... args);
 class Hittable {
 public:
 
-    __host__ __device__ virtual ~Hittable() = default;
+    __host__ __device__ virtual ~Hittable() = default;    
     __host__ virtual Hittable* build() const = 0;
 
     __device__ virtual bool hit(

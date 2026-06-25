@@ -6,4 +6,6 @@ from .engine import RenderEngine
 from .camera import Camera
 from .vector import Vector2, Vector3, Color
 
+from . import hittable, material
+
 

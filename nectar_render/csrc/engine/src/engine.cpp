@@ -40,10 +40,10 @@ void RenderEngine::build_scene(
                n * sizeof(Hittable*),
                cudaMemcpyHostToDevice);
 
-    scene = HittablesList{ d_objects, n };
+    device_scene = HittablesList{ d_objects, n };
 }
 
-uintptr_t RenderEngine::render() {
+uintptr_t RenderEngine::render(const std::vector<Hittable*>& scene) {
     if (!initialized) {
         throw std::runtime_error(
             "RenderEngine::render called before initialization."
@@ -52,18 +52,20 @@ uintptr_t RenderEngine::render() {
 
     Camera camera(*cam_params);
 
-    Lambertian mat_floor = Lambertian(Color(0.8f, 0.8f, 0.0f));
-    Lambertian diffuse = Lambertian(Color(0.2f, 0.4f, 0.8f));
-    Dielectric glass_inner = Dielectric(1.5f);
-    Dielectric glass_outer = Dielectric(1.0f / 1.33f);
-    Metal metal = Metal(Color(1.0f, 1.0f, 1.0f), 0.3f);
+    // Lambertian mat_floor = Lambertian(Color(0.8f, 0.8f, 0.0f));
+    // Lambertian diffuse = Lambertian(Color(0.2f, 0.4f, 0.8f));
+    // Dielectric glass_inner = Dielectric(1.5f);
+    // Dielectric glass_outer = Dielectric(1.0f / 1.33f);
+    // Metal metal = Metal(Color(1.0f, 1.0f, 1.0f), 0.3f);
 
-    Sphere s1_o(Vector3(-1.05f, 0.0f, -1.0f), 0.5f, glass_outer);
-    Sphere s1_i(Vector3(0.0f,   0.0f, -1.0f), 0.4f, glass_inner);
-    Sphere s2(Vector3(0.0f,   0.0f, -1.0f), 0.5f, diffuse);
-    Sphere s3(Vector3(1.05f,  0.0f, -1.0f), 0.5f, metal);
-    Sphere s_floor(Vector3(0.0f, -100.5f, -1.0f), 100.0f, mat_floor);
-    build_scene({ &s1_o, &s1_i, &s2, &s3, &s_floor });
+    // Sphere s1_o(Vector3(-1.05f, 0.0f, -1.0f), 0.5f, glass_outer);
+    // Sphere s1_i(Vector3(0.0f,   0.0f, -1.0f), 0.4f, glass_inner);
+    // Sphere s2(Vector3(0.0f,   0.0f, -1.0f), 0.5f, diffuse);
+    // Sphere s3(Vector3(1.05f,  0.0f, -1.0f), 0.5f, metal);
+    // Sphere s_floor(Vector3(0.0f, -100.5f, -1.0f), 100.0f, mat_floor);
+    // build_scene({ &s1_o, &s1_i, &s2, &s3, &s_floor });
+
+    build_scene(scene);
 
     for (int sample = 0; sample < num_samples; sample++) {
         float prog = (float)(sample+1) / (float)num_samples;
@@ -71,7 +73,7 @@ uintptr_t RenderEngine::render() {
         frame_idx++;
 
         DataObject color(&render_layers->beauty);
-        trace(scene, camera, color, max_depth, random_seed, frame_idx);
+        trace(device_scene, camera, color, max_depth, random_seed, frame_idx);
         render_layers->beauty.combine(color);
     }
 

@@ -7,8 +7,10 @@ from pathlib import Path
 from typing  import Self, TypeAlias
 from PIL     import Image
 from numpy   import ndarray
+from collections.abc import Sequence
 
 from nectar_render.python.camera import Camera
+from nectar_render.python.hittable import Hittable
 
 Engine: TypeAlias = _pathtracer.engine.RenderEngine
 
@@ -44,8 +46,8 @@ class RenderEngine:
         with tqdm.tqdm(total=num_samples, leave=sample==num_samples) as bar:
             bar.update(sample)
 
-    def render(self: Self) -> None:
-        object.__setattr__(self, 'DEVICE_PTR', self.ENGINE.render())
+    def render(self: Self, scene: Sequence[Hittable]) -> None:
+        object.__setattr__(self, 'DEVICE_PTR', self.ENGINE.render(scene))
         
     def get_data(self: Self) -> ndarray:
         data = _pathtracer.host.to_numpy(

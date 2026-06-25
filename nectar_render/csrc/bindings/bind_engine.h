@@ -65,7 +65,13 @@ void register_engine(py::module_& m) {
         ) { 
             self.initialize(camera_params, samples, ray_depth, seed); 
         })
-        .def("render", &RenderEngine::render);
+        .def("render", [](RenderEngine& self, py::list scene) {
+            std::vector<Hittable*> ptrs;
+            ptrs.reserve(scene.size());
+            for (auto& item : scene)
+                ptrs.push_back(item.cast<Hittable*>());
+            return self.render(ptrs);
+        });
 
 }
 

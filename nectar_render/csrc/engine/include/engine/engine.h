@@ -14,7 +14,7 @@
 class RenderEngine {
 public:
     size_t H, W;
-    HittablesList scene;
+    HittablesList device_scene;
     std::optional<CameraParams> cam_params;
     std::optional<RenderLayers> render_layers;
 
@@ -31,7 +31,7 @@ public:
     );
 
     void build_scene(const std::vector<Hittable*>& host_scene);
-    uintptr_t render();
+    uintptr_t render(const std::vector<Hittable*>& scene);
 
 private:
 
