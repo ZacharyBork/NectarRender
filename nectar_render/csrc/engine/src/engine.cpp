@@ -52,12 +52,18 @@ uintptr_t RenderEngine::render() {
 
     Camera camera(*cam_params);
 
-    Lambertian mat1 = Lambertian(Color(1.0f, 0.5f, 0.2f));
-    Lambertian mat2 = Lambertian(Color(0.8f, 0.8f, 0.8f));
+    Lambertian mat_floor = Lambertian(Color(0.8f, 0.8f, 0.0f));
+    Lambertian diffuse = Lambertian(Color(0.2f, 0.4f, 0.8f));
+    Dielectric glass_inner = Dielectric(1.5f);
+    Dielectric glass_outer = Dielectric(1.0f / 1.33f);
+    Metal metal = Metal(Color(1.0f, 1.0f, 1.0f), 0.3f);
 
-    Sphere s1(Vector3(0.0f,    0.0f, -1.0f),   0.5f, mat1.build());
-    Sphere s2(Vector3(0.0f, -100.5f, -1.0f), 100.0f, mat2.build());
-    build_scene({ &s1, &s2 });
+    Sphere s1_o(Vector3(-1.05f, 0.0f, -1.0f), 0.5f, glass_outer);
+    Sphere s1_i(Vector3(0.0f,   0.0f, -1.0f), 0.4f, glass_inner);
+    Sphere s2(Vector3(0.0f,   0.0f, -1.0f), 0.5f, diffuse);
+    Sphere s3(Vector3(1.05f,  0.0f, -1.0f), 0.5f, metal);
+    Sphere s_floor(Vector3(0.0f, -100.5f, -1.0f), 100.0f, mat_floor);
+    build_scene({ &s1_o, &s1_i, &s2, &s3, &s_floor });
 
     for (int sample = 0; sample < num_samples; sample++) {
         float prog = (float)(sample+1) / (float)num_samples;

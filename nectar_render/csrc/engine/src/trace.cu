@@ -32,6 +32,8 @@ template Sphere* device_build<Sphere>(Vector3, float, Material*);
 /* MATERIALS */
 
 template Lambertian* device_build<Lambertian>(Color);
+template Metal*      device_build<Metal>(Color, float);
+template Dielectric* device_build<Dielectric>(float);
 
 // ============================================================================
 // RAY COLORING

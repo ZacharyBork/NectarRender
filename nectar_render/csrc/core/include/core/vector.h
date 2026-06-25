@@ -298,6 +298,24 @@ __host__ __device__ inline Vector3 cross(const Vector3& u, const Vector3& v) {
     );
 }
 
+__host__ __device__ inline Vector3 reflect(
+    const Vector3& v,
+    const Vector3& n
+) { 
+    return v - 2.0f * dot(v, n) * n; 
+}
+
+__host__ __device__ inline Vector3 refract(
+    const Vector3& uv,
+    const Vector3& n,
+    float ior
+) { 
+    float cos_theta = fminf(dot(-uv, n), 1.0f);
+    Vector3 perp =  ior * (uv + cos_theta * n);
+    Vector3 parallel = -sqrtf(fabsf(1.0 - perp.length_squared())) * n;
+    return perp + parallel;
+}
+
 // CREATION ===================================================================
 
 __device__ inline Vector3 random_unit_vector(Generator& gen) {

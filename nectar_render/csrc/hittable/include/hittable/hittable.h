@@ -6,33 +6,11 @@
 #include "core/include/core/vector.h"
 #include "core/include/core/interval.h"
 #include "engine/include/engine/ray.h"
-
-class Material;
+#include "hittable/include/hittable/hit_record.h"
+#include "material/include/material/material.h"
 
 template<typename T, typename... Args>
 T* device_build(Args... args);
-
-// ============================================================================
-// HIT RECORD
-// ============================================================================
-
-class HitRecord {
-public:
-    Vector3 position;
-    Vector3 normal;
-    float   t;
-    bool    front_face;
-
-    Material* material = nullptr;
-
-    __device__ void set_face_normal(
-        const Ray& ray, 
-        const Vector3& outward_normal
-    ) {
-        front_face = dot(ray.direction(), outward_normal) < 0.0f;
-        normal     = front_face ? outward_normal : -outward_normal;
-    }
-};
 
 // ============================================================================
 // ABSTRACT PARENT
@@ -42,14 +20,13 @@ class Hittable {
 public:
 
     __host__ __device__ virtual ~Hittable() = default;
+    __host__ virtual Hittable* build() const = 0;
 
     __device__ virtual bool hit(
         const Ray& ray, 
         Interval   ray_t,
         HitRecord& rec
     ) const = 0;
-
-    virtual Hittable* build() const = 0;
 };
 
 // ============================================================================
@@ -58,11 +35,18 @@ public:
 
 class Sphere : public Hittable {
 public:
-    __host__ __device__ Sphere(
-        const Vector3& center, 
-        float          radius,
-        Material*      material
-    ): center(center), radius(radius + FMIN), mat(material) { }
+    
+    template <typename M>
+    __host__ Sphere(
+        const Vector3& center, float radius, const M& material
+    ) : center(center), radius(radius + FMIN), mat(material.build()) { }
+
+    __device__ Sphere(const Vector3& center, float radius, Material* mat)
+        : center(center), radius(radius), mat(mat) {}
+
+    __host__ Hittable* build() const override {
+        return device_build<Sphere>(center, radius, mat);
+    }
 
     __device__ bool hit(
         const Ray& ray, 
@@ -93,10 +77,6 @@ public:
         rec.set_face_normal(ray, norm);
 
         return true;
-    }
-
-    Hittable* build() const override {
-        return device_build<Sphere>(center, radius, mat);
     }
 
 private:

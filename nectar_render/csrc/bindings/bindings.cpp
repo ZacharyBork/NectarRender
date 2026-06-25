@@ -3,6 +3,7 @@
 #include "bindings/bind_core.h"
 #include "bindings/bind_engine.h"
 #include "bindings/bind_host.h"
+#include "bindings/bind_hittable.h"
 
 namespace py = pybind11;
 
@@ -12,6 +13,7 @@ PYBIND11_MODULE(_pathtracer, m) {
     register_core(m);
     register_host(m);
     register_engine(m);
+    register_hittable(m);
 
 }
 
