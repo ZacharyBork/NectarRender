@@ -1,0 +1,74 @@
+"""
+Engine data submodule.
+"""
+from __future__ import annotations
+import typing
+__all__: list[str] = ['DataObject', 'RenderLayers', 'RenderLayersConfig']
+class DataObject:
+    def is_enabled(self) -> bool:
+        ...
+    def numpy(self) -> numpy.ndarray:
+        ...
+    @property
+    def C(self) -> int:
+        ...
+    @property
+    def H(self) -> int:
+        ...
+    @property
+    def W(self) -> int:
+        ...
+    @property
+    def device_ptr(self) -> int:
+        ...
+    @property
+    def n_elements(self) -> int:
+        ...
+class RenderLayers:
+    def __init__(self, h: typing.SupportsInt | typing.SupportsIndex = True, w: typing.SupportsInt | typing.SupportsIndex = False, cfg: RenderLayersConfig = False) -> None:
+        ...
+    @property
+    def H(self) -> int:
+        ...
+    @property
+    def W(self) -> int:
+        ...
+    @property
+    def beauty(self) -> DataObject:
+        ...
+    @property
+    def depth(self) -> DataObject:
+        ...
+    @property
+    def diffuse(self) -> DataObject:
+        ...
+    @property
+    def emission(self) -> DataObject:
+        ...
+    @property
+    def normal(self) -> DataObject:
+        ...
+    @property
+    def object_id(self) -> DataObject:
+        ...
+    @property
+    def shadow(self) -> DataObject:
+        ...
+    @property
+    def specular(self) -> DataObject:
+        ...
+class RenderLayersConfig:
+    beauty: bool
+    depth: bool
+    diffuse: bool
+    emission: bool
+    normal: bool
+    object_id: bool
+    shadow: bool
+    specular: bool
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, beauty: bool = True, diffuse: bool = False, specular: bool = False, normal: bool = False, shadow: bool = False, depth: bool = False, emission: bool = False, object_id: bool = False) -> None:
+        ...

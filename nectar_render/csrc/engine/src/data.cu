@@ -31,7 +31,6 @@ __global__ void linear_to_gamma_kernel(DataObject data) {
 };
 
 void run_linear_to_gamma(DataObject data) {
-    int BS2D = 16;
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
     linear_to_gamma_kernel<<<grid, block>>>(data);
@@ -55,7 +54,6 @@ __global__ void combine_data_kernel(DataObject a, DataObject b) {
 }
 
 void run_combine_data(DataObject a, DataObject b) {
-    int BS2D = 16;
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((a.W + BS2D - 1) / BS2D, (a.H + BS2D - 1) / BS2D, 1);
     combine_data_kernel<<<grid, block>>>(a, b);
@@ -85,7 +83,6 @@ void run_norm_by_samples(
     DataObject   data, 
     unsigned int samples
 ) {
-    int BS2D = 16;
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
     norm_by_samples_kernel<<<grid, block>>>(data, samples);

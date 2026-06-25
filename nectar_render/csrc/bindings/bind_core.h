@@ -13,13 +13,16 @@ void register_core(py::module_& m) {
     
     auto m_core = m.def_submodule("core", "Core module.");
 
-    /* CUDA UTILS */
+    /* UTILS */
 
-    m_core.def("destroy_cublas_handle", &destroy_cublas_handle, 
+    auto m_utils = m_core.def_submodule("utils", "Core utility submodule.");
+
+    m_utils.def("destroy_cublas_handle", &destroy_cublas_handle, 
         "Destroys cuBLAS handle. Registered atexit for Python module.");
     
-    m_core.def("allocate_cuda_memory", &allocate_cuda_memory, "");
-    m_core.def("free_cuda_memory",     &free_cuda_memory,     "");
+    m_utils.def("allocate_cuda_memory", &allocate_cuda_memory, "");
+    m_utils.def("free_cuda_memory",     &free_cuda_memory,     "");
+    m_utils.def("cuda_synchronize",     &cuda_synchronize,     "");
 
     /* VECTORS */
 

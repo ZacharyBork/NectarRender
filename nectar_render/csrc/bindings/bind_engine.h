@@ -5,12 +5,17 @@
 
 #include "engine/include/engine/engine.h"
 #include "engine/include/engine/camera.h"
+#include "engine/include/engine/data.h"
 
 namespace py = pybind11;
 
 void register_engine(py::module_& m) {
     
     auto m_engine = m.def_submodule("engine", "Engine module.");
+
+// ############################################################################
+// CAMERA
+// ############################################################################
 
     py::class_<CameraParams>(m_engine, "CameraParams")
         .def(py::init<>()) 
@@ -53,9 +58,91 @@ void register_engine(py::module_& m) {
         .def_readwrite("sensor_width",   &CameraParams::sensor_width)
         .def_readwrite("shutter_speed",  &CameraParams::shutter_speed);
 
+// ############################################################################
+// RENDER LAYERS
+// ############################################################################
+
+    auto m_data = m_engine.def_submodule("data", "Engine data submodule.");
+
+    py::class_<DataObject>(m_data, "DataObject")
+        .def("numpy",               &DataObject::numpy)
+        .def("is_enabled",          &DataObject::is_enabled)
+        .def_readonly("device_ptr", &DataObject::device_ptr)
+        .def_readonly("C",          &DataObject::C)
+        .def_readonly("H",          &DataObject::H)
+        .def_readonly("W",          &DataObject::W)
+        .def_readonly("n_elements", &DataObject::n_elements);
+
+    py::class_<RenderLayersConfig>(m_data, "RenderLayersConfig")
+        .def(py::init<>()) 
+        .def(py::init([](
+            bool beauty,
+            bool diffuse,
+            bool specular,
+            bool normal,
+            bool shadow,
+            bool depth,
+            bool emission,
+            bool object_id
+        ) {
+            RenderLayersConfig cfg;
+            cfg.beauty    = beauty;
+            cfg.diffuse   = diffuse;
+            cfg.specular  = specular;
+            cfg.normal    = normal;
+            cfg.shadow    = shadow;
+            cfg.depth     = depth;
+            cfg.emission  = emission;
+            cfg.object_id = object_id;
+            return cfg;
+        }),
+            py::arg("beauty")    = true,
+            py::arg("diffuse")   = false,
+            py::arg("specular")  = false,
+            py::arg("normal")    = false,
+            py::arg("shadow")    = false,
+            py::arg("depth")     = false,
+            py::arg("emission")  = false,
+            py::arg("object_id") = false
+        )
+        .def_readwrite("beauty",    &RenderLayersConfig::beauty)
+        .def_readwrite("diffuse",   &RenderLayersConfig::diffuse)
+        .def_readwrite("specular",  &RenderLayersConfig::specular)
+        .def_readwrite("normal",    &RenderLayersConfig::normal)
+        .def_readwrite("shadow",    &RenderLayersConfig::shadow)
+        .def_readwrite("depth",     &RenderLayersConfig::depth)
+        .def_readwrite("emission",  &RenderLayersConfig::emission)
+        .def_readwrite("object_id", &RenderLayersConfig::object_id);
+
+    py::class_<RenderLayers>(m_data, "RenderLayers")
+        .def(py::init([](
+            size_t h, 
+            size_t w,
+            const RenderLayersConfig& cfg
+        ) {
+            return RenderLayers(h, w, cfg);
+        }),
+            py::arg("h")   = true,
+            py::arg("w")   = false,
+            py::arg("cfg") = false
+        )
+        .def_readonly("H",         &RenderLayers::H)
+        .def_readonly("W",         &RenderLayers::W)
+        .def_readonly("beauty",    &RenderLayers::beauty)
+        .def_readonly("diffuse",   &RenderLayers::diffuse)
+        .def_readonly("specular",  &RenderLayers::specular)
+        .def_readonly("normal",    &RenderLayers::normal)
+        .def_readonly("shadow",    &RenderLayers::shadow)
+        .def_readonly("depth",     &RenderLayers::depth)
+        .def_readonly("emission",  &RenderLayers::emission)
+        .def_readonly("object_id", &RenderLayers::object_id);
+
+// ############################################################################
+// RENDER ENGINE CLASS
+// ############################################################################
+
     py::class_<RenderEngine>(m_engine, "RenderEngine")
         .def(py::init<>())
-        .def_readwrite("on_sample", &RenderEngine::on_sample)
         .def("initialize", [](
             RenderEngine& self,
             CameraParams camera_params,
@@ -70,8 +157,10 @@ void register_engine(py::module_& m) {
             ptrs.reserve(scene.size());
             for (auto& item : scene)
                 ptrs.push_back(item.cast<Hittable*>());
-            return self.render(ptrs);
-        });
+            self.render(ptrs);
+        })
+        .def_readwrite("on_frame_finished", &RenderEngine::on_frame_finished)
+        .def("get_render_layers", &RenderEngine::get_render_layers);
 
 }
 

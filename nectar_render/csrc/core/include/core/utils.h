@@ -7,6 +7,7 @@
 
 uintptr_t allocate_cuda_memory(size_t n_elements, float fill_value);
 void free_cuda_memory(uintptr_t device_ptr);
+void cuda_synchronize();
 
 /* CUDA PROCESS UTILS */
 

@@ -21,7 +21,7 @@ public:
     unsigned int num_samples = 10;
     unsigned int max_depth = 8;
 
-    std::function<void(int, int, float)> on_sample;
+    std::function<void(int)> on_frame_finished;
     
     void initialize(
         const CameraParams& camera_params,
@@ -30,8 +30,8 @@ public:
         unsigned int seed
     );
 
-    void build_scene(const std::vector<Hittable*>& host_scene);
-    uintptr_t render(const std::vector<Hittable*>& scene);
+    void render(const std::vector<Hittable*>& scene);
+    RenderLayers get_render_layers();
 
 private:
 
@@ -39,6 +39,8 @@ private:
     unsigned int random_seed;
     unsigned int frame_idx = 0;
     bool initialized = false;
+
+    void build_scene(const std::vector<Hittable*>& host_scene);
 };
 
 static RenderEngine engine;

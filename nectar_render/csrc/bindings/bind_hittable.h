@@ -17,14 +17,15 @@ void register_hittable(py::module_& m) {
         .def(py::init([](
             const Vector3 center, 
             float radius, 
-            const Lambertian& mat
+            const Material& mat
         ) {
             return Sphere(center, radius, mat);
         }),
             py::arg("center")   = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("radius")   = 1.0f,
             py::arg("material") = Lambertian(Color(0.8f, 0.8f, 0.8f))
-        );
+        )
+        .def("set_motion_vector", &Hittable::set_motion_vector);
 
 }
 

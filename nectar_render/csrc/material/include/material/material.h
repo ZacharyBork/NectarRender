@@ -46,7 +46,7 @@ public:
         Vector3 dir = rec.normal + random_unit_vector(gen);
         dir = dir.near_zero() ? rec.normal : dir;
         
-        ray = Ray(rec.position, dir);
+        ray = Ray(rec.position, dir, ray.time());
         attenuation *= albedo;
         return true;
     }
@@ -77,7 +77,7 @@ public:
     ) const override { 
         Vector3 reflected = reflect(ray.direction(), rec.normal);
         reflected = normalize(reflected) + (fuzz * random_unit_vector(gen));
-        ray = Ray(rec.position, reflected);
+        ray = Ray(rec.position, reflected, ray.time());
         attenuation *= albedo;
         return (dot(ray.direction(), rec.normal) > 0);
     }
@@ -119,7 +119,7 @@ public:
             direction = reflect(unit_direction, rec.normal);
         else direction = refract(unit_direction, rec.normal, ri);
 
-        ray = Ray(rec.position, direction);
+        ray = Ray(rec.position, direction, ray.time());
         attenuation *= Color(1.0f, 1.0f, 1.0f);
         return true;
     }

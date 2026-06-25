@@ -4,7 +4,8 @@ Engine module.
 from __future__ import annotations
 import collections.abc
 import typing
-__all__: list[str] = ['CameraParams', 'RenderEngine']
+from . import data
+__all__: list[str] = ['CameraParams', 'RenderEngine', 'data']
 class CameraParams:
     @typing.overload
     def __init__(self) -> None:
@@ -61,10 +62,12 @@ class CameraParams:
     def shutter_speed(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
 class RenderEngine:
-    on_sample: collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex, typing.SupportsInt | typing.SupportsIndex, typing.SupportsFloat | typing.SupportsIndex], None]
+    on_frame_finished: collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex], None]
     def __init__(self) -> None:
+        ...
+    def get_render_layers(self) -> data.RenderLayers:
         ...
     def initialize(self, arg0: CameraParams, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsInt | typing.SupportsIndex, arg3: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
-    def render(self, arg0: list) -> int:
+    def render(self, arg0: list) -> None:
         ...

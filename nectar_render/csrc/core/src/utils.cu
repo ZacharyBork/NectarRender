@@ -31,6 +31,8 @@ void free_cuda_memory(uintptr_t device_ptr) {
     cudaFree(reinterpret_cast<void*>(device_ptr));
 }
 
+void cuda_synchronize() { cudaDeviceSynchronize(); }
+
 /* CUDA PROCESS UTILS */
 
 __device__ ProcessIndex get_process_index() {

@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <vector>
 
+#include "core/include/core/constants.h"
 #include "engine/include/engine/data.h"
 #include "engine/include/engine/camera.h"
 #include "hittable/include/hittable/hittable.h"

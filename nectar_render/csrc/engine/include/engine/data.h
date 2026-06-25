@@ -3,9 +3,15 @@
 #include <vector>
 #include <stdint.h>
 #include <cuda_runtime.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 
 #include "core/include/core/utils.h"
 #include "core/include/core/vector.h"
+#include "core/include/core/constants.h"
+
+namespace py = pybind11;
 
 // ============================================================================
 // UTILITIES
@@ -91,7 +97,15 @@ public:
         d_ptr[b] = color.z();
     }
 
-    
+    py::array numpy() {
+        std::vector<size_t> shape = { C, H, W };
+        auto result = py::array_t<float>(shape);
+        auto buf = result.request();
+        cudaDeviceSynchronize();
+        cudaMemcpy(buf.ptr, reinterpret_cast<void*>(device_ptr),
+            n_elements * sizeof(float), cudaMemcpyDeviceToHost);
+        return result;
+    }
 
 };
 
@@ -116,14 +130,14 @@ inline void DataObject::linear_to_gamma() {
 // ============================================================================
 
 struct RenderLayersConfig {
-    const bool beauty    = true;
-    const bool diffuse   = false;
-    const bool specular  = false;
-    const bool normal    = false;
-    const bool shadow    = false;
-    const bool depth     = false;
-    const bool emission  = false;
-    const bool object_id = false;
+    bool beauty    = true;
+    bool diffuse   = false;
+    bool specular  = false;
+    bool normal    = false;
+    bool shadow    = false;
+    bool depth     = false;
+    bool emission  = false;
+    bool object_id = false;
 };
 
 class RenderLayers {

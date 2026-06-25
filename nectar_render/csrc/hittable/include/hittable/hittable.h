@@ -16,8 +16,28 @@ T* device_build(Args... args);
 // ABSTRACT PARENT
 // ============================================================================
 
+#include <iostream>
+
 class Hittable {
 public:
+
+    Vector3   position, delta_position;
+    Material* material;
+
+    __host__ Hittable()
+        : position(Vector3(0.0f, 0.0f, 0.0f)), 
+          material(Lambertian(Color(1.0f, 0.0f, 1.0f)).build()) 
+    { }
+
+    template <typename M>
+    __host__ Hittable(const Vector3& position, const M& material)
+        : position(position), material(material.build()) 
+    { }
+
+    __device__ Hittable(const Vector3& pos, Material* mat) {
+        position = pos;
+        material = mat;
+    }
 
     __host__ __device__ virtual ~Hittable() = default;    
     __host__ virtual Hittable* build() const = 0;
@@ -27,6 +47,16 @@ public:
         Interval   ray_t,
         HitRecord& rec
     ) const = 0;
+
+    __host__ void set_motion_vector(const Vector3& offset) {
+        delta_position = offset;
+    }
+
+    __device__ Vector3 position_at_time(float time) const {
+        // if (delta_position.length() < 1e-16) return position;
+        Ray motion(position, delta_position);
+        return motion.at(time);
+    }
 };
 
 // ============================================================================
@@ -37,15 +67,14 @@ class Sphere : public Hittable {
 public:
     
     template <typename M>
-    __host__ Sphere(
-        const Vector3& center, float radius, const M& material
-    ) : center(center), radius(radius + FMIN), mat(material.build()) { }
+    __host__ Sphere(const Vector3& position, float radius, const M& material) 
+        : Hittable(position, material), radius(radius + FMIN) { }
 
-    __device__ Sphere(const Vector3& center, float radius, Material* mat)
-        : center(center), radius(radius), mat(mat) {}
+    __device__ Sphere(const Vector3& pos, float rad, Material* mat) 
+        : Hittable(pos, mat), radius(rad) {}
 
     __host__ Hittable* build() const override {
-        return device_build<Sphere>(center, radius, mat);
+        return device_build<Sphere>(position, radius, material);
     }
 
     __device__ bool hit(
@@ -53,7 +82,11 @@ public:
         Interval   ray_t,
         HitRecord& rec
     ) const override {
-        Vector3 oc = center - ray.origin();
+        Ray motion(position, delta_position);
+        Vector3 current_position =  motion.at(ray.time());
+        // Vector3 current_position = position_at_time(ray.time());
+
+        Vector3 oc = current_position - ray.origin();
         float a = ray.direction().length_squared();
         float h = dot(ray.direction(), oc);
         float c = oc.length_squared() - radius * radius;
@@ -72,17 +105,16 @@ public:
 
         rec.t        = root;
         rec.position = ray.at(rec.t);
-        rec.material = mat;
-        Vector3 norm = (rec.position - center) / (radius + FMIN);
+        rec.material = material;
+        Vector3 norm = (rec.position - current_position) / (radius + FMIN);
         rec.set_face_normal(ray, norm);
 
         return true;
     }
 
 private:
-    Vector3   center;
-    float     radius;
-    Material* mat;
+
+    float radius;
 };
 
 // ============================================================================

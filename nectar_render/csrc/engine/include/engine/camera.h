@@ -75,7 +75,8 @@ public:
             );
         }
 
-        return Ray(origin, focus_point - origin);
+        float time = shutter_time > 0.0f ? gen.uniform() * shutter_time : 0.0f;
+        return Ray(origin, focus_point - origin, gen.random_in_range());
     }
 
 private:

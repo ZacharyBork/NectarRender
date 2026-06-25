@@ -1,6 +1,6 @@
 import _pathtracer
 
-import tqdm
+import time
 import numpy as np
 from os      import PathLike
 from pathlib import Path
@@ -9,6 +9,7 @@ from PIL     import Image
 from numpy   import ndarray
 from collections.abc import Sequence
 
+from nectar_render.python import utils
 from nectar_render.python.camera import Camera
 from nectar_render.python.hittable import Hittable
 
@@ -18,6 +19,7 @@ class RenderEngine:
     DEVICE_PTR: int = None
     CAMERA:  Camera = None
     ENGINE:  Engine = None
+    SILENT:    bool = False 
     
     def __init__(
         self:      Self,
@@ -25,35 +27,34 @@ class RenderEngine:
         samples:   int = 10,
         max_depth: int = 8,
         seed:      int | None = None,
-        progress_bar:    bool = False
+        silent:    bool = False
     ) -> None:
         self.__setattr__('CAMERA', camera)
         self.__setattr__('ENGINE', Engine())
-        self.ENGINE.on_sample = (
-            self._on_sample if progress_bar else lambda *_ : None)
+        self.__setattr__('SILENT', silent)
+        self.ENGINE.on_frame_finished = self.on_frame_finished
         self.ENGINE.initialize(
             self.CAMERA.cdata, samples, max_depth, 
             seed if seed is not None 
             else np.random.random_integers(0, 999999)
         )
         
-    def _on_sample(
-        self:        Self, 
-        sample:      int, 
-        num_samples: int, 
-        progress:    float
-    ) -> None:
-        with tqdm.tqdm(total=num_samples, leave=sample==num_samples) as bar:
-            bar.update(sample)
+    def log(self: Self, log_string: str) -> None:
+        if not self.SILENT: print(log_string)
+        
+    def on_frame_finished(self: Self, frame_idx: int) -> None:
+        pass
 
     def render(self: Self, scene: Sequence[Hittable]) -> None:
-        object.__setattr__(self, 'DEVICE_PTR', self.ENGINE.render(scene))
+        start = time.time()
+        self.ENGINE.render(scene)
+        utils.cuda_synchronize()
+        self.log(f'Render complete. Time taken: {(time.time() - start):.4f}')
         
     def get_data(self: Self) -> ndarray:
-        data = _pathtracer.host.to_numpy(
-            self.DEVICE_PTR, (3,) + self.CAMERA.resolution
-        )
-        return (data.transpose(1, 2, 0) * 255).astype(np.uint8)
+        layers = self.ENGINE.get_render_layers()
+        beauty = layers.beauty.numpy()
+        return (beauty.transpose(1, 2, 0) * 255).astype(np.uint8)
     
     def save_image(self: Self, path: PathLike) -> None:
         path = Path(path).resolve()

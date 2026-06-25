@@ -96,14 +96,13 @@ install(TARGETS _pathtracer DESTINATION .)
 ##############################################################################
 # GENERATE PYBIND11 STUBS
 ##############################################################################
+# make -C build stubgen
 
-# find_program(STUBGEN_EXECUTABLE pybind11-stubgen)
-# add_custom_command(
-#     TARGET _pathtracer
-#     POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E env
-#             "PYTHONPATH=$<TARGET_FILE_DIR:_pathtracer>"
-#             ${STUBGEN_EXECUTABLE} _pathtracer --output-dir ${CMAKE_SOURCE_DIR}/stubs
-#     COMMENT "Generating pybind11 stubs for _pathtracer"
-#     VERBATIM
-# )
+find_program(STUBGEN_EXECUTABLE pybind11-stubgen)
+add_custom_target(stubgen
+    COMMAND ${CMAKE_COMMAND} -E env
+            "PYTHONPATH=$<TARGET_FILE_DIR:_pathtracer>"
+            ${STUBGEN_EXECUTABLE} _pathtracer --output-dir ${CMAKE_SOURCE_DIR}/stubs
+    DEPENDS _pathtracer
+    COMMENT "Generating pybind11 stubs for _pathtracer"
+)
