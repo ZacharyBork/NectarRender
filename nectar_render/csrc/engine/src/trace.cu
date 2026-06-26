@@ -34,6 +34,9 @@ template Dielectric* device_build<Dielectric>(float);
 
 template ConstantTexture* device_build<ConstantTexture>(Color);
 template CheckerTexture*  device_build<CheckerTexture>(Color, Color, float);
+template ImageTexture*    device_build<ImageTexture>(
+    uint8_t*, size_t, size_t, size_t
+);
 
 // ============================================================================
 // RAY COLORING

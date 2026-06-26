@@ -1,11 +1,7 @@
 #pragma once
 
-#include "core/include/core/vector.h"
-#include "core/include/core/interval.h"
+#include "core/include/core.h"
 #include "engine/include/engine/ray.h"
-
-template<typename T, typename... Args>
-T* device_build(Args... args);
 
 class AABB {
 public:

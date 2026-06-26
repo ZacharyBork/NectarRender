@@ -12,30 +12,6 @@
 namespace py = pybind11;
 
 // ============================================================================
-// UTILITIES
-// ============================================================================
-
-struct ColorIndex { 
-    int r, g, b; 
-
-    __host__ __device__ ColorIndex(int r, int g, int b) 
-        : r(r), g(g), b(b) { }
-};
-
-struct ColorValues { 
-    float r, g, b; 
-
-    __host__ __device__ ColorValues(float r, float g, float b) 
-        : r(r), g(g), b(b) { }
-
-    __host__ __device__ ColorValues(float* data_ptr, ColorIndex index) {
-        r = data_ptr[index.r];
-        g = data_ptr[index.g];
-        b = data_ptr[index.b];
-    }
-};
-
-// ============================================================================
 // DATA OBJECT CLASS
 // ============================================================================
 
@@ -85,14 +61,11 @@ public:
     __host__ void linear_to_gamma();
 
     __device__ void set_color(int x, int y, int z, Color color) {
-        int r = z * (C * H * W) + 0 * (H * W) + y * W + x;
-        int g = z * (C * H * W) + 1 * (H * W) + y * W + x;
-        int b = z * (C * H * W) + 2 * (H * W) + y * W + x;
-
+        ColorIndex idx = get_color_index(x, y, z, C, H, W);
         float* d_ptr = data_ptr();
-        d_ptr[r] = color.x();
-        d_ptr[g] = color.y();
-        d_ptr[b] = color.z();
+        d_ptr[idx.r] = color.x();
+        d_ptr[idx.g] = color.y();
+        d_ptr[idx.b] = color.z();
     }
 
     py::array numpy() {

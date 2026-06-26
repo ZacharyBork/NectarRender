@@ -4,19 +4,6 @@
 // UTILITIES
 // ============================================================================
 
-__device__ ColorIndex get_color_index(
-    ProcessIndex p_idx, 
-    size_t C, 
-    size_t H, 
-    size_t W
-) {
-    int r = p_idx.z * (C * H * W) + 0 * (H * W) + p_idx.y * W + p_idx.x;
-    int g = p_idx.z * (C * H * W) + 1 * (H * W) + p_idx.y * W + p_idx.x;
-    int b = p_idx.z * (C * H * W) + 2 * (H * W) + p_idx.y * W + p_idx.x;
-
-    return ColorIndex(r, g, b);
-}
-
 __global__ void linear_to_gamma_kernel(DataObject data) {
     ProcessIndex p_idx = get_process_index();
     if (p_idx.x >= data.W || p_idx.y >= data.H) return;
@@ -25,9 +12,9 @@ __global__ void linear_to_gamma_kernel(DataObject data) {
     float* data_ptr = data.data_ptr();
     ColorValues curr(data_ptr, c_idx);
 
-    data_ptr[c_idx.r] *= curr.r > 0.0f ? sqrtf(curr.r) : 0.0f;
-    data_ptr[c_idx.g] *= curr.g > 0.0f ? sqrtf(curr.g) : 0.0f;
-    data_ptr[c_idx.b] *= curr.b > 0.0f ? sqrtf(curr.b) : 0.0f;
+    data_ptr[c_idx.r] = curr.r > 0.0f ? sqrtf(curr.r) : 0.0f;
+    data_ptr[c_idx.g] = curr.g > 0.0f ? sqrtf(curr.g) : 0.0f;
+    data_ptr[c_idx.b] = curr.b > 0.0f ? sqrtf(curr.b) : 0.0f;
 };
 
 void run_linear_to_gamma(DataObject data) {

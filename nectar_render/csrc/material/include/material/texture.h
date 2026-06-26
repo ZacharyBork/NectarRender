@@ -75,3 +75,64 @@ private:
     float inv_scale;
 
 };
+
+// ############################################################################
+// IMAGE TEXTURE
+// ############################################################################
+
+class ImageTexture : public Texture {
+public:
+
+    __host__ ImageTexture(
+        uintptr_t    host_ptr, 
+        const size_t channels,
+        const size_t height,
+        const size_t width
+    ) : C(channels), H(height), W(width) { 
+        cudaMalloc(&device_ptr, n_bytes());
+        cudaMemcpy(
+            reinterpret_cast<void*>(device_ptr), 
+            reinterpret_cast<void*>(host_ptr), 
+            n_bytes(), cudaMemcpyHostToDevice
+        );
+    }
+
+    __device__ ImageTexture(uint8_t* ptr, size_t c, size_t h, size_t w) 
+        : device_ptr(ptr), C(c), H(h), W(w) {}
+
+    __host__ __device__ const size_t n_bytes() const {
+        return C * H * W * sizeof(uint8_t);
+    }
+
+    __host__ Texture* build() const {
+        return device_build<ImageTexture>(device_ptr, C, H, W);
+    }
+
+    __device__ Color sample(Vector2 uv, const Vector3& p) const override {
+        if (H <= 0) return Color(0.0f, 1.0f, 1.0f);
+
+        float u = Interval(0.0f, 1.0f).clamp(uv.u());
+        float v = 1.0f - Interval(0.0f, 1.0f).clamp(uv.v());
+
+        int i = (int)(u * W); if (i >= (int)W) i = (int)W - 1;
+        int j = (int)(v * H); if (j >= (int)H) j = (int)H - 1;
+
+        size_t pixel = j * W + i;
+
+        Color col(
+            (float)device_ptr[0 * H * W + pixel],
+            (float)device_ptr[1 * H * W + pixel],
+            (float)device_ptr[2 * H * W + pixel]
+        );
+        return col / 255.0f;
+    }
+
+private:
+
+    uint8_t* device_ptr;
+    size_t C;
+    size_t H;
+    size_t W;
+
+};
+

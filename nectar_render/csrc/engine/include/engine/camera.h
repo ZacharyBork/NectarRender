@@ -49,7 +49,11 @@ public:
         uvw = Vector3(sensor_width, -sensor_width * aspect_ratio, 0.0f);
 
         rotation = rotation_from_euler(
-            Vector3(p.rotation[0], p.rotation[1], p.rotation[2])
+            Vector3(
+                deg2rad(p.rotation[0]), 
+                deg2rad(p.rotation[1]), 
+                deg2rad(p.rotation[2])
+            )
         );
     }
 

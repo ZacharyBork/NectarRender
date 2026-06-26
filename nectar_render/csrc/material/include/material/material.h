@@ -1,10 +1,8 @@
 #pragma once
 
+#include "core/include/core.h"
 #include "hittable/include/hittable/hit_record.h"
 #include "material/include/material/texture.h"
-
-template<typename T, typename... Args>
-T* device_build(Args... args);
 
 // ############################################################################
 // ABSTRACT PARENT

@@ -43,6 +43,22 @@ void register_material(py::module_& m) {
             py::arg("scale")  = 1.0f
         );
 
+    py::class_<ImageTexture, Texture>(m_texture, "ImageTexture")
+        .def(py::init([](
+            uintptr_t    host_ptr, 
+            const size_t channels,
+            const size_t height,
+            const size_t width
+        ) {
+            return ImageTexture(host_ptr, channels, height, width);
+        }),
+            py::arg("host_ptr"),
+            py::arg("channels"),
+            py::arg("height"),
+            py::arg("width")
+        )
+        .def("n_bytes", &ImageTexture::n_bytes);
+
     /* MATERIAL CLASSES */
 
     py::class_<Material>(m_material, "Material");

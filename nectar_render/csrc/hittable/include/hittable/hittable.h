@@ -57,6 +57,8 @@ public:
         HitRecord& rec
     ) const = 0;
 
+    __device__ virtual const Vector2 get_uvs(const Vector3& p) const = 0;
+
     __host__ void set_motion_vector(const Vector3& offset) {
         delta_pos = offset;
     }
@@ -97,6 +99,12 @@ public:
         return AABB(position - rvec, position + rvec);
     }
 
+    __device__ const Vector2 get_uvs(const Vector3& p) const override {
+        float theta = acosf(-p.y());
+        float phi   = atan2f(-p.z(), p.x()) + PI;
+        return Vector2(phi / PI2, theta / PI);
+    };
+
     __device__ bool hit(
         const Ray& ray, 
         Interval   ray_t,
@@ -126,6 +134,7 @@ public:
         rec.material = material;
         Vector3 norm = (rec.position - current_position) / (radius + FMIN);
         rec.set_face_normal(ray, norm);
+        rec.uv = get_uvs(norm);
 
         return true;
     }
