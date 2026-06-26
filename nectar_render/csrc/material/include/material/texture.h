@@ -100,7 +100,7 @@ public:
     __device__ ImageTexture(uint8_t* ptr, size_t c, size_t h, size_t w) 
         : device_ptr(ptr), C(c), H(h), W(w) {}
 
-    __host__ __device__ const size_t n_bytes() const {
+    __host__ __device__ size_t n_bytes() const {
         return C * H * W * sizeof(uint8_t);
     }
 
@@ -109,7 +109,7 @@ public:
     }
 
     __device__ Color sample(Vector2 uv, const Vector3& p) const override {
-        if (H <= 0) return Color(0.0f, 1.0f, 1.0f);
+        if (H <= 0) return Color::purple();
 
         float u = Interval(0.0f, 1.0f).clamp(uv.u());
         float v = 1.0f - Interval(0.0f, 1.0f).clamp(uv.v());
@@ -133,6 +133,42 @@ private:
     size_t C;
     size_t H;
     size_t W;
+
+};
+
+// ############################################################################
+// NOISE TEXTURE
+// ############################################################################
+
+class NoiseTexture : public Texture {
+public:
+
+    __host__ NoiseTexture() : NoiseTexture(1.0f)  { }
+
+    __host__ NoiseTexture(
+        float scale, 
+        int iterations = 7, 
+        unsigned int seed = 42u
+    ): perlin(Perlin(seed).build()), scale(scale), iters(iterations) { }
+
+    __device__ NoiseTexture(Perlin* p, float scale, int iterations) 
+        : perlin(p), scale(scale), iters(iterations) { }
+
+    __host__ Texture* build() const {
+        return device_build<NoiseTexture>(perlin, scale, iters);
+    }
+
+    __device__ Color sample(Vector2 uv, const Vector3& p) const override {
+        float n = perlin->turb(p, iters) * 10.0f;
+        return Color::white() * 0.5f * (1.0f + sinf(scale * p.z() + n));
+    }
+
+private:
+
+    Perlin* perlin = nullptr;
+    
+    float scale;
+    int iters;
 
 };
 

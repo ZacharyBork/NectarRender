@@ -59,6 +59,18 @@ void register_material(py::module_& m) {
         )
         .def("n_bytes", &ImageTexture::n_bytes);
 
+    py::class_<NoiseTexture, Texture>(m_texture, "NoiseTexture")
+        .def(py::init<>()) 
+        .def(py::init([](
+            float scale,
+            unsigned int seed
+        ) {
+            return NoiseTexture(scale, seed);
+        }),
+            py::arg("scale"),
+            py::arg("seed") = 42u
+        );
+
     /* MATERIAL CLASSES */
 
     py::class_<Material>(m_material, "Material");

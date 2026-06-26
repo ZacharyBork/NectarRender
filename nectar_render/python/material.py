@@ -7,6 +7,10 @@ from typing  import Self
 from pathlib import Path
 from PIL     import Image
 
+###############################################################################
+# WRAPPERS
+###############################################################################
+
 class ImageTexture(mat.texture.ImageTexture):
     def __init__(
         self: Self,
@@ -19,18 +23,25 @@ class ImageTexture(mat.texture.ImageTexture):
             )
             
         arr = np.array(Image.open(fp), dtype=np.uint8).transpose((2, 0, 1))
+        ptr = np.ascontiguousarray(arr).ctypes.data
         C, H, W = arr.shape
         
-        super().__init__(np.ascontiguousarray(arr).ctypes.data, C, H, W)
+        super().__init__(ptr, C, H, W)
+
+###############################################################################
+# COLLECTIONS
+###############################################################################
 
 class Material(mat.Material):
     LAMBERTIAN = mat.Lambertian
     METAL      = mat.Metal
     DIELECTRIC = mat.Dielectric
 
+
 class Texture(mat.texture.Texture):
     CONSTANT = mat.texture.ConstantTexture
     CHECKER  = mat.texture.CheckerTexture
+    NOISE    = mat.texture.NoiseTexture
     IMAGE    = ImageTexture
 
 

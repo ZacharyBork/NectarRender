@@ -37,6 +37,15 @@ template CheckerTexture*  device_build<CheckerTexture>(Color, Color, float);
 template ImageTexture*    device_build<ImageTexture>(
     uint8_t*, size_t, size_t, size_t
 );
+template NoiseTexture* device_build<NoiseTexture>(
+    Perlin*, float, int
+);
+
+/* NOISE */
+
+template Perlin* device_build<Perlin>(
+    Vector3* rv, int* perm_x, int* perm_y, int* perm_z
+);
 
 // ============================================================================
 // RAY COLORING

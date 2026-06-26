@@ -275,11 +275,14 @@ public:
     __host__ __device__ float g() const { return e[1]; }
     __host__ __device__ float b() const { return e[2]; }
 
-    __host__ __device__ static Color black() {return Color(0.0f, 0.0f, 0.0f);}
-    __host__ __device__ static Color white() {return Color(1.0f, 1.0f, 1.0f);}
-    __host__ __device__ static Color red()   {return Color(1.0f, 0.0f, 0.0f);}
-    __host__ __device__ static Color green() {return Color(0.0f, 1.0f, 0.0f);}
-    __host__ __device__ static Color blue()  {return Color(0.0f, 0.0f, 1.0f);}
+    __host__ __device__ static Color black()  {return Color(0.0f, 0.0f, 0.0f);}
+    __host__ __device__ static Color white()  {return Color(1.0f, 1.0f, 1.0f);}
+    __host__ __device__ static Color red()    {return Color(1.0f, 0.0f, 0.0f);}
+    __host__ __device__ static Color green()  {return Color(0.0f, 1.0f, 0.0f);}
+    __host__ __device__ static Color blue()   {return Color(0.0f, 0.0f, 1.0f);}
+    __host__ __device__ static Color purple() {return Color(1.0f, 0.0f, 1.0f);}
+    __host__ __device__ static Color yellow() {return Color(1.0f, 1.0f, 0.0f);}
+    __host__ __device__ static Color teal()   {return Color(0.0f, 1.0f, 1.0f);}
 };
 
 // MATH =======================================================================

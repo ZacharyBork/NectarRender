@@ -4,14 +4,48 @@
 #include <curand.h>
 #include <curand_kernel.h>
 
+// ############################################################################
+// DEVICE-SIDE RANDOM NUMBER GENERATOR
+// ############################################################################
+
 class Generator {
 public:
 
-    __host__ __device__ Generator(unsigned int seed)
-        : seed_(seed), pixel_idx_(0), draw_id_(0) {}
+    /* CONSTRUCTORS */
 
-    __host__ __device__ Generator(unsigned int seed, unsigned int pixel_idx)
-        : seed_(seed), pixel_idx_(pixel_idx), draw_id_(0) {}
+    __host__ __device__ Generator() 
+        : seed_(0u), pixel_idx_(0u), draw_id_(0u) {}
+
+    __host__ __device__ Generator(unsigned int seed)
+        : seed_(seed), pixel_idx_(0u), draw_id_(0u) {}
+
+    __device__ Generator(unsigned int seed, unsigned int pixel_idx)
+        : seed_(seed), pixel_idx_(pixel_idx), draw_id_(0u) {}
+
+    /* UTILITIES */
+
+    __host__ __device__ unsigned int get_seed() const { 
+        return seed_; 
+    }
+    __host__ __device__ void set_seed(unsigned int seed) { 
+        seed_ = seed; 
+    }
+
+    __host__ __device__ unsigned int get_pixel_idx() const { 
+        return pixel_idx_; 
+    }
+    __host__ __device__ void set_pixel_idx(unsigned int idx) { 
+        pixel_idx_ = idx; 
+    }
+
+    __host__ __device__ unsigned int get_draw_id() const { 
+        return draw_id_; 
+    }
+    __host__ __device__ void set_draw_id(unsigned int id) { 
+        draw_id_ = id; 
+    }
+
+    /* GENERATORS */
 
     __device__ float uniform() {
         curandStatePhilox4_32_10_t state;
@@ -41,6 +75,12 @@ protected:
     unsigned int draw_id_;
     
 };
+
+
+
+// ############################################################################
+// HOST-SIDE RNG UTILITIES
+// ############################################################################
 
 __host__ inline float random_float(
     float min = 0.0f, 
