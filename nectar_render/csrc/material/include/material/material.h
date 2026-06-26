@@ -1,10 +1,10 @@
 #pragma once
 
 #include "hittable/include/hittable/hit_record.h"
+#include "material/include/material/texture.h"
 
 template<typename T, typename... Args>
 T* device_build(Args... args);
-
 
 // ############################################################################
 // ABSTRACT PARENT
@@ -32,10 +32,16 @@ public:
 class Lambertian : public Material {
 public:
 
-    __host__ __device__ Lambertian(const Color& albedo) : albedo(albedo) {}
+    __host__ Lambertian(const Color& albedo) 
+        : texture(ConstantTexture(albedo).build()) {}
+
+    template<typename T>
+    __host__ Lambertian(const T& texture) : texture(texture.build()) {}
+
+    __device__ Lambertian(Texture* texture) : texture(texture) { }
 
     __host__ Material* build() const override {
-        return device_build<Lambertian>(albedo);
+        return device_build<Lambertian>(texture);
     }
 
     __device__ bool scatter(
@@ -48,12 +54,13 @@ public:
         dir = dir.near_zero() ? rec.normal : dir;
         
         ray = Ray(rec.position, dir, ray.time());
-        attenuation *= albedo;
+        attenuation *= texture->sample(rec.uv, rec.position);
         return true;
     }
 
 private:
-    Color albedo;
+
+    Texture* texture;
 };
 
 // ############################################################################

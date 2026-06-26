@@ -1,8 +1,8 @@
 import _pathtracer
 
-from typing import TypeAlias
+class Hittable(_pathtracer.hittable.Hittable):
+    SPHERE = _pathtracer.hittable.Sphere
 
-Hittable: TypeAlias = _pathtracer.hittable.Hittable
-Sphere:   TypeAlias = _pathtracer.hittable.Sphere
+
 
 

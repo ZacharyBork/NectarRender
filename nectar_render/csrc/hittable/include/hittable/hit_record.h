@@ -9,6 +9,7 @@ class HitRecord {
 public:
     Vector3 position;
     Vector3 normal;
+    Vector2 uv;
     float   t;
     bool    front_face;
 

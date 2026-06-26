@@ -26,9 +26,14 @@ template Sphere* device_build<Sphere>(
 
 /* MATERIALS */
 
-template Lambertian* device_build<Lambertian>(Color);
+template Lambertian* device_build<Lambertian>(Texture*);
 template Metal*      device_build<Metal>(Color, float);
 template Dielectric* device_build<Dielectric>(float);
+
+/* TEXTURES */
+
+template ConstantTexture* device_build<ConstantTexture>(Color);
+template CheckerTexture*  device_build<CheckerTexture>(Color, Color, float);
 
 // ============================================================================
 // RAY COLORING
