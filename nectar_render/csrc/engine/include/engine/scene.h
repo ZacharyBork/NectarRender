@@ -15,9 +15,7 @@ public:
     __host__ Scene(
         std::vector<Hittable*>& hittables,
         SkyLight& skylight
-    ) { 
-        build(hittables);
-    }
+    ) : skylight(skylight) { build(hittables); }
 
     __host__ void build(std::vector<Hittable*>& hittables) {
         int n = hittables.size();

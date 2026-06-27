@@ -119,6 +119,7 @@ public:
         Matrix3 R = xform.R().T();
         u = (R * Vector3(1.0f, 0.0f,  0.0f)) * xform.scale().x();
         v = (R * Vector3(0.0f, 0.0f, -1.0f)) * xform.scale().z();
+        xform.set_position(xform.p() - (0.5f * u + 0.5f * v));
     }
 
     __device__ Quad(
@@ -170,7 +171,6 @@ private:
         Matrix3 R = xform.R().T();
         u = (R * Vector3(1.0f, 0.0f,  0.0f)) * xform.scale().x();
         v = (R * Vector3(0.0f, 0.0f, -1.0f)) * xform.scale().z();
-        xform.set_position(xform.p() - (0.5f * u + 0.5f * v));
 
         Vector3 n = cross(u, v);
         normal = normalize(n);

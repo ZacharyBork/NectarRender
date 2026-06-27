@@ -1,14 +1,11 @@
-from __future__ import annotations
-from typing     import TYPE_CHECKING
-if TYPE_CHECKING:
-    from nectar_render import Hittable
-    from nectar_render.python.engine import SkyLight
-
 import _pathtracer
 root = _pathtracer.engine
 
 from typing import Self
 from collections.abc import Sequence
+
+from nectar_render.python.hittable      import Hittable
+from nectar_render.python.engine.lights import SkyLight
 
 class Scene(root.Scene):
     def __init__(

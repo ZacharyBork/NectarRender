@@ -25,7 +25,7 @@ public:
     ) : start(start_color), end(end_color) { }
 
     __host__ static SkyLight black() {
-        return SkyLight(Color(0.0f), Color(0.0f));
+        return SkyLight(Color::black(), Color::black());
     }
 
     __device__ Color sample(const Ray& ray) {

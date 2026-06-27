@@ -18,7 +18,7 @@ __device__ bool trace_ray(
     
     if (!hit) color += atten * scene.skylight.sample(ray);
     else if(!rec.material->scatter(rec, ray, atten, gen)) {
-        color += rec.material->emitted(rec.uv, rec.position);
+        color = rec.material->emitted(rec.uv, rec.position);
     }
     return hit;
 }
