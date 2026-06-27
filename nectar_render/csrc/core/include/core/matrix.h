@@ -77,13 +77,13 @@ __host__ __device__ inline Matrix3 rotation_z(float angle_rad) {
     float c = cosf(angle_rad);
     float s = sinf(angle_rad);
     Matrix3 r;
-    r.m[0][0]=c;  r.m[0][1]=-s; r.m[0][2]=0;
-    r.m[1][0]=s;  r.m[1][1]=c;  r.m[1][2]=0;
-    r.m[2][0]=0;  r.m[2][1]=0;  r.m[2][2]=1;
+    r.m[0][0]=c; r.m[0][1]=-s; r.m[0][2]=0;
+    r.m[1][0]=s; r.m[1][1]=c;  r.m[1][2]=0;
+    r.m[2][0]=0; r.m[2][1]=0;  r.m[2][2]=1;
     return r;
 }
 
 __host__ __device__ inline Matrix3 rotation_from_euler(Vector3 r) {
-    return rotation_y(r.x()) * rotation_x(r.y()) * rotation_z(r.z());
+    return rotation_z(r.z()) * rotation_y(r.y()) * rotation_x(r.x());
 }
 
