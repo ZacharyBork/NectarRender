@@ -58,7 +58,9 @@ void register_engine(py::module_& m) {
 // CAMERA
 // ############################################################################
 
-    py::class_<CameraParams>(m_engine, "CameraParams")
+    auto m_camera = m_engine.def_submodule("camera", "Camera submodule.");
+
+    py::class_<CameraParams>(m_camera, "CameraParams")
         .def(py::init<>()) 
         .def(py::init([](
             std::array<int,   2> resolution,
@@ -99,6 +101,21 @@ void register_engine(py::module_& m) {
         .def_readwrite("sensor_width",   &CameraParams::sensor_width)
         .def_readwrite("shutter_speed",  &CameraParams::shutter_speed);
 
+    py::class_<Camera>(m_camera, "Camera")
+        .def(py::init([](const CameraParams& p) {
+            return Camera(p);
+        }),
+            py::arg("p") = CameraParams()
+        )
+        .def_readwrite("resolution",     &Camera::resolution)
+        .def_readwrite("position",       &Camera::position)
+        .def_readwrite("rotation",       &Camera::rotation)
+        .def_readwrite("focal_length",   &Camera::focal_length)
+        .def_readwrite("focus_distance", &Camera::focus_distance)
+        .def_readwrite("aperture",       &Camera::aperture)
+        .def_readwrite("sensor_width",   &Camera::sensor_width)
+        .def_readwrite("shutter_speed",  &Camera::shutter_speed);
+
 // ############################################################################
 // RENDER LAYERS
 // ############################################################################
@@ -108,6 +125,8 @@ void register_engine(py::module_& m) {
     py::class_<DataObject>(m_data, "DataObject")
         .def("numpy",               &DataObject::numpy)
         .def("is_enabled",          &DataObject::is_enabled)
+        .def("linear_to_gamma",     &DataObject::linear_to_gamma)
+        .def("tonemap",             &DataObject::tonemap)
         .def_readonly("device_ptr", &DataObject::device_ptr)
         .def_readonly("C",          &DataObject::C)
         .def_readonly("H",          &DataObject::H)
@@ -227,17 +246,19 @@ void register_engine(py::module_& m) {
         .def(py::init<>())
         .def("initialize", [](
             RenderEngine& self,
-            CameraParams camera_params,
-            unsigned int samples   = 10,
-            unsigned int ray_depth = 8,
-            unsigned int seed      = 54321
+            Camera        camera,
+            unsigned int  samples   = 10,
+            unsigned int  ray_depth = 8,
+            unsigned int  seed      = 54321
         ) { 
-            self.initialize(camera_params, samples, ray_depth, seed); 
+            self.initialize(camera, samples, ray_depth, seed); 
         })
         .def("render", [](RenderEngine& self, Scene& scene) {
             self.render(scene);
         })
-        .def_readwrite("on_frame_finished", &RenderEngine::on_frame_finished)
-        .def("get_render_layers", &RenderEngine::get_render_layers);
+        .def("get_render_layers",           &RenderEngine::get_render_layers)
+        .def_readonly("num_samples",        &RenderEngine::num_samples)
+        .def_readonly("max_depth",          &RenderEngine::max_depth)
+        .def_readwrite("on_frame_finished", &RenderEngine::on_frame_finished);
 }
 

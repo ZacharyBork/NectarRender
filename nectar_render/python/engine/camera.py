@@ -1,19 +1,11 @@
 import _pathtracer
-from typing import Any, Self, TypeAlias
+root = _pathtracer.engine.camera
 
-CameraParams: TypeAlias = _pathtracer.engine.CameraParams
+from typing import Self, TypeAlias
 
-class Camera:
-    _CDATA: CameraParams = None
-    resolution:     tuple[int, int]
-    position:       tuple[float, float, float]
-    rotation:       tuple[float, float, float]
-    focal_length:   float
-    focus_distance: float
-    aperture:       float
-    sensor_width:   float
-    shutter_speed:  float
-    
+CameraParams: TypeAlias = root.CameraParams
+
+class Camera(root.Camera):    
     def __init__(
         self:       Self,
         resolution: tuple[int, int] = (512, 512),
@@ -25,23 +17,11 @@ class Camera:
         sensor_width:   float = 2.0,
         shutter_speed:  float = 1.0
     ) -> None:
-        for key, value in { 
-            k: v for k, v in locals().items() if not k == 'self' 
-        }.items(): self.__dict__[key] = value
-        
-        self._build_cdata()
-        
-    def _build_cdata(self: Self) -> None:
-        self._CDATA = CameraParams(*list(self.__dict__.values()))
-        
+        super().__init__(CameraParams(*[
+            v for k, v in locals().items() 
+            if not k in ['__class__', 'self']]
+        ))
+
     @property
-    def cdata(self: Self) -> CameraParams: return self._CDATA
-    
-    @property
-    def params(self: Self) -> dict[str, Any]:
-        return { 
-            k: v for k, v in self.__dict__.items() 
-            if not k == '_CDATA' 
-        }
-        
+    def params(self: Self) -> CameraParams: return self.PARAMS
 

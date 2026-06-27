@@ -59,16 +59,14 @@ public:
     __host__ void combine(DataObject other);
     __host__ void normalize_by_samples(unsigned int samples);
     __host__ void linear_to_gamma();
+    __host__ void tonemap(float exposure);
 
     __device__ void set_color(int x, int y, int z, Color color) {
-        ColorIndex idx = get_color_index(x, y, z, C, H, W);
-        float* d_ptr = data_ptr();
-        d_ptr[idx.r] = color.x();
-        d_ptr[idx.g] = color.y();
-        d_ptr[idx.b] = color.z();
+        ColorIndex idx = ColorIndex::from_process(C, H, W);
+        idx.set_color(data_ptr(), color);
     }
 
-    py::array numpy() {
+    __host__ py::array numpy() {
         std::vector<size_t> shape = { C, H, W };
         auto result = py::array_t<float>(shape);
         auto buf = result.request();
@@ -83,6 +81,7 @@ public:
 void run_combine_data(DataObject a, DataObject b);
 void run_norm_by_samples(DataObject data, unsigned int samples);
 void run_linear_to_gamma(DataObject data);
+void run_tonemap(DataObject data, float exposure);
 
 inline void DataObject::combine(DataObject other) { 
     run_combine_data(*this, other); 
@@ -92,8 +91,12 @@ inline void DataObject::normalize_by_samples(unsigned int samples) {
     run_norm_by_samples(*this, samples);
 }
 
-inline void DataObject::linear_to_gamma() {
-    run_linear_to_gamma(*this);
+inline void DataObject::linear_to_gamma() { 
+    run_linear_to_gamma(*this); 
+}
+
+inline void DataObject::tonemap(float exposure) { 
+    run_tonemap(*this, exposure); 
 }
 
 // ============================================================================
@@ -125,13 +128,16 @@ public:
     DataObject emission;
     DataObject object_id;
 
-    RenderLayers(
+    __host__ RenderLayers(
         size_t h, 
         size_t w,
         const RenderLayersConfig& cfg = {}
-    ) : H(h), W(w) {
-        build_layers(cfg);
-    }
+    ) : H((size_t)h), W((size_t)w) { build_layers(cfg); }
+
+    __host__ RenderLayers(
+        const Vector2& resolution,
+        const RenderLayersConfig& cfg = {}
+    ) : RenderLayers(resolution[0], resolution[1], cfg) { }
 
     __host__ std::vector<DataObject> get_data() {
         std::vector<DataObject> objects;

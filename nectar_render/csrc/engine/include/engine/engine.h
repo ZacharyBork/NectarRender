@@ -15,7 +15,7 @@
 class RenderEngine {
 public:
     size_t H, W;
-    std::optional<CameraParams> cam_params;
+    std::optional<Camera> cam;
     std::optional<RenderLayers> render_layers;
 
     unsigned int num_samples = 10;
@@ -24,7 +24,7 @@ public:
     std::function<void(int)> on_frame_finished;
     
     void initialize(
-        const CameraParams& camera_params,
+        const Camera& camera,
         unsigned int samples,
         unsigned int ray_depth,
         unsigned int seed

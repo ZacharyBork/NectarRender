@@ -18,6 +18,9 @@ struct CameraParams {
 
 class Camera {
 public:
+
+    CameraParams params;
+
     Vector2 resolution;
     Vector3 position;
     Matrix3 rotation;
@@ -30,7 +33,8 @@ public:
     float shutter_speed;
 
     __host__ explicit Camera(const CameraParams& p = {})
-        : resolution(Vector2(p.resolution[0], p.resolution[1])),
+        : params(p),
+          resolution(Vector2(p.resolution[0], p.resolution[1])),
           position(Vector3(p.position[0], p.position[1], p.position[2])),
           focal_length(p.focal_length),
           focus_distance(p.focus_distance),

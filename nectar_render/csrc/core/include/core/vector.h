@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 #include <iostream>
 #include <type_traits>
 #include <cuda_runtime.h>
@@ -82,6 +83,14 @@ public:
         return derived().length() < eps;
     }
 
+    __host__ __device__ VecType& exp() const {
+        VecType result = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = expf(result.e[i]);
+        return result;
+    }
+
 private:
 
     __host__ __device__ VecType& derived() { 
@@ -91,7 +100,6 @@ private:
     __host__ __device__ const VecType& derived() const { 
         return static_cast<const VecType&>(*this); 
     }
-
 };
 
 template<typename T>
@@ -195,6 +203,7 @@ public:
     __host__ __device__ Vec2Core(float e0, float e1) : e{ e0, e1 } {}
     
     __host__ Vec2Core(std::array<float, 2> e) : e{e[0], e[1]} {}
+    __host__ Vec2Core(float e[4]) : e{e[0], e[1]} {}
 
     template <typename OtherType>
     __host__ __device__ explicit Vec2Core(const Vec2Core<OtherType>& other)
@@ -239,6 +248,8 @@ public:
     ) : e{ e0, e1, e2 } {}
 
     __host__ Vec3Core(std::array<float, 3> e) : e{e[0], e[1], e[2]} {}
+    __host__ Vec3Core(float e[4]) : e{e[0], e[1], e[2]} {}
+    
 
     template <typename OtherType>
     __host__ __device__ explicit Vec3Core(const Vec3Core<OtherType>& other)

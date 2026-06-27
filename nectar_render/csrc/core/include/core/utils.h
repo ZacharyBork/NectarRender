@@ -31,36 +31,36 @@ __device__ ProcessIndex get_process_index();
 struct ColorIndex { 
     int r, g, b; 
 
+    /* CONSTRUCTION */
+
     __host__ __device__ ColorIndex(int r, int g, int b) 
         : r(r), g(g), b(b) { }
-};
 
-struct ColorValues { 
-    float r, g, b; 
+    __device__ static ColorIndex from_process(
+        unsigned int C,
+        unsigned int H,
+        unsigned int W
+    ) {
+        ProcessIndex p_idx = get_process_index();
+        return ColorIndex(
+            p_idx.z * (C * H * W) + 0 * (H * W) + p_idx.y * W + p_idx.x, 
+            p_idx.z * (C * H * W) + 1 * (H * W) + p_idx.y * W + p_idx.x, 
+            p_idx.z * (C * H * W) + 2 * (H * W) + p_idx.y * W + p_idx.x
+        );
+    }
 
-    __host__ __device__ ColorValues(float r, float g, float b) 
-        : r(r), g(g), b(b) { }
+    /* UTILITIES */
 
-    __host__ __device__ ColorValues(float* data_ptr, ColorIndex index) {
-        r = data_ptr[index.r];
-        g = data_ptr[index.g];
-        b = data_ptr[index.b];
+    __host__ __device__ Color get_color(float* data_ptr) const {
+        return Color(data_ptr[r], data_ptr[g], data_ptr[b]);
+    }
+
+    __host__ __device__ void set_color(float* data_ptr, Color c) const {
+        data_ptr[r] = c.r();
+        data_ptr[g] = c.g();
+        data_ptr[b] = c.b();
     }
 };
-
-__device__ ColorIndex get_color_index(
-    ProcessIndex p_idx, 
-    size_t C, 
-    size_t H, 
-    size_t W
-);
-
-__device__ ColorIndex get_color_index(
-    int x, int y, int z,
-    size_t C, 
-    size_t H, 
-    size_t W
-);
 
 // ############################################################################
 // VALUE CONVERSION

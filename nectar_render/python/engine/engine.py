@@ -8,9 +8,10 @@ from pathlib import Path
 from typing  import Self, TypeAlias
 from PIL     import Image
 from numpy   import ndarray
-from collections.abc import Sequence
 
-from nectar_render.python import core
+
+
+from nectar_render.python import core, progress
 from nectar_render.python.engine.scene  import Scene
 from nectar_render.python.engine.camera import Camera
 
@@ -36,17 +37,22 @@ class RenderEngine:
         self.__setattr__('SILENT', silent)
         self.ENGINE.on_frame_finished = self.on_frame_finished
         self.ENGINE.initialize(
-            self.CAMERA.cdata, samples, max_depth, 
+            self.CAMERA, samples, max_depth, 
             seed if seed is not None 
             else np.random.random_integers(0, 999999)
         )
+        
+        progress.make_progress_bar('render', samples)
+        
+    @property
+    def num_samples(self: Self) -> int: return self.ENGINE.num_samples
         
     def log(self: Self, log_string: str) -> None:
         if not self.SILENT: print(log_string)
         
     def on_frame_finished(self: Self, frame_idx: int) -> None:
-        pass
-
+        progress.get_progress_bar('render').update(frame_idx)
+            
     def render(self: Self, scene: Scene) -> None:
         start = time.time()
         self.ENGINE.render(scene)
@@ -55,8 +61,10 @@ class RenderEngine:
         
     def get_data(self: Self) -> ndarray:
         layers = self.ENGINE.get_render_layers()
-        beauty = layers.beauty.numpy()
-        return (beauty.transpose(1, 2, 0) * 255).astype(np.uint8)
+        beauty = layers.beauty
+        beauty.tonemap(0.1)
+        beauty.linear_to_gamma()
+        return (beauty.numpy().transpose(1, 2, 0) * 255).astype(np.uint8)
     
     def save_image(self: Self, path: PathLike) -> None:
         path = Path(path).resolve()

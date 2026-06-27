@@ -45,32 +45,3 @@ __device__ ProcessIndex get_process_index() {
     return ProcessIndex(x, y, blockIdx.z);
 }
 
-// ############################################################################
-// COLOR UTILITIES
-// ############################################################################
-
-__device__ ColorIndex get_color_index(
-    ProcessIndex p_idx, 
-    size_t C, 
-    size_t H, 
-    size_t W
-) {
-    int r = p_idx.z * (C * H * W) + 0 * (H * W) + p_idx.y * W + p_idx.x;
-    int g = p_idx.z * (C * H * W) + 1 * (H * W) + p_idx.y * W + p_idx.x;
-    int b = p_idx.z * (C * H * W) + 2 * (H * W) + p_idx.y * W + p_idx.x;
-
-    return ColorIndex(r, g, b);
-}
-
-__device__ ColorIndex get_color_index(
-    int x, int y, int z,
-    size_t C, 
-    size_t H, 
-    size_t W
-) {
-    int r = z * (C * H * W) + 0 * (H * W) + y * W + x;
-    int g = z * (C * H * W) + 1 * (H * W) + y * W + x;
-    int b = z * (C * H * W) + 2 * (H * W) + y * W + x;
-    return ColorIndex(r, g, b);
-}
-

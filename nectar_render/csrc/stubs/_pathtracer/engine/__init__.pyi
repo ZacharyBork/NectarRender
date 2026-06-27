@@ -6,73 +6,25 @@ import _pathtracer.core.matrix
 import _pathtracer.core.vector
 import collections.abc
 import typing
+from . import camera
 from . import data
 from . import lights
-__all__: list[str] = ['CameraParams', 'RenderEngine', 'Scene', 'Transform', 'data', 'lights']
-class CameraParams:
-    @typing.overload
-    def __init__(self) -> None:
-        ...
-    @typing.overload
-    def __init__(self, resolution: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(2)"] = [512, 512], position: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], rotation: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], focal_length: typing.SupportsFloat | typing.SupportsIndex = 5.0, focus_distance: typing.SupportsFloat | typing.SupportsIndex = 10.0, aperture: typing.SupportsFloat | typing.SupportsIndex = 0.009999999776482582, sensor_width: typing.SupportsFloat | typing.SupportsIndex = 2.0, shutter_speed: typing.SupportsFloat | typing.SupportsIndex = 1.0) -> None:
-        ...
-    @property
-    def aperture(self) -> float:
-        ...
-    @aperture.setter
-    def aperture(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def focal_length(self) -> float:
-        ...
-    @focal_length.setter
-    def focal_length(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def focus_distance(self) -> float:
-        ...
-    @focus_distance.setter
-    def focus_distance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def position(self) -> typing.Annotated[list[float], "FixedSize(3)"]:
-        ...
-    @position.setter
-    def position(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> None:
-        ...
-    @property
-    def resolution(self) -> typing.Annotated[list[int], "FixedSize(2)"]:
-        ...
-    @resolution.setter
-    def resolution(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(2)"]) -> None:
-        ...
-    @property
-    def rotation(self) -> typing.Annotated[list[float], "FixedSize(3)"]:
-        ...
-    @rotation.setter
-    def rotation(self, arg0: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"]) -> None:
-        ...
-    @property
-    def sensor_width(self) -> float:
-        ...
-    @sensor_width.setter
-    def sensor_width(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def shutter_speed(self) -> float:
-        ...
-    @shutter_speed.setter
-    def shutter_speed(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
+__all__: list[str] = ['RenderEngine', 'Scene', 'Transform', 'camera', 'data', 'lights']
 class RenderEngine:
     on_frame_finished: collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex], None]
     def __init__(self) -> None:
         ...
     def get_render_layers(self) -> data.RenderLayers:
         ...
-    def initialize(self, arg0: CameraParams, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsInt | typing.SupportsIndex, arg3: typing.SupportsInt | typing.SupportsIndex) -> None:
+    def initialize(self, arg0: camera.Camera, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsInt | typing.SupportsIndex, arg3: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     def render(self, arg0: Scene) -> None:
+        ...
+    @property
+    def max_depth(self) -> int:
+        ...
+    @property
+    def num_samples(self) -> int:
         ...
 class Scene:
     def __init__(self, hittables: list, skylight: lights.SkyLight) -> None:
