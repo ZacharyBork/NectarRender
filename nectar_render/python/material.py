@@ -1,5 +1,5 @@
 import _pathtracer
-mat  = _pathtracer.material
+root = _pathtracer.material
 
 import numpy as np
 from os      import PathLike
@@ -11,7 +11,7 @@ from PIL     import Image
 # WRAPPERS
 ###############################################################################
 
-class ImageTexture(mat.texture.ImageTexture):
+class ImageTexture(root.texture.ImageTexture):
     def __init__(
         self: Self,
         fp:   PathLike    
@@ -32,16 +32,16 @@ class ImageTexture(mat.texture.ImageTexture):
 # COLLECTIONS
 ###############################################################################
 
-class Material(mat.Material):
-    LAMBERTIAN = mat.Lambertian
-    METAL      = mat.Metal
-    DIELECTRIC = mat.Dielectric
+class Material(root.Material):
+    LAMBERTIAN = root.Lambertian
+    METAL      = root.Metal
+    DIELECTRIC = root.Dielectric
 
 
-class Texture(mat.texture.Texture):
-    CONSTANT = mat.texture.ConstantTexture
-    CHECKER  = mat.texture.CheckerTexture
-    NOISE    = mat.texture.NoiseTexture
+class Texture(root.texture.Texture):
+    CONSTANT = root.texture.ConstantTexture
+    CHECKER  = root.texture.CheckerTexture
+    NOISE    = root.texture.NoiseTexture
     IMAGE    = ImageTexture
 
 

@@ -17,12 +17,28 @@ void register_hittable(py::module_& m) {
         .def(py::init([](
             const Vector3 center, 
             float radius, 
-            const Material& mat
+            const Material& material
         ) {
-            return Sphere(center, radius, mat);
+            return Sphere(center, radius, material);
         }),
             py::arg("center")   = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("radius")   = 1.0f,
+            py::arg("material") = Lambertian(Color(0.8f, 0.8f, 0.8f))
+        )
+        .def("set_motion_vector", &Hittable::set_motion_vector);
+
+    py::class_<Quad, Hittable>(m_hittable, "Quad")
+        .def(py::init([](
+            const Vector3 position, 
+            const Vector3 rotation, 
+            const Vector3 scale, 
+            const Material& material
+        ) {
+            return Quad(position, rotation, scale, material);
+        }),
+            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
             py::arg("material") = Lambertian(Color(0.8f, 0.8f, 0.8f))
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);

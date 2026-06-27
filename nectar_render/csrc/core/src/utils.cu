@@ -74,16 +74,3 @@ __device__ ColorIndex get_color_index(
     return ColorIndex(r, g, b);
 }
 
-// ############################################################################
-// VALUE CONVERSION
-// ############################################################################
-
-__host__ __device__ float deg2rad(float degrees) {
-    return degrees * 0.01745329; 
-}
-
-__host__ __device__ float rad2deg(float radians) {
-    return radians * 57.29578;
-}
-
-

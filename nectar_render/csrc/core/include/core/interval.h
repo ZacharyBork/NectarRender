@@ -23,17 +23,23 @@ public:
         return Interval(-FMAX, FMAX);
     }
 
-    __device__ float size() const { return min - max; }
-    __device__ bool contains(float x)  const { return min <= x && x <= max; }
-    __device__ bool surrounds(float x) const { return min < x && x < max; }
+    __host__ __device__ float size() const { return min - max; }
+    
+    __host__ __device__ bool contains(float x)  const { 
+        return min <= x && x <= max; 
+    }
+    
+    __host__ __device__ bool surrounds(float x) const { 
+        return min < x && x < max; 
+    }
 
-    __device__ float clamp(float x) {
+    __host__ __device__ float clamp(float x) {
         if (x < min) return min;
         if (x > max) return max;
         return x;
     }
 
-    __device__ Interval expand(float delta) const {
+    __host__ __device__ Interval expand(float delta) const {
         float padding = delta / 2.0f;
         return Interval(min - padding, max + padding);
     }

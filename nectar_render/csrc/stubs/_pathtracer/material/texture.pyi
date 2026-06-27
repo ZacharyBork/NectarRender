@@ -25,7 +25,7 @@ class NoiseTexture(Texture):
     def __init__(self) -> None:
         ...
     @typing.overload
-    def __init__(self, seed: typing.SupportsInt | typing.SupportsIndex) -> None:
+    def __init__(self, scale: typing.SupportsFloat | typing.SupportsIndex, seed: typing.SupportsInt | typing.SupportsIndex = 42) -> None:
         ...
 class Texture:
     pass

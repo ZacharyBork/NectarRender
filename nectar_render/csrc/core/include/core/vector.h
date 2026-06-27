@@ -1,9 +1,10 @@
 #pragma once
 
-#include <type_traits>
-
-#include <cuda_runtime.h>
+#include <array>
 #include <iostream>
+#include <type_traits>
+#include <cuda_runtime.h>
+
 #include "core/include/core/random.h"
 #include "core/include/core/constants.h"
 
@@ -178,7 +179,7 @@ __host__ __device__ inline T operator/(float t, const T& u) {
 //=============================================================================
 
 template <typename T, typename = is_vector<T>>
-__device__ inline T normalize(const T& v) { return v / v.length(); }
+__host__ __device__ inline T normalize(const T& v) { return v / v.length(); }
 
 //=============================================================================
 // VECTOR2
@@ -192,6 +193,8 @@ public:
     __host__ __device__ Vec2Core() : e{ 0, 0 } {}
     __host__ __device__ Vec2Core(float e) : e{ e, e } {}
     __host__ __device__ Vec2Core(float e0, float e1) : e{ e0, e1 } {}
+    
+    __host__ Vec2Core(std::array<float, 2> e) : e{e[0], e[1]} {}
 
     template <typename OtherType>
     __host__ __device__ explicit Vec2Core(const Vec2Core<OtherType>& other)
@@ -234,6 +237,8 @@ public:
     __host__ __device__ Vec3Core(
         float e0, float e1, float e2
     ) : e{ e0, e1, e2 } {}
+
+    __host__ Vec3Core(std::array<float, 3> e) : e{e[0], e[1], e[2]} {}
 
     template <typename OtherType>
     __host__ __device__ explicit Vec3Core(const Vec3Core<OtherType>& other)

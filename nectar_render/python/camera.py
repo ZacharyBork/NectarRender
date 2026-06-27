@@ -1,5 +1,4 @@
 import _pathtracer
-
 from typing import Any, Self, TypeAlias
 
 CameraParams: TypeAlias = _pathtracer.engine.CameraParams

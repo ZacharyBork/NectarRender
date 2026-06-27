@@ -3,6 +3,8 @@
 #include <cuda_runtime.h>
 #include <stdint.h>
 
+#include "core/include/core/vector.h"
+
 // ############################################################################
 // MEMORY MANAGEMENT
 // ############################################################################
@@ -64,5 +66,27 @@ __device__ ColorIndex get_color_index(
 // VALUE CONVERSION
 // ############################################################################
 
-__host__ __device__ float deg2rad(float degrees);
-__host__ __device__ float rad2deg(float radians);
+__host__ __device__ inline float deg2rad(float degrees) {
+    return degrees * 0.01745329; 
+}
+
+__host__ __device__ inline Vector3 deg2rad(const Vector3& degrees) {
+    return Vector3(
+        deg2rad(degrees.x()), 
+        deg2rad(degrees.y()), 
+        deg2rad(degrees.z())
+    );
+}
+
+__host__ __device__ inline float rad2deg(float radians) {
+    return radians * 57.29578;
+}
+
+__host__ __device__ inline Vector3 rad2deg(const Vector3& radians) {
+    return Vector3(
+        rad2deg(radians.x()), 
+        rad2deg(radians.y()), 
+        rad2deg(radians.z())
+    );
+}
+

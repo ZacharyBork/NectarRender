@@ -5,7 +5,6 @@
 #include "core/include/core.h"
 #include "core/include/core/cublas_context.h"
 
-
 namespace py = pybind11;
 
 void register_core(py::module_& m) {
@@ -28,6 +27,11 @@ void register_core(py::module_& m) {
     auto m_vector = m_core.def_submodule("vector", "Vector module.");
     
     py::class_<Vector2>(m_vector, "Vector2")
+        .def(py::init([](float e) {
+            return Vector2(e);
+        }),
+            py::arg("e") = 0.0f
+        )
         .def(py::init([](float x, float y) {
             return Vector2(x, y);
         }),
@@ -40,6 +44,11 @@ void register_core(py::module_& m) {
         .def("v", &Vector2::v);
 
     py::class_<Vector3>(m_vector, "Vector3")
+        .def(py::init([](float e) {
+            return Vector3(e);
+        }),
+            py::arg("e") = 0.0f
+        )
         .def(py::init([](float x, float y, float z) {
             return Vector3(x, y, z);
         }),
@@ -62,9 +71,29 @@ void register_core(py::module_& m) {
             py::arg("g") = 0.0f,
             py::arg("b") = 0.0f
         )
-        .def("r", &Color::r)
-        .def("g", &Color::g)
-        .def("b", &Color::b);
+        .def("r",      &Color::r)
+        .def("g",      &Color::g)
+        .def("b",      &Color::b)
+        .def("black",  &Color::black)
+        .def("white",  &Color::white)
+        .def("red",    &Color::red)
+        .def("green",  &Color::green)
+        .def("blue",   &Color::blue)
+        .def("purple", &Color::purple)
+        .def("yellow", &Color::yellow)
+        .def("teal",   &Color::teal);
+
+    auto m_matrix = m_core.def_submodule("matrix", "Matrix module.");
+
+    py::class_<Matrix3>(m_matrix, "Matrix3")
+        .def(py::init<>())
+        .def("transpose", &Matrix3::transpose)
+        .def("T",         &Matrix3::T)
+        .def("right",     &Matrix3::right)
+        .def("up",        &Matrix3::up)
+        .def("forward",   &Matrix3::forward);
+
+    m_matrix.def("rotation_from_euler", &rotation_from_euler, "");
 
 }
 

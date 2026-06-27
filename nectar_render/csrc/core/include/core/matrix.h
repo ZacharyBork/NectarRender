@@ -40,6 +40,8 @@ public:
         return result;
     }
 
+    __host__ __device__ Matrix3 T() const { return transpose(); }
+
     __host__ __device__ Vector3 right() const { 
         return Vector3(m[0][0], m[1][0], m[2][0]); 
     }

@@ -6,12 +6,52 @@
 #include "engine/include/engine/engine.h"
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/data.h"
+#include "engine/include/engine/transform.h"
 
 namespace py = pybind11;
 
 void register_engine(py::module_& m) {
     
     auto m_engine = m.def_submodule("engine", "Engine module.");
+
+// ############################################################################
+// TRANSFORM
+// ############################################################################
+
+    py::class_<Transform>(m_engine, "Transform")
+        .def(py::init<>()) 
+        .def(py::init([](
+            const Vector3& position,
+            const Vector3& rotation,
+            const Vector3& scale
+        ) {
+            return Transform(position, rotation, scale);
+        }),
+            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f)
+        )
+        .def(py::init([](
+            std::array<float, 3> position,
+            std::array<float, 3> rotation,
+            std::array<float, 3> scale
+        ) {
+            return Transform(position, rotation, scale);
+        }),
+            py::arg("position") = std::array<float, 3>{0.0f, 0.0f, 0.0f},
+            py::arg("rotation") = std::array<float, 3>{0.0f, 0.0f, 0.0f},
+            py::arg("scale")    = std::array<float, 3>{1.0f, 1.0f, 1.0f}
+        )
+        .def("position",     &Transform::position)
+        .def("rotation",     &Transform::rotation)
+        .def("scale",        &Transform::scale)
+        .def("set_position", &Transform::set_position)
+        .def("set_rotation", &Transform::set_rotation)
+        .def("set_scale",    &Transform::set_scale)
+        .def("p",            &Transform::p)
+        .def("pos",          &Transform::pos)
+        .def("R",            &Transform::R);
+        
 
 // ############################################################################
 // CAMERA

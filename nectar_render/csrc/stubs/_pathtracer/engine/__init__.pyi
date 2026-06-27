@@ -2,10 +2,12 @@
 Engine module.
 """
 from __future__ import annotations
+import _pathtracer.core.matrix
+import _pathtracer.core.vector
 import collections.abc
 import typing
 from . import data
-__all__: list[str] = ['CameraParams', 'RenderEngine', 'data']
+__all__: list[str] = ['CameraParams', 'RenderEngine', 'Transform', 'data']
 class CameraParams:
     @typing.overload
     def __init__(self) -> None:
@@ -70,4 +72,32 @@ class RenderEngine:
     def initialize(self, arg0: CameraParams, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsInt | typing.SupportsIndex, arg3: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     def render(self, arg0: list) -> None:
+        ...
+class Transform:
+    def R(self) -> _pathtracer.core.matrix.Matrix3:
+        ...
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ...) -> None:
+        ...
+    @typing.overload
+    def __init__(self, position: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], rotation: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], scale: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [1.0, 1.0, 1.0]) -> None:
+        ...
+    def p(self) -> _pathtracer.core.vector.Vector3:
+        ...
+    def pos(self) -> _pathtracer.core.vector.Vector3:
+        ...
+    def position(self) -> _pathtracer.core.vector.Vector3:
+        ...
+    def rotation(self) -> _pathtracer.core.matrix.Matrix3:
+        ...
+    def scale(self) -> _pathtracer.core.vector.Vector3:
+        ...
+    def set_position(self, arg0: _pathtracer.core.vector.Vector3) -> None:
+        ...
+    def set_rotation(self, arg0: _pathtracer.core.matrix.Matrix3) -> None:
+        ...
+    def set_scale(self, arg0: _pathtracer.core.vector.Vector3) -> None:
         ...

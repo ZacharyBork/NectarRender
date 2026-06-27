@@ -1,4 +1,5 @@
 import _pathtracer
+root = _pathtracer.engine
 
 import time
 import numpy as np
@@ -9,11 +10,12 @@ from PIL     import Image
 from numpy   import ndarray
 from collections.abc import Sequence
 
-from nectar_render.python import utils
-from nectar_render.python.camera import Camera
+from nectar_render.python          import core
+from nectar_render.python.camera   import Camera
 from nectar_render.python.hittable import Hittable
 
-Engine: TypeAlias = _pathtracer.engine.RenderEngine
+Transform: TypeAlias = root.Transform
+Engine:    TypeAlias = root.RenderEngine
 
 class RenderEngine:
     DEVICE_PTR: int = None
@@ -48,7 +50,7 @@ class RenderEngine:
     def render(self: Self, scene: Sequence[Hittable]) -> None:
         start = time.time()
         self.ENGINE.render(scene)
-        utils.cuda_synchronize()
+        core.cuda_synchronize()
         self.log(f'Render complete. Time taken: {(time.time() - start):.4f}')
         
     def get_data(self: Self) -> ndarray:

@@ -5,6 +5,30 @@ from __future__ import annotations
 import typing
 __all__: list[str] = ['Color', 'Vector2', 'Vector3']
 class Color:
+    @staticmethod
+    def black() -> Color:
+        ...
+    @staticmethod
+    def blue() -> Color:
+        ...
+    @staticmethod
+    def green() -> Color:
+        ...
+    @staticmethod
+    def purple() -> Color:
+        ...
+    @staticmethod
+    def red() -> Color:
+        ...
+    @staticmethod
+    def teal() -> Color:
+        ...
+    @staticmethod
+    def white() -> Color:
+        ...
+    @staticmethod
+    def yellow() -> Color:
+        ...
     def __init__(self, r: typing.SupportsFloat | typing.SupportsIndex = 0.0, g: typing.SupportsFloat | typing.SupportsIndex = 0.0, b: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
         ...
     def b(self) -> float:
@@ -14,6 +38,10 @@ class Color:
     def r(self) -> float:
         ...
 class Vector2:
+    @typing.overload
+    def __init__(self, e: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
+        ...
+    @typing.overload
     def __init__(self, x: typing.SupportsFloat | typing.SupportsIndex = 0.0, y: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
         ...
     def u(self) -> float:
@@ -25,6 +53,10 @@ class Vector2:
     def y(self) -> float:
         ...
 class Vector3:
+    @typing.overload
+    def __init__(self, e: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
+        ...
+    @typing.overload
     def __init__(self, x: typing.SupportsFloat | typing.SupportsIndex = 0.0, y: typing.SupportsFloat | typing.SupportsIndex = 0.0, z: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
         ...
     def u(self) -> float:

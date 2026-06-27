@@ -1,8 +1,9 @@
 import _pathtracer
+root = _pathtracer.hittable
 
-class Hittable(_pathtracer.hittable.Hittable):
-    SPHERE = _pathtracer.hittable.Sphere
-
+class Hittable(root.Hittable):
+    SPHERE = root.Sphere
+    QUAD   = root.Quad
 
 
 
