@@ -7,7 +7,8 @@ import _pathtracer.core.vector
 import collections.abc
 import typing
 from . import data
-__all__: list[str] = ['CameraParams', 'RenderEngine', 'Transform', 'data']
+from . import lights
+__all__: list[str] = ['CameraParams', 'RenderEngine', 'Scene', 'Transform', 'data', 'lights']
 class CameraParams:
     @typing.overload
     def __init__(self) -> None:
@@ -71,7 +72,10 @@ class RenderEngine:
         ...
     def initialize(self, arg0: CameraParams, arg1: typing.SupportsInt | typing.SupportsIndex, arg2: typing.SupportsInt | typing.SupportsIndex, arg3: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
-    def render(self, arg0: list) -> None:
+    def render(self, arg0: Scene) -> None:
+        ...
+class Scene:
+    def __init__(self, hittables: list, skylight: lights.SkyLight) -> None:
         ...
 class Transform:
     def R(self) -> _pathtracer.core.matrix.Matrix3:

@@ -10,9 +10,9 @@ from PIL     import Image
 from numpy   import ndarray
 from collections.abc import Sequence
 
-from nectar_render.python          import core
-from nectar_render.python.camera   import Camera
-from nectar_render.python.hittable import Hittable
+from nectar_render.python import core
+from nectar_render.python.engine.scene  import Scene
+from nectar_render.python.engine.camera import Camera
 
 Transform: TypeAlias = root.Transform
 Engine:    TypeAlias = root.RenderEngine
@@ -47,7 +47,7 @@ class RenderEngine:
     def on_frame_finished(self: Self, frame_idx: int) -> None:
         pass
 
-    def render(self: Self, scene: Sequence[Hittable]) -> None:
+    def render(self: Self, scene: Scene) -> None:
         start = time.time()
         self.ENGINE.render(scene)
         core.cuda_synchronize()

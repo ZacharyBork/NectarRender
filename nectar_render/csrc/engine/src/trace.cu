@@ -1,23 +1,30 @@
 #include "engine/include/engine/trace.h"
 
-// ============================================================================
-// RAY COLORING
-// ============================================================================
-
-__device__ Color sample_skylight(const Ray& ray) {
-    Vector3 unit_direction = normalize(ray.direction());
-    float a = 0.5 * (unit_direction.y() + 1.0);
-    return (1.0 - a) 
-         * Color(1.0, 1.0, 1.0) 
-         + a * Color(0.5, 0.7, 1.0);
-}
+#include "engine/include/engine/light.h"
 
 // ============================================================================
 // RAY TRACING FUNCTION
 // ============================================================================
 
+__device__ bool trace_ray(
+    Scene  scene,
+    Ray&   ray,
+    Color& color,
+    Color& atten,
+    Generator& gen
+) {
+    HitRecord rec;
+    bool hit = scene.hit(ray, Interval(EPS, FMAX), rec);
+    
+    if (!hit) color += atten * scene.skylight.sample(ray);
+    else if(!rec.material->scatter(rec, ray, atten, gen)) {
+        color += rec.material->emitted(rec.uv, rec.position);
+    }
+    return hit;
+}
+
 __global__ void trace_kernel(
-    const Scene  scene,
+    Scene        scene,
     Camera       camera,
     DataObject   data, 
     unsigned int max_depth,
@@ -26,32 +33,22 @@ __global__ void trace_kernel(
 ) {
     ProcessIndex p_idx = get_process_index();
     if (p_idx.x >= data.W || p_idx.y >= data.H) return;
-    
     unsigned int pixel_idx = p_idx.y * data.W + p_idx.x;
-    Generator gen(seed, pixel_idx + frame * (data.W * data.H));
 
+    Generator gen(seed, pixel_idx + frame * (data.W * data.H));
     Ray ray = camera.get_ray(p_idx.x, p_idx.y, gen);
-    
+
     Color color = Color::black();
     Color atten = Color::white();
 
-    for (int bounce = 0; bounce < max_depth; bounce++) {
-        HitRecord rec;
-        bool hit = scene.hit(ray, Interval(EPS, FMAX), rec);
-        
-        if (!hit) {
-            color += atten * sample_skylight(ray);
-            break;
-        }
-
-        rec.material->scatter(rec, ray, atten, gen);
-    }
+    for (int bounce = 0; bounce < max_depth; bounce++)
+        if (!trace_ray(scene, ray, color, atten, gen)) break;
 
     data.set_color(p_idx.x, p_idx.y, p_idx.z, color);
 }
 
 void trace(
-    const Scene  scene,
+    Scene        scene,
     Camera       camera,
     DataObject   data, 
     unsigned int max_depth,

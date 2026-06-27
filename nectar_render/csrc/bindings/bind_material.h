@@ -100,6 +100,16 @@ void register_material(py::module_& m) {
             py::arg("ior") = 1.5f
         );
 
+    py::class_<Emissive, Material>(m_material, "Emissive")
+        .def(py::init([](const Color& albedo) {
+            return Emissive(albedo);
+        }),
+            py::arg("albedo") = Color(0.8f, 0.8f, 0.8f)
+        )
+        .def(py::init([](const Texture& texture) {
+            return Emissive(texture);
+        }));
+
 
 }
 

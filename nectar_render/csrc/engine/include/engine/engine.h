@@ -15,7 +15,6 @@
 class RenderEngine {
 public:
     size_t H, W;
-    Scene device_scene;
     std::optional<CameraParams> cam_params;
     std::optional<RenderLayers> render_layers;
 
@@ -31,7 +30,7 @@ public:
         unsigned int seed
     );
 
-    void render(std::vector<Hittable*>& scene);
+    void render(Scene& scene);
     RenderLayers get_render_layers();
 
 private:

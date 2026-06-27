@@ -7,6 +7,7 @@
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/data.h"
 #include "engine/include/engine/transform.h"
+#include "engine/include/engine/light.h"
 
 namespace py = pybind11;
 
@@ -178,6 +179,47 @@ void register_engine(py::module_& m) {
         .def_readonly("object_id", &RenderLayers::object_id);
 
 // ############################################################################
+// LIGHTS
+// ############################################################################
+
+    auto m_lights = m_engine.def_submodule("lights", "Lights submodule.");
+
+    py::class_<Light>(m_lights, "Light");
+
+    py::class_<SkyLight, Light>(m_lights, "SkyLight")
+        .def(py::init<>())
+        .def(py::init([](
+            const Color& start_color, 
+            const Color& end_color
+        ) {
+            return SkyLight(start_color, end_color);
+        }),
+            py::arg("start_color") = Color(1.0f, 1.0f, 1.0f),
+            py::arg("end_color")   = Color(0.5f, 0.7f, 1.0f)
+        )
+        .def("black", &SkyLight::black);
+
+// ############################################################################
+// SCENE
+// ############################################################################
+
+    py::class_<Scene>(m_engine, "Scene")
+        .def(py::init([](
+            py::list hittables,
+            SkyLight skylight
+        ) {
+            std::vector<Hittable*> ptrs;
+            ptrs.reserve(hittables.size());
+            for (auto& item : hittables)
+                ptrs.push_back(item.cast<Hittable*>());
+
+            return Scene(ptrs, skylight);
+        }),
+            py::arg("hittables"), 
+            py::arg("skylight")
+        );
+
+// ############################################################################
 // RENDER ENGINE CLASS
 // ############################################################################
 
@@ -192,15 +234,10 @@ void register_engine(py::module_& m) {
         ) { 
             self.initialize(camera_params, samples, ray_depth, seed); 
         })
-        .def("render", [](RenderEngine& self, py::list scene) {
-            std::vector<Hittable*> ptrs;
-            ptrs.reserve(scene.size());
-            for (auto& item : scene)
-                ptrs.push_back(item.cast<Hittable*>());
-            self.render(ptrs);
+        .def("render", [](RenderEngine& self, Scene& scene) {
+            self.render(scene);
         })
         .def_readwrite("on_frame_finished", &RenderEngine::on_frame_finished)
         .def("get_render_layers", &RenderEngine::get_render_layers);
-
 }
 

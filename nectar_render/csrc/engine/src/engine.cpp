@@ -22,43 +22,19 @@ void RenderEngine::initialize(
     initialized = true;
 }
 
-void RenderEngine::build_scene(std::vector<Hittable*>& host_scene) {
-    int n = host_scene.size();
-
-    BVH bvh;
-    bvh.build(host_scene);
-
-    std::vector<Hittable*> device_obj_ptrs(n);
-    for (int i = 0; i < n; i++)
-        device_obj_ptrs[i] = host_scene[i]->build();
-
-    cudaMalloc(&d_objects, n * sizeof(Hittable*));
-    cudaMemcpy(d_objects, device_obj_ptrs.data(),
-               n * sizeof(Hittable*), cudaMemcpyHostToDevice);
-
-    int n_nodes = bvh.nodes.size();
-    BVHNode* d_bvh_nodes;
-    cudaMalloc(&d_bvh_nodes, n_nodes * sizeof(BVHNode));
-    cudaMemcpy(d_bvh_nodes, bvh.nodes.data(),
-               n_nodes * sizeof(BVHNode), cudaMemcpyHostToDevice);
-
-    device_scene = Scene{ d_bvh_nodes, d_objects, n_nodes, n };
-}
-
-void RenderEngine::render(std::vector<Hittable*>& scene) {
+void RenderEngine::render(Scene& scene) {
     if (!initialized) {
         throw std::runtime_error(
             "RenderEngine::render called before initialization."
         );
     }
     Camera camera(*cam_params);
-    build_scene(scene);
 
     for (int sample = 0; sample < num_samples; sample++) {
         frame_idx++;
 
         DataObject color(&render_layers->beauty);
-        trace(device_scene, camera, color, max_depth, random_seed, frame_idx);
+        trace(scene, camera, color, max_depth, random_seed, frame_idx);
         render_layers->beauty.combine(color);
 
         on_frame_finished(frame_idx);

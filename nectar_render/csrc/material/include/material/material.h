@@ -21,6 +21,10 @@ public:
     ) const { 
         return false; 
     }
+
+    __device__ virtual Color emitted(Vector2 uv, const Vector3& p) const {
+        return Color::black();
+    }
 };
 
 // ############################################################################
@@ -147,5 +151,27 @@ private:
 // EMISSIVE
 // ############################################################################
 
+class Emissive : public Material {
+public:
 
+    __host__ Emissive(const Color& albedo) 
+        : texture(ConstantTexture(albedo).build()) {}
+
+    template<typename T>
+    __host__ Emissive(const T& texture) : texture(texture.build()) {}
+
+    __device__ Emissive(Texture* texture) : texture(texture) { }
+
+    __host__ Material* build() const override {
+        return device_build<Emissive>(texture);
+    }
+
+    __device__ Color emitted(Vector2 uv, const Vector3& p) const override {
+        return texture->sample(uv, p);
+    }
+
+private:
+
+    Texture* texture;
+};
 

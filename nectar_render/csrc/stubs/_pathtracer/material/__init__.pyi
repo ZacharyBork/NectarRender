@@ -5,9 +5,16 @@ from __future__ import annotations
 import _pathtracer.core.vector
 import typing
 from . import texture
-__all__: list[str] = ['Dielectric', 'Lambertian', 'Material', 'Metal', 'texture']
+__all__: list[str] = ['Dielectric', 'Emissive', 'Lambertian', 'Material', 'Metal', 'texture']
 class Dielectric(Material):
     def __init__(self, ior: typing.SupportsFloat | typing.SupportsIndex = 1.5) -> None:
+        ...
+class Emissive(Material):
+    @typing.overload
+    def __init__(self, albedo: _pathtracer.core.vector.Color = ...) -> None:
+        ...
+    @typing.overload
+    def __init__(self, arg0: texture.Texture) -> None:
         ...
 class Lambertian(Material):
     @typing.overload

@@ -36,7 +36,8 @@ class Material(root.Material):
     LAMBERTIAN = root.Lambertian
     METAL      = root.Metal
     DIELECTRIC = root.Dielectric
-
+    EMISSIVE   = root.Emissive
+    
 
 class Texture(root.texture.Texture):
     CONSTANT = root.texture.ConstantTexture
