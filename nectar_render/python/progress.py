@@ -36,12 +36,8 @@ class ProgressBar:
             self.pbar = None
             PROGRESS_BARS.pop(self.name)
     
-def make_progress_bar(key: str, total: int) -> None:
+def pbar(key: str, total: int) -> ProgressBar: 
     global PROGRESS_BARS
-    if key in PROGRESS_BARS:
-        raise KeyError(f'Key [{key}] already exists in progress bar cache.')
-    PROGRESS_BARS[key] = ProgressBar(total, key)
-    
-def get_progress_bar(key: str) -> ProgressBar: 
-    global PROGRESS_BARS
+    if not key in PROGRESS_BARS: 
+        PROGRESS_BARS[key] = ProgressBar(total, key)
     return PROGRESS_BARS[key]

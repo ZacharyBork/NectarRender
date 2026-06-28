@@ -2,6 +2,7 @@
 #include "engine/include/engine/trace.h"
 
 #include "material/include/material/material.h"
+#include "engine/include/engine/denoise.h"
 
 void RenderEngine::initialize(
     const Camera& camera,

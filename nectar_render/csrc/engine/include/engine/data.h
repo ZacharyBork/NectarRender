@@ -20,20 +20,17 @@ public:
     uintptr_t device_ptr;
     
     size_t C, H, W; // Channels, Height, Width
-    size_t n_elements;
-
     bool enabled = true;
 
     DataObject() 
-        : device_ptr(0), C(0), H(0), W(0), n_elements(0), enabled(false) {}
+        : device_ptr(0), C(0), H(0), W(0), enabled(false) {}
 
     DataObject(
         size_t n_channels, 
         size_t h, 
         size_t w
     ) : C(n_channels), H(h), W(w) {
-        n_elements = n_channels * H * W;
-        device_ptr = allocate_cuda_memory(n_elements, 0.0f);
+        device_ptr = allocate_cuda_memory(n_elements(), 0.0f);
     }
 
     DataObject(
@@ -41,14 +38,19 @@ public:
         size_t    n_channels, 
         size_t    h, 
         size_t    w
-    ) : device_ptr(d_ptr), C(n_channels), H(h), W(w) {
-        n_elements = n_channels * H * W;
-    }
+    ) : device_ptr(d_ptr), C(n_channels), H(h), W(w) { }
 
     DataObject(
         DataObject* data
-    ) : C(data->C), H(data->H), W(data->W), n_elements(data->n_elements) {
-        device_ptr = allocate_cuda_memory(n_elements, 0.0f);
+    ) : C(data->C), 
+        H(data->H), 
+        W(data->W)
+    { device_ptr = allocate_cuda_memory(data->n_elements(), 0.0f); }
+
+    __host__ __device__ size_t n_pixels()   const { return H * W; }
+    __host__ __device__ size_t n_elements() const { return C * n_pixels(); }
+    __host__ __device__ size_t n_bytes()    const { 
+        return n_elements() * sizeof(float); 
     }
 
     __host__ __device__ bool is_enabled() { return enabled; }
@@ -72,7 +74,7 @@ public:
         auto buf = result.request();
         cudaDeviceSynchronize();
         cudaMemcpy(buf.ptr, reinterpret_cast<void*>(device_ptr),
-            n_elements * sizeof(float), cudaMemcpyDeviceToHost);
+            n_bytes(), cudaMemcpyDeviceToHost);
         return result;
     }
 

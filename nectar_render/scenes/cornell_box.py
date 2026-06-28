@@ -71,7 +71,6 @@ class CornellBox(RenderEngine):
             silent    = silent
         )
         
-    def render(self: Self, output_path: PathLike) -> None:
-        self.ENGINE.render(Scene(self.hittables, self.skylight))
-        self.save_image(output_path)
+    def render(self: Self) -> None:
+        super().render(Scene(self.hittables, self.skylight))
 

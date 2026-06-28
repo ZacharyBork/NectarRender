@@ -12,8 +12,10 @@ from numpy   import ndarray
 
 
 from nectar_render.python import core, progress
-from nectar_render.python.engine.scene  import Scene
-from nectar_render.python.engine.camera import Camera
+from nectar_render.python.engine.data    import RenderLayers
+from nectar_render.python.engine.scene   import Scene
+from nectar_render.python.engine.camera  import Camera
+from nectar_render.python.engine.denoise import Denoiser, TVDenoiser
 
 Transform: TypeAlias = root.Transform
 Engine:    TypeAlias = root.RenderEngine
@@ -22,8 +24,8 @@ class RenderEngine:
     DEVICE_PTR: int = None
     CAMERA:  Camera = None
     ENGINE:  Engine = None
-    SILENT:    bool = False 
-    
+    SILENT:    bool = False
+        
     def __init__(
         self:      Self,
         camera:    Camera = Camera(),
@@ -41,9 +43,7 @@ class RenderEngine:
             seed if seed is not None 
             else np.random.random_integers(0, 999999)
         )
-        
-        progress.make_progress_bar('render', samples)
-        
+                
     @property
     def num_samples(self: Self) -> int: return self.ENGINE.num_samples
         
@@ -51,13 +51,18 @@ class RenderEngine:
         if not self.SILENT: print(log_string)
         
     def on_frame_finished(self: Self, frame_idx: int) -> None:
-        progress.get_progress_bar('render').update(frame_idx)
+        if not self.SILENT:
+            progress.pbar('render', self.num_samples).update(frame_idx)
             
     def render(self: Self, scene: Scene) -> None:
         start = time.time()
         self.ENGINE.render(scene)
         core.cuda_synchronize()
         self.log(f'Render complete. Time taken: {(time.time() - start):.4f}')
+        
+    def denoise(self: Self, denoiser: Denoiser = TVDenoiser()) -> None:
+        layers = self.ENGINE.get_render_layers()
+        denoiser.run(layers.beauty)
         
     def get_data(self: Self) -> ndarray:
         layers = self.ENGINE.get_render_layers()

@@ -8,8 +8,9 @@ import collections.abc
 import typing
 from . import camera
 from . import data
+from . import denoise
 from . import lights
-__all__: list[str] = ['RenderEngine', 'Scene', 'Transform', 'camera', 'data', 'lights']
+__all__: list[str] = ['RenderEngine', 'Scene', 'Transform', 'camera', 'data', 'denoise', 'lights']
 class RenderEngine:
     on_frame_finished: collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex], None]
     def __init__(self) -> None:

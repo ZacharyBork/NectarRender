@@ -12,7 +12,9 @@ from .engine   import (
     Transform, 
     Light, 
     SkyLight,
-    Camera
+    Camera,
+    Denoiser,
+    TVDenoiser
 )
 
 

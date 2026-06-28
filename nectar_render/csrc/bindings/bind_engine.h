@@ -8,6 +8,7 @@
 #include "engine/include/engine/data.h"
 #include "engine/include/engine/transform.h"
 #include "engine/include/engine/light.h"
+#include "engine/include/engine/denoise.h"
 
 namespace py = pybind11;
 
@@ -123,6 +124,9 @@ void register_engine(py::module_& m) {
     auto m_data = m_engine.def_submodule("data", "Engine data submodule.");
 
     py::class_<DataObject>(m_data, "DataObject")
+        .def("n_pixels",            &DataObject::n_pixels)
+        .def("n_elements",          &DataObject::n_elements)
+        .def("n_bytes",             &DataObject::n_bytes)
         .def("numpy",               &DataObject::numpy)
         .def("is_enabled",          &DataObject::is_enabled)
         .def("linear_to_gamma",     &DataObject::linear_to_gamma)
@@ -130,8 +134,7 @@ void register_engine(py::module_& m) {
         .def_readonly("device_ptr", &DataObject::device_ptr)
         .def_readonly("C",          &DataObject::C)
         .def_readonly("H",          &DataObject::H)
-        .def_readonly("W",          &DataObject::W)
-        .def_readonly("n_elements", &DataObject::n_elements);
+        .def_readonly("W",          &DataObject::W);
 
     py::class_<RenderLayersConfig>(m_data, "RenderLayersConfig")
         .def(py::init<>()) 
@@ -237,6 +240,26 @@ void register_engine(py::module_& m) {
             py::arg("hittables"), 
             py::arg("skylight")
         );
+
+// ############################################################################
+// DENOISERS
+// ############################################################################
+
+    auto m_denoise = m_engine.def_submodule("denoise", "Denoising submodule.");
+
+    py::class_<Denoiser>(m_denoise, "Denoiser").def("run", &Denoiser::run);
+
+    py::class_<TVDenoiser, Denoiser>(m_denoise, "TVDenoiser")
+        .def(py::init([](
+            const float weight, 
+            const unsigned int iterations
+        ) {
+            return TVDenoiser(weight, iterations);
+        }),
+            py::arg("weight")     = 1.0f,
+            py::arg("iterations") = 100
+        )
+        .def("run", &TVDenoiser::run);
 
 // ############################################################################
 // RENDER ENGINE CLASS
