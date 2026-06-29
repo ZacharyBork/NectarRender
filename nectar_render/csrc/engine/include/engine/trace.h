@@ -8,10 +8,10 @@
 #include "engine/include/engine/light.h"
 
 void trace(
-    Scene       scene,
-    Camera      camera,
-    DataObject  data, 
-    unsigned int max_depth,
-    unsigned int seed, 
-    unsigned int frame
+    Scene         scene,
+    Camera        camera,
+    RenderLayers& layers, 
+    unsigned int  max_depth,
+    unsigned int  seed, 
+    unsigned int  frame
 );

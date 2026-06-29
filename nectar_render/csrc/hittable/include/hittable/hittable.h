@@ -19,7 +19,7 @@ public:
     Material* material = nullptr;
     AABB      bbox;
 
-    __host__ __device__ virtual ~Hittable() = default;
+    /* CONSTRUCTORS */
 
     __host__ Hittable() : material(Lambertian(Color::purple()).build()) { }
 
@@ -59,13 +59,6 @@ public:
         delta(Transform(delta_position)),
         material(material.build())
     { }
-
-    template <typename M>
-    __host__ Hittable(
-        Transform& xform, 
-        Transform& delta, 
-        const M&   material
-    ) : xform(xform), delta(delta), material(material) { }
 
     __device__ Hittable(
         Transform& xform, 

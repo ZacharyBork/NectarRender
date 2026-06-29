@@ -28,16 +28,16 @@ __device__ bool trace_ray(
 __global__ void trace_kernel(
     Scene        scene,
     Camera       camera,
-    DataObject   data, 
+    AOVs         aovs, 
     unsigned int max_depth,
     unsigned int seed,
     unsigned int frame
 ) {
     ProcessIndex p_idx = get_process_index();
-    if (p_idx.x >= data.W || p_idx.y >= data.H) return;
-    unsigned int pixel_idx = p_idx.y * data.W + p_idx.x;
+    if (p_idx.x >= aovs.W || p_idx.y >= aovs.H) return;
+    unsigned int pixel_idx = p_idx.y * aovs.W + p_idx.x;
 
-    Generator gen(seed, pixel_idx + frame * (data.W * data.H));
+    Generator gen(seed, pixel_idx + frame * (aovs.W * aovs.H));
     Ray ray = camera.get_ray(p_idx.x, p_idx.y, gen);
 
     Color color = Color::black();
@@ -46,18 +46,20 @@ __global__ void trace_kernel(
     for (int bounce = 0; bounce < max_depth; bounce++)
         if (!trace_ray(scene, ray, color, atten, gen)) break;
 
-    data.set_color(p_idx.x, p_idx.y, p_idx.z, color);
+    aovs.beauty.set_color(color);
 }
 
 void trace(
-    Scene        scene,
-    Camera       camera,
-    DataObject   data, 
-    unsigned int max_depth,
-    unsigned int seed, 
-    unsigned int frame
+    Scene         scene,
+    Camera        camera,
+    RenderLayers& layers, 
+    unsigned int  max_depth,
+    unsigned int  seed, 
+    unsigned int  frame
 ) {
     dim3 block(BS2D, BS2D, 1);
-    dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
-    trace_kernel<<<grid, block>>>(scene, camera, data, max_depth, seed, frame);
+    dim3 grid((layers.W + BS2D - 1) / BS2D, (layers.H + BS2D - 1) / BS2D, 1);
+    trace_kernel<<<grid, block>>>(
+        scene, camera, layers.aovs(), max_depth, seed, frame
+    );
 }

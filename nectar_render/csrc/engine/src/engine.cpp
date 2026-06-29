@@ -25,12 +25,15 @@ void RenderEngine::render(Scene& scene) {
         );
     }
 
+    RenderLayers rl(layers());
+    render_layers->pin_buffer(LayerType::BEAUTY);
+    
     for (int sample = 0; sample < num_samples; sample++) {
         frame_idx++;
 
-        DataObject color(&render_layers->beauty);
-        trace(scene, *cam, color, max_depth, random_seed, frame_idx);
-        render_layers->beauty.combine(color);
+        rl.clear();
+        trace(scene, *cam, rl, max_depth, random_seed, frame_idx);
+        render_layers->combine(rl);
 
         on_frame_finished(frame_idx);
     }
@@ -38,5 +41,6 @@ void RenderEngine::render(Scene& scene) {
     render_layers->normalize_by_samples(num_samples);
 }
 
-RenderLayers RenderEngine::get_render_layers() { return *render_layers; }
+RenderLayers* RenderEngine::layers() { return &render_layers.value(); }
+
 

@@ -33,6 +33,10 @@ void free_cuda_memory(uintptr_t device_ptr) {
     cudaFree(reinterpret_cast<void*>(device_ptr));
 }
 
+// ############################################################################
+// CUDA SYNCHRONIZATION
+// ############################################################################
+
 void cuda_synchronize() { cudaDeviceSynchronize(); }
 
 // ############################################################################

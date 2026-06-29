@@ -124,17 +124,20 @@ void register_engine(py::module_& m) {
     auto m_data = m_engine.def_submodule("data", "Engine data submodule.");
 
     py::class_<DataObject>(m_data, "DataObject")
-        .def("n_pixels",            &DataObject::n_pixels)
-        .def("n_elements",          &DataObject::n_elements)
-        .def("n_bytes",             &DataObject::n_bytes)
-        .def("numpy",               &DataObject::numpy)
-        .def("is_enabled",          &DataObject::is_enabled)
-        .def("linear_to_gamma",     &DataObject::linear_to_gamma)
-        .def("tonemap",             &DataObject::tonemap)
-        .def_readonly("device_ptr", &DataObject::device_ptr)
-        .def_readonly("C",          &DataObject::C)
-        .def_readonly("H",          &DataObject::H)
-        .def_readonly("W",          &DataObject::W);
+        .def("n_pixels",        &DataObject::n_pixels)
+        .def("n_elements",      &DataObject::n_elements)
+        .def("n_bytes",         &DataObject::n_bytes)
+        .def("shape",           &DataObject::shape)
+        .def("numpy",           &DataObject::numpy)
+        .def("is_enabled",      &DataObject::is_enabled)
+        .def("is_pinned",       &DataObject::is_pinned)
+        .def("linear_to_gamma", &DataObject::linear_to_gamma)
+        .def("tonemap",         &DataObject::tonemap)
+        .def("device_ptr",      &DataObject::device_ptr)
+        .def("readback_pinned", &DataObject::readback_pinned)
+        .def_readonly("C",      &DataObject::C)
+        .def_readonly("H",      &DataObject::H)
+        .def_readonly("W",      &DataObject::W);
 
     py::class_<RenderLayersConfig>(m_data, "RenderLayersConfig")
         .def(py::init<>()) 
@@ -279,7 +282,10 @@ void register_engine(py::module_& m) {
         .def("render", [](RenderEngine& self, Scene& scene) {
             self.render(scene);
         })
-        .def("get_render_layers",           &RenderEngine::get_render_layers)
+        .def(
+            "layers", &RenderEngine::layers,
+            py::return_value_policy::reference
+        )
         .def_readonly("num_samples",        &RenderEngine::num_samples)
         .def_readonly("max_depth",          &RenderEngine::max_depth)
         .def_readwrite("on_frame_finished", &RenderEngine::on_frame_finished);

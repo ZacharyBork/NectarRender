@@ -31,7 +31,7 @@ public:
     );
 
     void render(Scene& scene);
-    RenderLayers get_render_layers();
+    RenderLayers* layers();
 
 private:
 

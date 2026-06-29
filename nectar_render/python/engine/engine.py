@@ -2,6 +2,7 @@ import _pathtracer
 root = _pathtracer.engine
 
 import time
+import ctypes
 import numpy as np
 from os      import PathLike
 from pathlib import Path
@@ -61,16 +62,28 @@ class RenderEngine:
         self.log(f'Render complete. Time taken: {(time.time() - start):.4f}')
         
     def denoise(self: Self, denoiser: Denoiser = TVDenoiser()) -> None:
-        layers = self.ENGINE.get_render_layers()
+        layers = self.ENGINE.layers()
         denoiser.run(layers.beauty)
-        
+
     def get_data(self: Self) -> ndarray:
-        layers = self.ENGINE.get_render_layers()
-        beauty = layers.beauty
+        layers  = self.ENGINE.layers()
+        beauty  = layers.beauty
+        pinned  = beauty.is_pinned()
+        C, H, W = beauty.shape()
+        
         beauty.tonemap(0.1)
         beauty.linear_to_gamma()
-        return (beauty.numpy().transpose(1, 2, 0) * 255).astype(np.uint8)
-    
+        
+        if not pinned: arr = beauty.numpy()
+        else:
+            ptr = beauty.readback_pinned()
+            arr = np.ctypeslib.as_array(
+                (ctypes.c_float * beauty.n_elements()).from_address(ptr)
+            ).copy()
+            
+        image = (arr.reshape(C, H, W).transpose(1, 2, 0) * 255)
+        return image.astype(np.uint8)
+
     def save_image(self: Self, path: PathLike) -> None:
         path = Path(path).resolve()
         if not path.parent.exists():
