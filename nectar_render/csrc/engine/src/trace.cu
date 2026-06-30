@@ -15,14 +15,14 @@ __device__ bool trace_ray(
 ) {
     HitRecord rec;
     bool hit = scene.hit(ray, Interval(EPS, FMAX), rec);
-    
+
     if (!hit) {
         color += atten * scene.skylight.sample(ray);
         return false;
     }
 
-    color += atten * rec.material->emitted(rec.uv, rec.position);
-    return hit & rec.material->scatter(rec, ray, atten, gen);
+    color += atten * rec.mat->emitted(rec.uv, rec.p);
+    return hit & rec.mat->scatter(rec, ray, atten, gen);
 }
 
 __global__ void trace_kernel(

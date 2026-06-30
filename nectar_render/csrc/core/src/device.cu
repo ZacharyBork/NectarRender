@@ -1,6 +1,7 @@
 #include "core/include/core/device.h"
 
 #include "engine/include/engine/scene.h"
+#include "hittable/include/hittable.h"
 
 // ############################################################################
 // DEVICE-SIDE OBJECT CONSTRUCTION
@@ -23,6 +24,7 @@ T* device_build(Args... args) {
 // HITTABLES ==================================================================
 
 template Quad*   device_build<Quad>(Transform, Transform, Material*);
+// template Cube*   device_build<Cube>(Transform, Transform, Material*);
 template Sphere* device_build<Sphere>(Transform, Transform, float, Material*);
 
 // MATERIALS ================================================================== 

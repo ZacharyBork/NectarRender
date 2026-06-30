@@ -4,6 +4,8 @@
 #include <pybind11/stl.h>
 
 #include "hittable/include/hittable/hittable.h"
+#include "hittable/include/hittable/primitives.h"
+#include "hittable/include/hittable/shapes.h"
 
 namespace py = pybind11;
 

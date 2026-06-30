@@ -20,6 +20,8 @@ template<typename VecType>
 class Vector {
 public:
 
+    __host__ __device__ Vector() { }
+
     __host__ __device__ float   operator[](int i) const { 
         auto& self = derived();
         return self.e[i]; 
@@ -61,8 +63,16 @@ public:
         return self;
     }
 
+    __host__ __device__ VecType& operator/=(const VecType& other) {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] /= (other.e[i] + FMIN);
+        return self;
+    }
+
     __host__ __device__ VecType& operator/=(float t) {
-        return *this *= 1.0f / (t + FMAX);
+        return *this *= 1.0f / (t + FMIN);
     }
 
     __host__ __device__ float length() const {

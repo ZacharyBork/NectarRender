@@ -52,11 +52,11 @@ public:
         Color&     attenuation,
         Generator& gen
     ) const override { 
-        Vector3 dir = rec.normal + random_unit_vector(gen);
-        dir = dir.near_zero() ? rec.normal : dir;
+        Vector3 dir = rec.n + random_unit_vector(gen);
+        dir = dir.near_zero() ? rec.n : dir;
         
-        ray = Ray(rec.position, dir, ray.time());
-        attenuation *= texture->sample(rec.uv, rec.position);
+        ray = Ray(rec.p, dir, ray.time());
+        attenuation *= texture->sample(rec.uv, rec.p);
         return true;
     }
 
@@ -85,11 +85,11 @@ public:
         Color&     attenuation,
         Generator& gen
     ) const override { 
-        Vector3 reflected = reflect(ray.direction(), rec.normal);
+        Vector3 reflected = reflect(ray.direction(), rec.n);
         reflected = normalize(reflected) + (fuzz * random_unit_vector(gen));
-        ray = Ray(rec.position, reflected, ray.time());
+        ray = Ray(rec.p, reflected, ray.time());
         attenuation *= albedo;
-        return (dot(ray.direction(), rec.normal) > 0);
+        return (dot(ray.direction(), rec.n) > 0);
     }
 
 private:
@@ -119,17 +119,17 @@ public:
         float ri = rec.front_face ? (1.0f / ior) : ior;
 
         Vector3 unit_direction = normalize(ray.direction());
-        float cos_theta = fminf(dot(-unit_direction, rec.normal), 1.0f);
+        float cos_theta = fminf(dot(-unit_direction, rec.n), 1.0f);
         float sin_theta = sqrtf(1.0f - cos_theta * cos_theta);
 
         bool cannot_refract = ri * sin_theta > 1.0;
         Vector3 direction;
 
         if (cannot_refract || reflectance(cos_theta, ri) > gen.uniform())
-            direction = reflect(unit_direction, rec.normal);
-        else direction = refract(unit_direction, rec.normal, ri);
+            direction = reflect(unit_direction, rec.n);
+        else direction = refract(unit_direction, rec.n, ri);
 
-        ray = Ray(rec.position, direction, ray.time());
+        ray = Ray(rec.p, direction, ray.time());
         attenuation *= Color(1.0f, 1.0f, 1.0f);
         return true;
     }

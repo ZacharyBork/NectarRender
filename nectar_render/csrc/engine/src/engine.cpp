@@ -35,6 +35,7 @@ void RenderEngine::render(Scene& scene) {
         trace(scene, *cam, rl, max_depth, random_seed, frame_idx);
         render_layers->combine(rl);
 
+        cuda_synchronize();
         on_frame_finished(frame_idx);
     }
 

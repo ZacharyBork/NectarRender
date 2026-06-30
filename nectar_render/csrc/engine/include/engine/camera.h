@@ -79,7 +79,7 @@ public:
         }
 
         float time = shutter_time > 0.0f ? gen.uniform() * shutter_time : 0.0f;
-        return Ray(origin, focus_point - origin, time);
+        return Ray(origin, normalize(focus_point - origin), time);
     }
 
 private:

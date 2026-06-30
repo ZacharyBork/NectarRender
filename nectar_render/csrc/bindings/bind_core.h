@@ -24,9 +24,11 @@ void register_core(py::module_& m) {
 
     /* VECTORS */
 
-    auto m_vector = m_core.def_submodule("vector", "Vector module.");
-    
-    py::class_<Vector2>(m_vector, "Vector2")
+    auto m_vec = m_core.def_submodule("vector", "Vector module.");
+
+    py::class_<Vector<Vector2>>(m_vec, "VectorBase2");
+    py::class_<Vec2Core<Vector2>, Vector<Vector2>>(m_vec, "Vec2Core2");
+    py::class_<Vector2, Vec2Core<Vector2>>(m_vec, "Vector2")
         .def(py::init([](float e) {
             return Vector2(e);
         }),
@@ -43,7 +45,9 @@ void register_core(py::module_& m) {
         .def("u", &Vector2::u)
         .def("v", &Vector2::v);
 
-    py::class_<Vector3>(m_vector, "Vector3")
+    py::class_<Vector<Vector3>>(m_vec, "VectorBase3");
+    py::class_<Vec3Core<Vector3>, Vector<Vector3>>(m_vec, "Vec3Core3");
+    py::class_<Vector3, Vec3Core<Vector3>>(m_vec, "Vector3")
         .def(py::init([](float e) {
             return Vector3(e);
         }),
@@ -63,7 +67,9 @@ void register_core(py::module_& m) {
         .def("v", &Vector3::v)
         .def("w", &Vector3::w);
 
-    py::class_<Color>(m_vector, "Color")
+    py::class_<Vector<Color>>(m_vec, "VectorBaseColor");
+    py::class_<Vec3Core<Color>, Vector<Color>>(m_vec, "Vec3CoreColor");
+    py::class_<Color, Vec3Core<Color>, Vector<Color>>(m_vec, "Color")
         .def(py::init([](float r, float g, float b) {
             return Color(r, g, b);
         }),
@@ -83,9 +89,19 @@ void register_core(py::module_& m) {
         .def("yellow", &Color::yellow)
         .def("teal",   &Color::teal);
 
-    auto m_matrix = m_core.def_submodule("matrix", "Matrix module.");
+    m_vec.def("dot",     &dot,     "");
+    m_vec.def("cross",   &cross,   "");
+    m_vec.def("reflect", &reflect, "");
+    m_vec.def("refract", &refract, "");
 
-    py::class_<Matrix3>(m_matrix, "Matrix3")
+    m_vec.def("random_unit_vector",   &random_unit_vector,   "");
+    m_vec.def("random_on_hemisphere", &random_on_hemisphere, "");
+
+    /* MATRICES */
+
+    auto m_mat = m_core.def_submodule("matrix", "Matrix module.");
+
+    py::class_<Matrix3>(m_mat, "Matrix3")
         .def(py::init<>())
         .def("transpose", &Matrix3::transpose)
         .def("T",         &Matrix3::T)
@@ -93,7 +109,7 @@ void register_core(py::module_& m) {
         .def("up",        &Matrix3::up)
         .def("forward",   &Matrix3::forward);
 
-    m_matrix.def("rotation_from_euler", &rotation_from_euler, "");
+    m_mat.def("rotation_from_euler", &rotation_from_euler, "");
 
 }
 

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <optional>
+#include <cuda_runtime.h>
 
 #include "engine/include/engine/light.h"
 #include "hittable/include/hittable/hittable.h"
@@ -18,23 +19,23 @@ public:
     ) : skylight(skylight) { build(hittables); }
 
     __host__ void build(std::vector<Hittable*>& hittables) {
-        int n = hittables.size();
+        n_objects = hittables.size();
 
         BVH bvh;
         bvh.build(hittables);
 
-        std::vector<Hittable*> device_obj_ptrs(n);
-        for (int i = 0; i < n; i++)
+        std::vector<Hittable*> device_obj_ptrs(n_objects);
+        for (int i = 0; i < n_objects; i++)
             device_obj_ptrs[i] = hittables[i]->build();
 
-        cudaMalloc(&objects, n * sizeof(Hittable*));
+        cudaMalloc(&objects, n_objects * sizeof(Hittable*));
         cudaMemcpy(
             objects, device_obj_ptrs.data(),
-            n * sizeof(Hittable*), 
+            n_objects * sizeof(Hittable*), 
             cudaMemcpyHostToDevice
         );
 
-        int n_nodes = bvh.nodes.size();
+        n_nodes = bvh.nodes.size();
         cudaMalloc(&bvh_nodes, n_nodes * sizeof(BVHNode));
         cudaMemcpy(
             bvh_nodes, bvh.nodes.data(),
@@ -61,10 +62,17 @@ public:
             if (!node.bbox.hit(ray, ray_t)) continue;
 
             if (node.object != -1) {
-                if (objects[node.object]->hit(ray, ray_t, rec)) {
-                    hit_anything = true;
-                    ray_t.max = rec.t;
+                Hittable* current = objects[node.object];
+                HitTestResult result = current->hit_test(ray);
+
+                if (result.hit) {
+                    if (ray_t.surrounds(result.rec.t)) {
+                        rec = result.rec;
+                        hit_anything = true;
+                        ray_t.max = result.rec.t;
+                    }
                 }
+
             } else {
                 stack[stack_ptr++] = node.left;
                 stack[stack_ptr++] = node.right;
@@ -78,6 +86,8 @@ private:
     static constexpr int stack_size = 64;
     BVHNode*   bvh_nodes;
     Hittable** objects;
+    uint32_t n_objects;
+    uint32_t n_nodes;
 
 };
 
