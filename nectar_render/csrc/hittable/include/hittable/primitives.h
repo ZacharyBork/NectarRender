@@ -5,6 +5,14 @@
 class Quad : public Hittable {
 public:
 
+    __host__ Quad() : Hittable(Vector3(0.0f), Vector3(0.0f), Vector3(1.0f)) { }
+
+    __host__ Quad(
+        const Vector3& position,
+        const Vector3& rotation,
+        const Vector3& scale
+    ) : Hittable(position, rotation, scale) { }
+
     template <typename M>
     __host__ Quad(const M& material) 
         : Quad(Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), material) { }
@@ -15,6 +23,13 @@ public:
         const Vector3& rotation,
         const Vector3& scale, 
         const M&       material
+    ) : Hittable(position, rotation, scale, material) { }
+
+    __host__ Quad(
+        const Vector3& position,
+        const Vector3& rotation,
+        const Vector3& scale, 
+        Material*      material
     ) : Hittable(position, rotation, scale, material) { }
 
     __device__ Quad(
@@ -35,12 +50,7 @@ public:
     }
 
     __host__ const AABB build_bbox() const override {
-        Vector3 bound = 0.5f * xform.scale();
-        AABB box(xform.p() - bound, xform.p() + bound);
-        if (box.x.max - box.x.min < EPS) box.x = box.x.expand(EPS);
-        if (box.y.max - box.y.min < EPS) box.y = box.y.expand(EPS);
-        if (box.z.max - box.z.min < EPS) box.z = box.z.expand(EPS);
-        return box;
+        return AABB::oriented(Vector3(0.5f), xform).buffer();
     }
 
     __device__ bool hit(

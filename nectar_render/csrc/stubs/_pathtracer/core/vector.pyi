@@ -3,8 +3,8 @@ Vector module.
 """
 from __future__ import annotations
 import typing
-__all__: list[str] = ['Color', 'Vector2', 'Vector3']
-class Color:
+__all__: list[str] = ['Color', 'Vec2Core2', 'Vec3Core3', 'Vec3CoreColor', 'Vector2', 'Vector3', 'VectorBase2', 'VectorBase3', 'VectorBaseColor', 'cross', 'dot', 'random_on_hemisphere', 'random_unit_vector', 'reflect', 'refract']
+class Color(Vec3CoreColor, VectorBaseColor):
     @staticmethod
     def black() -> Color:
         ...
@@ -37,7 +37,13 @@ class Color:
         ...
     def r(self) -> float:
         ...
-class Vector2:
+class Vec2Core2(VectorBase2):
+    pass
+class Vec3Core3(VectorBase3):
+    pass
+class Vec3CoreColor(VectorBaseColor):
+    pass
+class Vector2(Vec2Core2):
     @typing.overload
     def __init__(self, e: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
         ...
@@ -52,7 +58,7 @@ class Vector2:
         ...
     def y(self) -> float:
         ...
-class Vector3:
+class Vector3(Vec3Core3):
     @typing.overload
     def __init__(self, e: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
         ...
@@ -71,3 +77,21 @@ class Vector3:
         ...
     def z(self) -> float:
         ...
+class VectorBase2:
+    pass
+class VectorBase3:
+    pass
+class VectorBaseColor:
+    pass
+def cross(arg0: Vector3, arg1: Vector3) -> Vector3:
+    ...
+def dot(arg0: Vector3, arg1: Vector3) -> float:
+    ...
+def random_on_hemisphere(arg0: Vector3, arg1: Generator) -> Vector3:
+    ...
+def random_unit_vector(arg0: Generator) -> Vector3:
+    ...
+def reflect(arg0: Vector3, arg1: Vector3) -> Vector3:
+    ...
+def refract(arg0: Vector3, arg1: Vector3, arg2: typing.SupportsFloat | typing.SupportsIndex) -> Vector3:
+    ...

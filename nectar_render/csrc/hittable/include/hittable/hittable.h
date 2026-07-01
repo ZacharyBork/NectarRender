@@ -29,6 +29,15 @@ public:
         material(Lambertian(Color::purple()).build())
     { }
 
+    __host__ Hittable(
+        const Vector3& position,
+        const Vector3& rotation,
+        const Vector3& scale, 
+        Material*      mat
+    ) : xform(Transform(position, rotation, scale)), 
+        material(mat) 
+    { }
+
     template <typename M>
     __host__ Hittable(
         const Vector3& position, 
@@ -72,14 +81,17 @@ public:
         return build_bbox(); 
     }
 
-    __device__ const HitTestResult hit_test(const Ray& ray) const {
+    __device__ const bool hit_test(
+        const Ray& ray,
+        HitRecord& rec
+    ) const {
+        HitRecord tmp_rec;
         Ray r = ray.to_object_space(xform);
 
-        HitRecord tmp_rec;
-
-        bool hit_obj = hit(r, Interval(EPS, FMAX), tmp_rec);
-        tmp_rec.to_world_space(xform, r, ray);
-        return HitTestResult{ hit_obj, tmp_rec };
+        bool hit_obj = hit(r, Interval(EPS, FMAX), rec);
+        rec.to_world_space(xform, r, ray);
+        
+        return hit_obj;
     }
 
     __device__ virtual bool hit(

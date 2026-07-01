@@ -28,6 +28,55 @@ public:
         z = Interval(box0.z, box1.z);
     }
 
+    __host__ __device__ static AABB simple(
+        const Vector3& half_size,
+        const Transform& xform
+    ) {
+        Vector3 bound = half_size * xform.scale();
+        return AABB(xform.p() - bound, xform.p() + bound);
+    }
+
+    __host__ __device__ static AABB oriented(
+        const Vector3& half_size,
+        const Transform& xform
+    ) {
+        Vector3 mn( FMAX,  FMAX,  FMAX);
+        Vector3 mx(-FMAX, -FMAX, -FMAX);
+
+        for (int sx = -1; sx <= 1; sx += 2)
+        for (int sy = -1; sy <= 1; sy += 2)
+        for (int sz = -1; sz <= 1; sz += 2) {
+            Vector3 local_corner(
+                sx * half_size.x(), 
+                sy * half_size.y(), 
+                sz * half_size.z()
+            );
+            Vector3 world_corner = xform.R() 
+                                 * (local_corner * xform.scale()) 
+                                 + xform.p();
+
+            mn = Vector3(
+                fminf(mn.x(), world_corner.x()),
+                fminf(mn.y(), world_corner.y()),
+                fminf(mn.z(), world_corner.z())
+            );
+            mx = Vector3(
+                fmaxf(mx.x(), world_corner.x()),
+                fmaxf(mx.y(), world_corner.y()),
+                fmaxf(mx.z(), world_corner.z())
+            );
+        }
+
+        return AABB(mn, mx);
+    }
+
+    __host__ __device__ AABB& buffer(const float epsilon = EPS) {
+        if (x.max - x.min < epsilon) x = x.expand(epsilon);
+        if (y.max - y.min < epsilon) y = y.expand(epsilon);
+        if (z.max - z.min < epsilon) z = z.expand(epsilon);
+        return *this;
+    }
+
     __host__ __device__ const Interval& axis_interval(int n) const {
         if (n == 1) return y;
         if (n == 2) return z;
@@ -62,5 +111,6 @@ public:
     __host__ AABB* build() const {
         return device_build<AABB>(x, y, z);
     }
+
 };
 

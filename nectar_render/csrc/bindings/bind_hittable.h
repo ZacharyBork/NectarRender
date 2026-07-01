@@ -45,5 +45,21 @@ void register_hittable(py::module_& m) {
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 
+    py::class_<Cube, Hittable>(m_hittable, "Cube")
+        .def(py::init([](
+            const Vector3 position, 
+            const Vector3 rotation, 
+            const Vector3 scale, 
+            const Material& material
+        ) {
+            return Cube(position, rotation, scale, material);
+        }),
+            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
+            py::arg("material") = Lambertian(Color(0.8f, 0.8f, 0.8f))
+        )
+        .def("set_motion_vector", &Hittable::set_motion_vector);
+
 }
 

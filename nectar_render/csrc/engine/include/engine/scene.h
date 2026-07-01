@@ -62,14 +62,13 @@ public:
             if (!node.bbox.hit(ray, ray_t)) continue;
 
             if (node.object != -1) {
-                Hittable* current = objects[node.object];
-                HitTestResult result = current->hit_test(ray);
-
-                if (result.hit) {
-                    if (ray_t.surrounds(result.rec.t)) {
-                        rec = result.rec;
+                HitRecord tmp_rec;
+                
+                if (objects[node.object]->hit_test(ray, tmp_rec)) {
+                    if (ray_t.surrounds(tmp_rec.t)) {
+                        rec = tmp_rec;
                         hit_anything = true;
-                        ray_t.max = result.rec.t;
+                        ray_t.max = tmp_rec.t;
                     }
                 }
 

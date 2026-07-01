@@ -115,7 +115,7 @@ private:
                 * (uvw.y() / resolution.y());
         float w = -focal_length;
 
-        Vector3 center = rotation.transpose() * Vector3(u, v, w);
+        Vector3 center = rotation * Vector3(u, v, w);
         float focus_scale = focus_distance / focal_length;
         return position + center * focus_scale;
     }

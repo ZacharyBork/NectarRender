@@ -5,9 +5,10 @@
 
 class Ray {
 public:
-    __host__ __device__ Ray() { 
-        Ray(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 1.0f), 0.0f);
-    }
+
+    __host__ __device__ Ray() 
+        : Ray(Vector3(0.0f), Vector3(0.0f, 0.0f, 1.0f), 0.0f)
+    { }    
 
     __host__ __device__ Ray(
         const Vector3& origin, const Vector3& direction, float time = 0.0f

@@ -24,8 +24,7 @@ public:
     }
 
     __host__ const AABB build_bbox() const override {
-        Vector3 rad = radius * xform.scale();
-        return AABB(xform.position() - rad, xform.position() + rad);
+        return AABB::simple(Vector3(radius), xform);
     }
 
     __device__ const Vector2 get_uvs(const Vector3& p) const {
@@ -73,66 +72,119 @@ private:
     float radius;
 };
 
-// class Cube : public Hittable {
-// public:
+class Cube : public Hittable {
+public:
     
-//     template <typename M>
-//     __host__ Cube(const M& material) 
-//         : Cube(Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), material) { }
+    template <typename M>
+    __host__ Cube(const M& material) 
+        : Cube(Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), material) { }
 
-//     template <typename M>
-//     __host__ Cube(
-//         const Vector3& position,
-//         const Vector3& rotation,
-//         const Vector3& scale, 
-//         const M&       material
-//     ) : Hittable(position, rotation, scale, material) { 
-//         Matrix3 R = xform.R().T();
-//         u = (R * Vector3(1.0f, 0.0f,  0.0f)) * xform.scale().x();
-//         v = (R * Vector3(0.0f, 0.0f, -1.0f)) * xform.scale().z();
-//         xform.set_position(xform.p() - (0.5f * u + 0.5f * v));
-//     }
+    template <typename M>
+    __host__ Cube(
+        const Vector3& position,
+        const Vector3& rotation,
+        const Vector3& scale, 
+        const M&       material
+    ) : Hittable(position, rotation, scale, material) { }
 
-//     __device__ Cube(
-//         Transform& xform, 
-//         Transform& delta, 
-//         Material*  mat
-//     ) : Hittable(xform, delta, mat) { init(); }
+    __device__ Cube(
+        Transform& xform, 
+        Transform& delta, 
+        Material*  mat,
+        Hittable** faces
+    ) : Hittable(xform, delta, mat) { 
+        for (int i = 0; i < 6; i++) prims[i] = faces[i];
+    }
 
-//     __host__ Hittable* build() const override {
-//         return device_build<Cube>(xform, delta, material);
-//     }
+    __host__ Hittable* build() const override {
+        Hittable* d_faces[6];
 
-//     __host__ const AABB build_bbox() const override {
-//         AABB box(
-//             Vector3(-0.5f, -0.5f, -0.5f),
-//             Vector3( 0.5f,  0.5f,  0.5f)
-//         );
-//         return box;
-//     }
+        d_faces[0] = Quad( // Front
+            Vector3(0.0f, 0.0f, 0.5f), 
+            Vector3(90.0f, 0.0f, 0.0f), 
+            Vector3(1.0f),
+            material
+        ).build();
+        d_faces[1] = Quad( // Back
+            Vector3(0.0f, 0.0f, -0.5f), 
+            Vector3(-90.0f, 0.0f, 0.0f), 
+            Vector3(1.0f),
+            material
+        ).build();
+        d_faces[2] = Quad( // Right
+            Vector3(0.5f, 0.0f, 0.0f), 
+            Vector3(0.0f, 0.0f, -90.0f), 
+            Vector3(1.0f),
+            material
+        ).build();
+        d_faces[3] = Quad( // Left
+            Vector3(-0.5f, 0.0f, 0.0f), 
+            Vector3(0.0f, 0.0f, 90.0f),
+            Vector3(1.0f),
+            material
+        ).build();
+        d_faces[4] = Quad( // Top
+            Vector3(0.0f, 0.5f, 0.0f), 
+            Vector3(0.0f, 0.0f, 0.0f), 
+            Vector3(1.0f),
+            material
+        ).build();
+        d_faces[5] = Quad( // Bottom
+            Vector3(0.0f, -0.5f, 0.0f), 
+            Vector3(180.0f, 0.0f, 0.0f), 
+            Vector3(1.0f),
+            material
+        ).build();
 
-//     __device__ bool hit(
-//         const Ray& ray, 
-//         Interval   ray_t,
-//         HitRecord& rec
-//     ) const override {
-//         float denom = dot(normal, ray.direction());
-//         if (fabs(denom) < FMIN) return false;
+        Hittable** d_face_ptrs;
+        cudaMalloc(&d_face_ptrs, 6 * sizeof(Hittable*));
+        cudaMemcpy(
+            d_face_ptrs, d_faces, 
+            6 * sizeof(Hittable*), 
+            cudaMemcpyHostToDevice
+        );
 
-//         float t = (D - dot(normal, ray.origin())) / denom;
-//         if (!ray_t.contains(t)) return false;
+        return device_build<Cube>(xform, delta, material, d_face_ptrs);
+    }
 
-//         rec.t        = t;
-//         rec.position = ray.at(t);
-//         rec.material = material;
-//         rec.set_face_normal(ray, normal);
+    __host__ const AABB build_bbox() const override {
+        return AABB::oriented(Vector3(0.5f), xform).buffer();
+    }
 
-//         return is_interior(rec);
-//     }
+    __device__ bool hit(
+        const Ray& ray, 
+        Interval   ray_t,
+        HitRecord& rec
+    ) const override { 
 
-// private:
+        bool hit_anything = false;
+        int  hit_face = -1;
+        Ray  hit_face_ray;
 
-//     Quad* prims[6];
+        for (int i = 0; i < 6; i++) {
+            Hittable* current = prims[i];
+            Ray r = ray.to_object_space(current->xform);
 
-// };
+            HitRecord face_rec;
+            if (current->hit(r, ray_t, face_rec)) {
+                hit_anything = true;
+                hit_face     = i;
+                hit_face_ray = r;
+                rec          = face_rec;
+                ray_t.max    = face_rec.t;
+            }
+        }
+
+        if (hit_anything) {
+            rec.to_world_space(prims[hit_face]->xform, hit_face_ray, ray);
+        }
+
+        return hit_anything;
+    }
+
+
+private:
+
+    Hittable* prims[6];
+};
 

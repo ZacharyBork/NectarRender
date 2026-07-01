@@ -4,6 +4,7 @@ root = _pathtracer.hittable
 class Hittable(root.Hittable):
     SPHERE = root.Sphere
     QUAD   = root.Quad
+    CUBE   = root.Cube
 
 
 
