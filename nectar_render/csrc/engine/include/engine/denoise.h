@@ -6,7 +6,7 @@
 void tv_denoise(
     DataObject& data,    
     const float lambda,
-    const unsigned int iterations
+    const uint32_t iterations
 );
 
 class Denoiser { 
@@ -22,7 +22,7 @@ public:
 class TVDenoiser : public Denoiser {
 public:
 
-    __host__ TVDenoiser(const float weight, const unsigned int iterations)
+    __host__ TVDenoiser(const float weight, const uint32_t iterations)
      : weight(weight), iterations(iterations) { }
 
     __host__ void run(DataObject& data) const override {
@@ -32,7 +32,7 @@ public:
 private:
 
     float weight;
-    unsigned int iterations;
+    uint32_t iterations;
 };
 
 

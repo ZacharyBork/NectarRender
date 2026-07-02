@@ -3,7 +3,10 @@ from pathlib import Path
 from typing  import Self
 
 from nectar_render.python import (
-    RenderEngine, Scene, Camera, Hittable, Vector3, Color, Material
+    RenderEngine, Scene, Camera, Hittable, Vector3, Color, Material,
+    
+    
+    Volumetric
 )
 
 class CornellBox(RenderEngine):
@@ -54,17 +57,30 @@ class CornellBox(RenderEngine):
                 Material.LAMBERTIAN(Color.white())
             ),
             
-            Hittable.CUBE(
-                Vector3(0.2, -0.35, 0.2), 
-                Vector3(0.0, 35.0, 0.0),
-                Vector3(0.3),
-                Material.LAMBERTIAN(Color.white())
-            ),
-            Hittable.CUBE(
-                Vector3(-0.2, -0.2, -0.1), 
-                Vector3(0.0, 35.0, 0.0),
-                Vector3(0.3, 0.6, 0.3),
-                Material.LAMBERTIAN(Color.white())
+            # Hittable.CUBE(
+            #     Vector3(0.2, -0.35, 0.2), 
+            #     Vector3(0.0, 35.0, 0.0),
+            #     Vector3(0.3),
+            #     Material.LAMBERTIAN(Color.white())
+            # ),
+            # Hittable.CUBE(
+            #     Vector3(-0.2, -0.2, -0.1), 
+            #     Vector3(0.0, 35.0, 0.0),
+            #     Vector3(0.3, 0.6, 0.3),
+            #     Material.LAMBERTIAN(Color.white())
+            # ),
+            
+            
+            
+            Volumetric.CONSTANT(
+                Hittable.CUBE(
+                    Vector3(-0.2, -0.2, -0.1), 
+                    Vector3(0.0, 35.0, 0.0),
+                    Vector3(0.3, 0.6, 0.3),
+                    Material.LAMBERTIAN(Color.white())
+                ),
+                10.0, 
+                Color.white()
             ),
         ]
     )

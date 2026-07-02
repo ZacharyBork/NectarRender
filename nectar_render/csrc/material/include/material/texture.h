@@ -148,7 +148,7 @@ public:
     __host__ NoiseTexture(
         float scale, 
         int iterations = 7, 
-        unsigned int seed = 42u
+        uint32_t seed = 42u
     ): perlin(Perlin(seed).build()), scale(scale), iters(iterations) { }
 
     __device__ NoiseTexture(Perlin* p, float scale, int iterations) 

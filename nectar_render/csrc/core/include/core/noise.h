@@ -7,7 +7,7 @@ class Perlin {
 public:
 
     __host__ Perlin() : Perlin(42u) { }
-    __host__ Perlin(unsigned int seed) : seed_(seed) { }
+    __host__ Perlin(uint32_t seed) : seed_(seed) { }
 
     __device__ Perlin(Vector3* rv, int* px, int* py, int* pz) 
         : randvec(rv), perm_x(px), perm_y(py), perm_z(pz) { }
@@ -58,14 +58,14 @@ public:
 
 private:
 
-    unsigned int seed_ = 0u;
+    uint32_t seed_ = 0u;
     static const int point_count = 256;
     Vector3* randvec;
     int* perm_x;
     int* perm_y;
     int* perm_z;
 
-    __host__ unsigned int current_seed() { 
+    __host__ uint32_t current_seed() { 
         seed_++;
         return seed_;
     }

@@ -71,7 +71,7 @@ void run_accumulate_samples(
 
 __global__ void norm_by_samples_kernel(
     DataView data, 
-    unsigned int samples
+    uint32_t samples
 ) {
     ColorIndex c_idx = ColorIndex::from_process(data.C, data.H, data.W);
     float* data_ptr = data.ptr;
@@ -81,7 +81,7 @@ __global__ void norm_by_samples_kernel(
 
 void run_norm_by_samples(
     DataView   data, 
-    unsigned int samples
+    uint32_t samples
 ) {
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);

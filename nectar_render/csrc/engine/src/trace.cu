@@ -26,7 +26,7 @@ __device__ bool trace_ray(
 __global__ void trace_kernel(TraceConfig cfg) {
     ProcessIndex p_idx = get_process_index();
     if (p_idx.x >= cfg.W || p_idx.y >= cfg.H) return;
-    unsigned int pixel_idx = p_idx.y * cfg.W + p_idx.x;
+    uint32_t pixel_idx = p_idx.y * cfg.W + p_idx.x;
 
     Generator gen(cfg.seed, pixel_idx + cfg.frame * (cfg.W * cfg.H));
     Ray ray = cfg.camera->get_ray(p_idx.x, p_idx.y, gen);

@@ -179,23 +179,30 @@ private:
 // EMISSIVE
 // ############################################################################
 
-class IsoTropic : public Material {
+class Isotropic : public Material {
 public:
 
-    __host__ IsoTropic(const Color& albedo) 
+    __host__ Isotropic(const Color& albedo) 
         : texture(ConstantTexture(albedo).build()) {}
 
     template<typename T>
-    __host__ IsoTropic(const T& texture) : texture(texture.build()) {}
+    __host__ Isotropic(const T& texture) : texture(texture.build()) {}
 
-    __device__ IsoTropic(Texture* texture) : texture(texture) { }
+    __device__ Isotropic(Texture* texture) : texture(texture) { }
 
     __host__ Material* build() const override {
-        return device_build<IsoTropic>(texture);
+        return device_build<Isotropic>(texture);
     }
 
-    __device__ Color emitted(Vector2 uv, const Vector3& p) const override {
-        return texture->sample(uv, p);
+    __device__ bool scatter(
+        const HitRecord& rec,
+        Ray&       ray,
+        Color&     attenuation,
+        Generator& gen
+    ) const override { 
+        ray = Ray(rec.p, random_unit_vector(gen), ray.time());
+        attenuation *= texture->sample(rec.uv, rec.p);
+        return true;
     }
 
 private:

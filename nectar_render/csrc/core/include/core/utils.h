@@ -37,9 +37,9 @@ struct ColorIndex {
         : r(r), g(g), b(b) { }
 
     __device__ static ColorIndex from_process(
-        unsigned int C,
-        unsigned int H,
-        unsigned int W
+        uint32_t C,
+        uint32_t H,
+        uint32_t W
     ) {
         ProcessIndex p_idx = get_process_index();
         return ColorIndex(
@@ -88,5 +88,11 @@ __host__ __device__ inline Vector3 rad2deg(const Vector3& radians) {
         rad2deg(radians.y()), 
         rad2deg(radians.z())
     );
+}
+
+__host__ __device__ inline uint32_t float_as_uint(float f) {
+    uint32_t u;
+    memcpy(&u, &f, sizeof(u));
+    return u;
 }
 

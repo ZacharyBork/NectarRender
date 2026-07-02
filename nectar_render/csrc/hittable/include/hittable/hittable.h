@@ -109,6 +109,7 @@ public:
         Ray motion(xform.p(), delta.p());
         return motion.at(time);
     }
+
 };
 
 

@@ -63,7 +63,7 @@ void register_material(py::module_& m) {
         .def(py::init<>()) 
         .def(py::init([](
             float scale,
-            unsigned int seed
+            uint32_t seed
         ) {
             return NoiseTexture(scale, seed);
         }),
@@ -108,6 +108,16 @@ void register_material(py::module_& m) {
         )
         .def(py::init([](const Texture& texture) {
             return Emissive(texture);
+        }));
+
+    py::class_<Isotropic, Material>(m_material, "Isotropic")
+        .def(py::init([](const Color& albedo) {
+            return Isotropic(albedo);
+        }),
+            py::arg("albedo") = Color(0.8f, 0.8f, 0.8f)
+        )
+        .def(py::init([](const Texture& texture) {
+            return Isotropic(texture);
         }));
 
 

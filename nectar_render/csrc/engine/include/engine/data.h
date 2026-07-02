@@ -143,7 +143,7 @@ public:
         uint32_t current_sample
     );
 
-    __host__ void normalize_by_samples(unsigned int samples);
+    __host__ void normalize_by_samples(uint32_t samples);
     __host__ void linear_to_gamma();
     __host__ void tonemap(float exposure);
 
@@ -193,7 +193,7 @@ private:
 void run_combine_data(DataView a, DataView b);
 void run_accumulate_samples(DataView a, DataView b,uint32_t current_sample);
 
-void run_norm_by_samples(DataView data, unsigned int samples);
+void run_norm_by_samples(DataView data, uint32_t samples);
 void run_linear_to_gamma(DataView data);
 void run_tonemap(DataView data, float exposure);
 
@@ -211,7 +211,7 @@ inline void DataObject::accumulate_samples(
     }
 }
 
-inline void DataObject::normalize_by_samples(unsigned int samples) {
+inline void DataObject::normalize_by_samples(uint32_t samples) {
     if (this->enabled) run_norm_by_samples(this->view(), samples);
 }
 
@@ -345,7 +345,7 @@ public:
                 cudaMemset(obj->data_ptr(), 0, obj->n_bytes());
     }
 
-    __host__ void normalize_by_samples(unsigned int total_samples) {
+    __host__ void normalize_by_samples(uint32_t total_samples) {
         for (DataObject* obj : get_data())
             if (obj->is_enabled()) obj->normalize_by_samples(total_samples);
     }

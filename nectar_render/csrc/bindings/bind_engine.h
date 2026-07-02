@@ -262,7 +262,7 @@ void register_engine(py::module_& m) {
     py::class_<TVDenoiser, Denoiser>(m_denoise, "TVDenoiser")
         .def(py::init([](
             const float weight, 
-            const unsigned int iterations
+            const uint32_t iterations
         ) {
             return TVDenoiser(weight, iterations);
         }),

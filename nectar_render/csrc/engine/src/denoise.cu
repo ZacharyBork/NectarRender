@@ -69,7 +69,7 @@ __global__ void tvd_update(
 void tv_denoise(
     DataObject& data,    
     const float lambda,
-    const unsigned int iterations
+    const uint32_t iterations
 ) {
     const float dt  = 0.1f;
 

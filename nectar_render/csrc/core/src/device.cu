@@ -29,12 +29,17 @@ template Cube*   device_build<Cube>(
     Transform, Transform, Material*, Hittable**
 );
 
+template ConstantMedium* device_build<ConstantMedium>(
+    Transform, Transform, Material*, Hittable*, float
+);
+
 // MATERIALS ================================================================== 
 
 template Lambertian* device_build<Lambertian>(Texture*);
 template Metal*      device_build<Metal>(Color, float);
 template Dielectric* device_build<Dielectric>(float);
 template Emissive*   device_build<Emissive>(Texture*);
+template Isotropic*  device_build<Isotropic>(Texture*);
 
 // TEXTURES ===================================================================
 
