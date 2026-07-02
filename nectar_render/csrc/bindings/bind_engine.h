@@ -11,6 +11,7 @@
 #include "engine/include/engine/denoise.h"
 
 namespace py = pybind11;
+using return_policy = py::return_value_policy;
 
 void register_engine(py::module_& m) {
     
@@ -139,6 +140,16 @@ void register_engine(py::module_& m) {
         .def_readonly("H",      &DataObject::H)
         .def_readonly("W",      &DataObject::W);
 
+    py::enum_<LayerType>(m_engine, "LayerType")
+        .value("BEAUTY",    LayerType::BEAUTY)
+        .value("DIFFUSE",   LayerType::DIFFUSE)
+        .value("SPECULAR",  LayerType::SPECULAR)
+        .value("NORMAL",    LayerType::NORMAL)
+        .value("SHADOW",    LayerType::SHADOW)
+        .value("DEPTH",     LayerType::DEPTH)
+        .value("EMISSION",  LayerType::EMISSION)
+        .value("OBJECT_ID", LayerType::OBJECT_ID);
+
     py::class_<RenderLayersConfig>(m_data, "RenderLayersConfig")
         .def(py::init<>()) 
         .def(py::init([](
@@ -171,14 +182,14 @@ void register_engine(py::module_& m) {
             py::arg("emission")  = false,
             py::arg("object_id") = false
         )
-        .def_readwrite("beauty",    &RenderLayersConfig::beauty)
-        .def_readwrite("diffuse",   &RenderLayersConfig::diffuse)
-        .def_readwrite("specular",  &RenderLayersConfig::specular)
-        .def_readwrite("normal",    &RenderLayersConfig::normal)
-        .def_readwrite("shadow",    &RenderLayersConfig::shadow)
-        .def_readwrite("depth",     &RenderLayersConfig::depth)
-        .def_readwrite("emission",  &RenderLayersConfig::emission)
-        .def_readwrite("object_id", &RenderLayersConfig::object_id);
+        .def_readwrite("beauty",     &RenderLayersConfig::beauty)
+        .def_readwrite("diffuse",    &RenderLayersConfig::diffuse)
+        .def_readwrite("specular",   &RenderLayersConfig::specular)
+        .def_readwrite("normal",     &RenderLayersConfig::normal)
+        .def_readwrite("shadow",     &RenderLayersConfig::shadow)
+        .def_readwrite("depth",      &RenderLayersConfig::depth)
+        .def_readwrite("emission",   &RenderLayersConfig::emission)
+        .def_readwrite("object_id",  &RenderLayersConfig::object_id);
 
     py::class_<RenderLayers>(m_data, "RenderLayers")
         .def(py::init([](
@@ -192,16 +203,19 @@ void register_engine(py::module_& m) {
             py::arg("w")   = false,
             py::arg("cfg") = false
         )
-        .def_readonly("H",         &RenderLayers::H)
-        .def_readonly("W",         &RenderLayers::W)
-        .def_readonly("beauty",    &RenderLayers::beauty)
-        .def_readonly("diffuse",   &RenderLayers::diffuse)
-        .def_readonly("specular",  &RenderLayers::specular)
-        .def_readonly("normal",    &RenderLayers::normal)
-        .def_readonly("shadow",    &RenderLayers::shadow)
-        .def_readonly("depth",     &RenderLayers::depth)
-        .def_readonly("emission",  &RenderLayers::emission)
-        .def_readonly("object_id", &RenderLayers::object_id);
+        .def("get_layer",            &RenderLayers::get_layer)
+        .def("pin_buffer",           &RenderLayers::pin_buffer)
+        .def("normalize_by_samples", &RenderLayers::normalize_by_samples)
+        .def_readonly("H",           &RenderLayers::H)
+        .def_readonly("W",           &RenderLayers::W)
+        .def_readonly("beauty",      &RenderLayers::beauty)
+        .def_readonly("diffuse",     &RenderLayers::diffuse)
+        .def_readonly("specular",    &RenderLayers::specular)
+        .def_readonly("normal",      &RenderLayers::normal)
+        .def_readonly("shadow",      &RenderLayers::shadow)
+        .def_readonly("depth",       &RenderLayers::depth)
+        .def_readonly("emission",    &RenderLayers::emission)
+        .def_readonly("object_id",   &RenderLayers::object_id);
 
 // ############################################################################
 // LIGHTS
@@ -268,26 +282,45 @@ void register_engine(py::module_& m) {
 // RENDER ENGINE CLASS
 // ############################################################################
 
+    py::enum_<SampleMode>(m_engine, "SampleMode")
+        .value("ACCUMULATE", SampleMode::ACCUMULATE)
+        .value("COMBINE",    SampleMode::COMBINE);
+
     py::class_<RenderEngine>(m_engine, "RenderEngine")
-        .def(py::init<>())
-        .def("initialize", [](
-            RenderEngine& self,
-            Camera        camera,
-            unsigned int  samples   = 10,
-            unsigned int  ray_depth = 8,
-            unsigned int  seed      = 54321
+        .def(py::init([](
+            Camera   camera,
+            uint32_t samples,
+            uint32_t ray_depth,
+            uint32_t seed
         ) { 
-            self.initialize(camera, samples, ray_depth, seed); 
-        })
-        .def("render", [](RenderEngine& self, Scene& scene) {
-            self.render(scene);
-        })
-        .def(
-            "layers", &RenderEngine::layers,
-            py::return_value_policy::reference
+            return RenderEngine(camera, samples, ray_depth, seed); 
+        }),
+            py::arg("camera"),
+            py::arg("samples")   = 10u,
+            py::arg("ray_depth") = 8u,
+            py::arg("seed")      = 54321u
         )
-        .def_readonly("num_samples",        &RenderEngine::num_samples)
-        .def_readonly("max_depth",          &RenderEngine::max_depth)
+        .def("sample", ([](
+            RenderEngine& self, 
+            Scene& scene, 
+            SampleMode mode
+        ) {
+            self.sample(scene, mode);
+        }),
+            py::arg("scene"), py::arg("mode") = SampleMode::ACCUMULATE
+        )
+        .def("render", ([](
+            RenderEngine& self, 
+            Scene& scene, 
+            SampleMode mode
+        ) {
+            self.sample(scene, mode);
+        }),
+            py::arg("scene"), py::arg("mode") = SampleMode::ACCUMULATE
+        )
+        .def("layers", &RenderEngine::layers, return_policy::reference)
+        .def_readonly("num_samples", &RenderEngine::num_samples)
+        .def_readonly("max_depth",   &RenderEngine::max_depth)
         .def_readwrite("on_frame_finished", &RenderEngine::on_frame_finished);
 }
 

@@ -1,16 +1,14 @@
 #include "engine/include/engine/trace.h"
 
-#include "engine/include/engine/light.h"
-
 // ============================================================================
 // RAY TRACING FUNCTION
 // ============================================================================
 
 __device__ bool trace_ray(
-    Scene  scene,
-    Ray&   ray,
-    Color& color,
-    Color& atten,
+    SceneGraph scene,
+    Ray&       ray,
+    Color&     color,
+    Color&     atten,
     Generator& gen
 ) {
     HitRecord rec;
@@ -26,8 +24,8 @@ __device__ bool trace_ray(
 }
 
 __global__ void trace_kernel(
-    Scene        scene,
     Camera       camera,
+    SceneGraph   scene,
     AOVs         aovs, 
     unsigned int max_depth,
     unsigned int seed,
@@ -50,8 +48,8 @@ __global__ void trace_kernel(
 }
 
 void trace(
-    Scene         scene,
     Camera        camera,
+    Scene&        scene,
     RenderLayers& layers, 
     unsigned int  max_depth,
     unsigned int  seed, 
@@ -60,6 +58,6 @@ void trace(
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((layers.W + BS2D - 1) / BS2D, (layers.H + BS2D - 1) / BS2D, 1);
     trace_kernel<<<grid, block>>>(
-        scene, camera, layers.aovs(), max_depth, seed, frame
+        camera, scene.graph(), layers.aovs(), max_depth, seed, frame
     );
 }

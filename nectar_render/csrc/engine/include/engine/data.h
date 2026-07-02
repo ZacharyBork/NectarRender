@@ -138,6 +138,11 @@ public:
     /* KERNEL WRAPPERS */
 
     __host__ void combine(DataObject& other);
+    __host__ void accumulate_samples(
+        DataObject& other,
+        uint32_t current_sample
+    );
+
     __host__ void normalize_by_samples(unsigned int samples);
     __host__ void linear_to_gamma();
     __host__ void tonemap(float exposure);
@@ -186,6 +191,8 @@ private:
 };
 
 void run_combine_data(DataView a, DataView b);
+void run_accumulate_samples(DataView a, DataView b,uint32_t current_sample);
+
 void run_norm_by_samples(DataView data, unsigned int samples);
 void run_linear_to_gamma(DataView data);
 void run_tonemap(DataView data, float exposure);
@@ -193,6 +200,15 @@ void run_tonemap(DataView data, float exposure);
 inline void DataObject::combine(DataObject& other) {
     if (this->enabled && other.enabled) 
         run_combine_data(this->view(), other.view()); 
+}
+
+inline void DataObject::accumulate_samples(
+    DataObject& other,
+    uint32_t current_sample
+) {
+    if (this->enabled && other.enabled) {
+        run_accumulate_samples(this->view(), other.view(), current_sample); 
+    }
 }
 
 inline void DataObject::normalize_by_samples(unsigned int samples) {
@@ -270,6 +286,8 @@ public:
     DataObject emission;
     DataObject object_id;
 
+    __host__ RenderLayers() : H((size_t)0), W((size_t)0), cfg({}) { }
+
     __host__ RenderLayers(
         size_t h, 
         size_t w,
@@ -302,15 +320,23 @@ public:
         };
     }
 
-    __host__ void combine(RenderLayers& other) {     
-        beauty.combine(other.beauty);
-        diffuse.combine(other.diffuse);
-        specular.combine(other.specular);
-        normal.combine(other.normal);
-        shadow.combine(other.shadow);
-        depth.combine(other.depth);
-        emission.combine(other.emission);
-        object_id.combine(other.object_id);
+    __host__ void combine(RenderLayers& other) { 
+        std::array<DataObject*, N_RENDER_LAYERS> this_data = get_data();
+        std::array<DataObject*, N_RENDER_LAYERS> other_data = other.get_data();
+        for (int i = 0; i < N_RENDER_LAYERS; i++) {
+            this_data[i]->combine(*other_data[i]);
+        }    
+    }
+
+    __host__ void accumulate(
+        RenderLayers& other,
+        uint32_t current_sample
+    ) {
+        std::array<DataObject*, N_RENDER_LAYERS> this_data = get_data();
+        std::array<DataObject*, N_RENDER_LAYERS> other_data = other.get_data();
+        for (int i = 0; i < N_RENDER_LAYERS; i++) {
+            this_data[i]->accumulate_samples(*other_data[i], current_sample);
+        }
     }
 
     __host__ void clear() {

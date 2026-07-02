@@ -1,4 +1,7 @@
-from nectar_render.python import RenderEngine
+from nectar_render import (
+    RenderEngine, Camera, Vector3, Color, Material, Texture, 
+    Hittable, Scene, SkyLight, TVDenoiser
+)
 
 import sys
 from typing  import Self
@@ -10,19 +13,53 @@ from PySide6.QtUiTools import QUiLoader
 from PySide6.QtGui import QPixmap
 from qimage2ndarray import array2qimage
 
-ENGINE = RenderEngine()
+
+
+
+
 
 class Interface(QObject):    
     def __init__(self: Self) -> None:
-        super().__init__()        
+        super().__init__()
+        
+        self.engine = RenderEngine(
+            camera = Camera(
+                resolution   = (1024, 1024),
+                position     = (0.0, 0.0, 3.0),
+                rotation     = (0.0, 0.0, 0.0),
+                focal_length = 2.0
+            ),
+            samples   = 500,
+            max_depth = 10,
+            seed      = None
+        )
+        self.engine.ENGINE.on_frame_finished = self._on_frame_finished
+        
+        self.scene  = Scene(
+            skylight  = SkyLight(),
+            hittables = [
+                Hittable.SPHERE(
+                    Vector3(0.0, 0.0, 0.0), 0.5,
+                    Material.LAMBERTIAN(Color.white())
+                ),
+                Hittable.SPHERE(
+                    Vector3(0.0, -100.5, 0.0), 100.0,
+                    Material.LAMBERTIAN(Color(1.0, 1.0, 0.0))
+                )
+            ]
+        )
 
     ### CALLBACKS ###
+    
+    def _on_frame_finished(self: Self, frame_idx: int) -> None:
+        if frame_idx % 10 == 1: 
+            data = self.engine.get_data()
+            pixmap = QPixmap.fromImage(array2qimage(data))
+            self.find(QtWidgets.QLabel, 'image_label').setPixmap(pixmap)
 
     def render(self: Self) -> None:
-        ENGINE.render()
-        data = ENGINE.get_data()
-        pixmap = QPixmap.fromImage(array2qimage(data))
-        self.find(QtWidgets.QLabel, 'image_label').setPixmap(pixmap)
+        self.engine.render(self.scene)
+        
 
     ### INITIALIZATION ###
 
@@ -55,8 +92,6 @@ class Interface(QObject):
     def run(self: Self) -> None:
         self.app = QtWidgets.QApplication(sys.argv)
         self._set_stylesheet()
-        
-        ENGINE.init(channels=3, resolution=(512, 512))
 
         self.mainwidget = self._init_mainwidget()
         self.mainwidget.setWindowTitle('NectarRender')

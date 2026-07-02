@@ -7,14 +7,20 @@ from nectar_render.python import (
 )
 
 class CornellBox(RenderEngine):
-    skylight  = None
+    skylight = None
+    camera   = Camera(
+        resolution   = (1024, 1024),
+        position     = (0.0, 0.0, 2.0),
+        rotation     = (0.0, 0.0, 0.0),
+        focal_length = 3.0
+    )
     
     hittables = [
         Hittable.QUAD( # Light
             Vector3(0.0, 0.499, 0.0),
             Vector3(0.0, 0.0, 0.0),
             Vector3(0.2),
-            Material.EMISSIVE(Color(10.0, 10.0, 10.0))
+            Material.EMISSIVE(Color(35.0, 35.0, 35.0))
         ),
         Hittable.QUAD( # Bottom
             Vector3(0.0, -0.5, 0.0),
@@ -54,7 +60,7 @@ class CornellBox(RenderEngine):
             Material.LAMBERTIAN(Color.white())
         ),
         Hittable.CUBE(
-            Vector3(-0.15, -0.2, -0.1), 
+            Vector3(-0.2, -0.2, -0.1), 
             Vector3(0.0, 35.0, 0.0),
             Vector3(0.3, 0.6, 0.3),
             Material.LAMBERTIAN(Color.white())
@@ -69,18 +75,13 @@ class CornellBox(RenderEngine):
         silent:    bool = False
     ) -> None:
         super().__init__(
-            camera  = Camera(
-                resolution   = (1024, 1024),
-                position     = (0.0, 0.0, 2.0),
-                rotation     = (0.0, 0.0, 0.0),
-                focal_length = 3.0
-            ),
+            camera    = self.camera,
             samples   = samples,
             max_depth = max_depth,
             seed      = seed,
             silent    = silent
         )
         
-    def render(self: Self) -> None:
-        super().render(Scene(self.hittables, self.skylight))
+    def render(self: Self) -> Self:
+        return super().render(Scene(self.hittables, self.skylight))
 

@@ -10,22 +10,18 @@ from typing  import Self, TypeAlias
 from PIL     import Image
 from numpy   import ndarray
 
-
-
 from nectar_render.python import core, progress
-from nectar_render.python.engine.data    import RenderLayers
 from nectar_render.python.engine.scene   import Scene
 from nectar_render.python.engine.camera  import Camera
 from nectar_render.python.engine.denoise import Denoiser, TVDenoiser
 
-Transform: TypeAlias = root.Transform
-Engine:    TypeAlias = root.RenderEngine
+Engine:     TypeAlias = root.RenderEngine
+Transform:  TypeAlias = root.Transform
+SampleMode: TypeAlias = root.SampleMode
 
 class RenderEngine:
-    DEVICE_PTR: int = None
-    CAMERA:  Camera = None
-    ENGINE:  Engine = None
-    SILENT:    bool = False
+    ENGINE: Engine = None
+    SILENT:   bool = False
         
     def __init__(
         self:      Self,
@@ -34,17 +30,15 @@ class RenderEngine:
         max_depth: int = 8,
         seed:      int | None = None,
         silent:    bool = False
-    ) -> None:
-        self.__setattr__('CAMERA', camera)
-        self.__setattr__('ENGINE', Engine())
+    ) -> None:        
         self.__setattr__('SILENT', silent)
-        self.ENGINE.on_frame_finished = self.on_frame_finished
-        self.ENGINE.initialize(
-            self.CAMERA, samples, max_depth, 
+        self.__setattr__('ENGINE', Engine(
+            camera, samples, max_depth, 
             seed if seed is not None 
             else np.random.random_integers(0, 999999)
-        )
-                
+        ))
+        self.ENGINE.on_frame_finished = self.on_frame_finished
+                        
     @property
     def num_samples(self: Self) -> int: return self.ENGINE.num_samples
         
@@ -54,16 +48,30 @@ class RenderEngine:
     def on_frame_finished(self: Self, frame_idx: int) -> None:
         if not self.SILENT:
             progress.pbar('render', self.num_samples).update(frame_idx)
+        
+    def sample(
+        self:  Self, 
+        scene: Scene, 
+        mode:  SampleMode = SampleMode.ACCUMULATE
+    ) -> Self:
+        self.ENGINE.sample(scene, mode)
+        return self
             
-    def render(self: Self, scene: Scene) -> None:
+    def render(
+        self:  Self, 
+        scene: Scene, 
+        mode:  SampleMode = SampleMode.ACCUMULATE
+    ) -> Self:
         start = time.time()
-        self.ENGINE.render(scene)
+        self.ENGINE.render(scene, mode)
         core.cuda_synchronize()
         self.log(f'Render complete. Time taken: {(time.time() - start):.4f}')
-        
-    def denoise(self: Self, denoiser: Denoiser = TVDenoiser()) -> None:
+        return self
+    
+    def denoise(self: Self, denoiser: Denoiser = TVDenoiser()) -> Self:
         layers = self.ENGINE.layers()
         denoiser.run(layers.beauty)
+        return self
 
     def get_data(self: Self) -> ndarray:
         layers  = self.ENGINE.layers()
@@ -71,8 +79,8 @@ class RenderEngine:
         pinned  = beauty.is_pinned()
         C, H, W = beauty.shape()
         
-        beauty.tonemap(0.1)
-        beauty.linear_to_gamma()
+        beauty.tonemap(1.0)
+        # beauty.linear_to_gamma()
         
         if not pinned: arr = beauty.numpy()
         else:
@@ -84,7 +92,7 @@ class RenderEngine:
         image = (arr.reshape(C, H, W).transpose(1, 2, 0) * 255)
         return image.astype(np.uint8)
 
-    def save_image(self: Self, path: PathLike) -> None:
+    def save_image(self: Self, path: PathLike) -> Self:
         path = Path(path).resolve()
         if not path.parent.exists():
             raise FileNotFoundError(
@@ -92,4 +100,5 @@ class RenderEngine:
         
         output = self.get_data()
         Image.fromarray(output).save(path)
+        return self
 

@@ -2,6 +2,7 @@
 Engine data submodule.
 """
 from __future__ import annotations
+import _pathtracer.engine
 import typing
 __all__: list[str] = ['DataObject', 'RenderLayers', 'RenderLayersConfig']
 class DataObject:
@@ -38,6 +39,12 @@ class DataObject:
         ...
 class RenderLayers:
     def __init__(self, h: typing.SupportsInt | typing.SupportsIndex = True, w: typing.SupportsInt | typing.SupportsIndex = False, cfg: RenderLayersConfig = False) -> None:
+        ...
+    def get_layer(self, arg0: _pathtracer.engine.LayerType) -> DataObject:
+        ...
+    def normalize_by_samples(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def pin_buffer(self, arg0: _pathtracer.engine.LayerType) -> None:
         ...
     @property
     def H(self) -> int:

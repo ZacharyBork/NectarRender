@@ -3,6 +3,6 @@ from .data    import DataObject
 from .scene   import Scene
 from .camera  import Camera
 from .lights  import Light, SkyLight
-from .engine  import RenderEngine, Transform
+from .engine  import RenderEngine, Transform, SampleMode
 from .denoise import Denoiser, TVDenoiser
 

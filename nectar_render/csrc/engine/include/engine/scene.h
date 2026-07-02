@@ -8,6 +8,50 @@
 #include "hittable/include/hittable/hittable.h"
 #include "hittable/include/bvh/node.h"
 
+static constexpr int STACK_SIZE = 64;
+
+struct SceneGraph {
+    BVHNode*   bvh_nodes;
+    Hittable** objects;
+    SkyLight   skylight;
+
+    __device__ bool hit(
+        const Ray&  ray,
+        Interval    ray_t,
+        HitRecord&  rec
+    ) const {
+        int stack[STACK_SIZE];
+        int stack_ptr = 0;
+        stack[stack_ptr++] = 0;
+
+        bool hit_anything = false;
+
+        while (stack_ptr > 0) {
+            int idx = stack[--stack_ptr];
+            const BVHNode& node = bvh_nodes[idx];
+
+            if (!node.bbox.hit(ray, ray_t)) continue;
+
+            if (node.object != -1) {
+                HitRecord tmp_rec;
+
+                if (objects[node.object]->hit_test(ray, tmp_rec)) {
+                    if (ray_t.surrounds(tmp_rec.t)) {
+                        rec = tmp_rec;
+                        hit_anything = true;
+                        ray_t.max = tmp_rec.t;
+                    }
+                }
+
+            } else {
+                stack[stack_ptr++] = node.left;
+                stack[stack_ptr++] = node.right;
+            }
+        }
+        return hit_anything;
+    }
+};
+
 class Scene {
 public:
 
@@ -44,45 +88,12 @@ public:
         );
     }
 
-    __device__ bool hit(
-        const Ray&  ray,
-        Interval    ray_t,
-        HitRecord&  rec
-    ) const {
-        int stack[stack_size];
-        int stack_ptr = 0;
-        stack[stack_ptr++] = 0;
-
-        bool hit_anything = false;
-
-        while (stack_ptr > 0) {
-            int idx = stack[--stack_ptr];
-            const BVHNode& node = bvh_nodes[idx];
-
-            if (!node.bbox.hit(ray, ray_t)) continue;
-
-            if (node.object != -1) {
-                HitRecord tmp_rec;
-                
-                if (objects[node.object]->hit_test(ray, tmp_rec)) {
-                    if (ray_t.surrounds(tmp_rec.t)) {
-                        rec = tmp_rec;
-                        hit_anything = true;
-                        ray_t.max = tmp_rec.t;
-                    }
-                }
-
-            } else {
-                stack[stack_ptr++] = node.left;
-                stack[stack_ptr++] = node.right;
-            }
-        }
-        return hit_anything;
+    __host__ SceneGraph graph() {
+        return SceneGraph{ bvh_nodes, objects, skylight };
     }
 
 private:
 
-    static constexpr int stack_size = 64;
     BVHNode*   bvh_nodes;
     Hittable** objects;
     uint32_t n_objects;
