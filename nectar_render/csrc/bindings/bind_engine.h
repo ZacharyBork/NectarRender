@@ -109,14 +109,7 @@ void register_engine(py::module_& m) {
         }),
             py::arg("p") = CameraParams()
         )
-        .def_readwrite("resolution",     &Camera::resolution)
-        .def_readwrite("position",       &Camera::position)
-        .def_readwrite("rotation",       &Camera::rotation)
-        .def_readwrite("focal_length",   &Camera::focal_length)
-        .def_readwrite("focus_distance", &Camera::focus_distance)
-        .def_readwrite("aperture",       &Camera::aperture)
-        .def_readwrite("sensor_width",   &Camera::sensor_width)
-        .def_readwrite("shutter_speed",  &Camera::shutter_speed);
+        .def_readwrite("resolution", &Camera::resolution);
 
 // ############################################################################
 // RENDER LAYERS
@@ -289,21 +282,19 @@ void register_engine(py::module_& m) {
     py::class_<RenderEngine>(m_engine, "RenderEngine")
         .def(py::init([](
             Camera   camera,
-            uint32_t samples,
             uint32_t ray_depth,
             uint32_t seed
         ) { 
-            return RenderEngine(camera, samples, ray_depth, seed); 
+            return RenderEngine(camera, ray_depth, seed); 
         }),
             py::arg("camera"),
-            py::arg("samples")   = 10u,
             py::arg("ray_depth") = 8u,
             py::arg("seed")      = 54321u
         )
         .def("sample", ([](
             RenderEngine& self, 
-            Scene& scene, 
-            SampleMode mode
+            Scene&        scene, 
+            SampleMode    mode
         ) {
             self.sample(scene, mode);
         }),
@@ -311,15 +302,17 @@ void register_engine(py::module_& m) {
         )
         .def("render", ([](
             RenderEngine& self, 
-            Scene& scene, 
-            SampleMode mode
+            Scene&        scene, 
+            uint32_t      num_samples,
+            SampleMode    mode
         ) {
-            self.sample(scene, mode);
+            self.render(scene, num_samples, mode);
         }),
-            py::arg("scene"), py::arg("mode") = SampleMode::ACCUMULATE
+            py::arg("scene"), 
+            py::arg("num_samples") = 100u,
+            py::arg("mode") = SampleMode::ACCUMULATE
         )
         .def("layers", &RenderEngine::layers, return_policy::reference)
-        .def_readonly("num_samples", &RenderEngine::num_samples)
         .def_readonly("max_depth",   &RenderEngine::max_depth)
         .def_readwrite("on_frame_finished", &RenderEngine::on_frame_finished);
 }

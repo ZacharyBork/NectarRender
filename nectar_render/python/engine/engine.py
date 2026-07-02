@@ -26,22 +26,18 @@ class RenderEngine:
     def __init__(
         self:      Self,
         camera:    Camera = Camera(),
-        samples:   int = 10,
         max_depth: int = 8,
         seed:      int | None = None,
         silent:    bool = False
     ) -> None:        
         self.__setattr__('SILENT', silent)
         self.__setattr__('ENGINE', Engine(
-            camera, samples, max_depth, 
+            camera, max_depth, 
             seed if seed is not None 
             else np.random.random_integers(0, 999999)
         ))
         self.ENGINE.on_frame_finished = self.on_frame_finished
-                        
-    @property
-    def num_samples(self: Self) -> int: return self.ENGINE.num_samples
-        
+
     def log(self: Self, log_string: str) -> None:
         if not self.SILENT: print(log_string)
         
@@ -58,12 +54,14 @@ class RenderEngine:
         return self
             
     def render(
-        self:  Self, 
-        scene: Scene, 
-        mode:  SampleMode = SampleMode.ACCUMULATE
+        self:    Self, 
+        scene:   Scene, 
+        samples: int = 100,
+        mode:    SampleMode = SampleMode.ACCUMULATE
     ) -> Self:
+        self.num_samples = samples
         start = time.time()
-        self.ENGINE.render(scene, mode)
+        self.ENGINE.render(scene, samples, mode)
         core.cuda_synchronize()
         self.log(f'Render complete. Time taken: {(time.time() - start):.4f}')
         return self

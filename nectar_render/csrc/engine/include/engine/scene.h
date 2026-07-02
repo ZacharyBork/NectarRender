@@ -88,8 +88,15 @@ public:
         );
     }
 
-    __host__ SceneGraph graph() {
-        return SceneGraph{ bvh_nodes, objects, skylight };
+    __host__ SceneGraph* graph() {
+        SceneGraph graph{ bvh_nodes, objects, skylight };
+        SceneGraph* d_graph_ptr;
+        size_t n_bytes = sizeof(graph);
+
+        cudaMalloc(&d_graph_ptr, n_bytes);
+        cudaMemcpy(d_graph_ptr, &graph, n_bytes, cudaMemcpyHostToDevice);
+
+        return d_graph_ptr;
     }
 
 private:

@@ -5,6 +5,10 @@
 #include "core/include/core.h"
 #include "engine/include/engine/ray.h"
 
+// ############################################################################
+// CAMERA PARAMETERS
+// ############################################################################
+
 struct CameraParams {
     std::array<int,   2> resolution = { 512, 512 };
     std::array<float, 3> position   = { 0.0f, 0.0f, 0.0f };
@@ -16,7 +20,11 @@ struct CameraParams {
     float shutter_speed  = 1.0f;
 };
 
-class Camera {
+// ############################################################################
+// DEVICE CAMERA
+// ############################################################################
+
+struct DeviceCamera {
 public:
 
     CameraParams params;
@@ -25,32 +33,23 @@ public:
     Vector3 position;
     Matrix3 rotation;
 
-    float focal_length;
-    float focus_distance;
-    float aperture;
-
-    float sensor_width;
-    float shutter_speed;
-
-    __host__ explicit Camera(const CameraParams& p = {})
-        : params(p),
-          resolution(Vector2(p.resolution[0], p.resolution[1])),
-          position(Vector3(p.position[0], p.position[1], p.position[2])),
-          focal_length(p.focal_length),
-          focus_distance(p.focus_distance),
-          aperture(p.aperture),
-          sensor_width(p.sensor_width),
-          shutter_speed(p.shutter_speed)
+    __host__ explicit DeviceCamera(
+        const CameraParams& p = {}
+    ) : params(p),
+        resolution(Vector2(p.resolution[0], p.resolution[1])),
+        position(Vector3(p.position[0], p.position[1], p.position[2]))
     {
-        shutter_time = 1.0f / (shutter_speed+FMIN);
-        fstop = focal_length / (aperture+FMIN);
+        shutter_time = 1.0f / (p.shutter_speed + FMIN);
+        float fstop = p.focal_length / (p.aperture + FMIN);
 
-        float aperture_radius = aperture / 2.0;
-        defocus_angle  = 2.0 * atanf(aperture_radius / (focus_distance+FMIN));
-        defocus_radius = focus_distance * tanf(defocus_angle / 2.0);
+        float aperture_radius = p.aperture / 2.0f;
+        defocus_angle  = 2.0 * atanf(
+            aperture_radius / (p.focus_distance + FMIN)
+        );
+        defocus_radius = p.focus_distance * tanf(defocus_angle / 2.0);
 
-        aspect_ratio = (float)resolution.y() / (float)resolution.x();
-        uvw = Vector3(sensor_width, -sensor_width * aspect_ratio, 0.0f);
+        float aspect_ratio = (float)resolution.y() / (float)resolution.x();
+        uvw = Vector3(p.sensor_width, -p.sensor_width * aspect_ratio, 0.0f);
 
         rotation = rotation_from_euler(
             Vector3(
@@ -61,11 +60,7 @@ public:
         );
     }
 
-    __device__ Ray get_ray(
-        unsigned int x, 
-        unsigned int y, 
-        Generator& gen
-    ) {
+    __device__ Ray get_ray(uint32_t x, uint32_t y, Generator& gen) {
         Vector3 origin;
         Vector3 focus_point = get_focus_point(x, y, gen);
         
@@ -82,18 +77,6 @@ public:
         return Ray(origin, normalize(focus_point - origin), time);
     }
 
-private:
-
-    float fstop;
-    float shutter_time;
-    float defocus_angle;
-    float defocus_radius;
-    float aspect_ratio;
-
-    Vector3 uvw;
-    Vector3 defocus_disk_u;
-    Vector3 defocus_disk_v;
-
     __device__ void update_defocuse_disk() {
         defocus_disk_u = rotation.right() * defocus_radius;
         defocus_disk_v = rotation.up()    * defocus_radius;
@@ -104,8 +87,8 @@ private:
     }
 
     __device__ Vector3 get_focus_point(
-        unsigned int x, 
-        unsigned int y, 
+        uint32_t x, 
+        uint32_t y, 
         Generator& gen
     ) {
         Vector2 offset = Vector2::sample_square(gen);
@@ -113,11 +96,50 @@ private:
                 * (uvw.x() / resolution.x());
         float v = ((float)y + offset.y() - (resolution.y() - 1) * 0.5f) 
                 * (uvw.y() / resolution.y());
-        float w = -focal_length;
+        float w = -params.focal_length;
 
         Vector3 center = rotation * Vector3(u, v, w);
-        float focus_scale = focus_distance / focal_length;
+        float focus_scale = params.focus_distance / params.focal_length;
         return position + center * focus_scale;
+    }
+
+private:
+
+    float shutter_time;
+    float defocus_angle;
+    float defocus_radius;
+
+    Vector3 uvw;
+    Vector3 defocus_disk_u, defocus_disk_v;
+
+};
+
+// ############################################################################
+// HOST CAMERA
+// ############################################################################
+
+class Camera {
+public:
+
+    CameraParams params;
+
+    Vector2 resolution;
+
+    __host__ explicit Camera(
+        const CameraParams& p = {}
+    ) : params(p), 
+        resolution(Vector2(p.resolution[0], p.resolution[1]))
+    { }
+
+    __host__ DeviceCamera* device_camera() {
+        DeviceCamera d_cam(params);
+        DeviceCamera* d_ptr;
+        size_t n_bytes = sizeof(DeviceCamera);
+        
+        cudaMalloc(&d_ptr, n_bytes);
+        cudaMemcpy(d_ptr, &d_cam, n_bytes, cudaMemcpyHostToDevice);
+
+        return d_ptr;
     }
 
 };

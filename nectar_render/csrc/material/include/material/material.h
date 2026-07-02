@@ -175,3 +175,32 @@ private:
     Texture* texture;
 };
 
+// ############################################################################
+// EMISSIVE
+// ############################################################################
+
+class IsoTropic : public Material {
+public:
+
+    __host__ IsoTropic(const Color& albedo) 
+        : texture(ConstantTexture(albedo).build()) {}
+
+    template<typename T>
+    __host__ IsoTropic(const T& texture) : texture(texture.build()) {}
+
+    __device__ IsoTropic(Texture* texture) : texture(texture) { }
+
+    __host__ Material* build() const override {
+        return device_build<IsoTropic>(texture);
+    }
+
+    __device__ Color emitted(Vector2 uv, const Vector3& p) const override {
+        return texture->sample(uv, p);
+    }
+
+private:
+
+    Texture* texture;
+};
+
+
