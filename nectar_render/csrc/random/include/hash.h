@@ -82,6 +82,34 @@ __host__ __device__ inline float pcg_float(
     return (float)hash * HASH_SCALAR;
 }
 
+__host__ __device__ inline float pcg_float_in_range(
+    const float f,
+    const float min = 0.0f,
+    const float max = 1.0f,
+    const uint32_t seed   = 0u,
+    const uint32_t stream = 0u
+) {
+    return pcg_float(f, seed, stream) * (max - min) + min;
+}
+
+__host__ __device__ inline float pcg_float(
+    const uint32_t i,
+    const uint32_t seed   = 0u,
+    const uint32_t stream = 0u
+) {
+    return pcg_float((float)i, seed, stream);
+}
+
+__host__ __device__ inline float pcg_float_in_range(
+    const uint32_t i,
+    const float min = 0.0f,
+    const float max = 1.0f,
+    const uint32_t seed   = 0u,
+    const uint32_t stream = 0u
+) {
+    return pcg_float(i, seed, stream) * (max - min) + min;
+}
+
 __host__ __device__ inline float pcg_float(
     const Vector3& a,
     const uint32_t seed = 0u,
@@ -97,6 +125,16 @@ __host__ __device__ inline float pcg_float(
     return (float)((word >> 22u) ^ word) * HASH_SCALAR;
 }
 
+__host__ __device__ inline float pcg_float_in_range(
+    const Vector3& a,
+    const float min = 0.0f,
+    const float max = 1.0f,
+    const uint32_t seed   = 0u,
+    const uint32_t stream = 0u
+) {
+    return pcg_float(a, seed, stream) * (max - min) + min;
+}
+
 __host__ __device__ inline float pcg_float(
     const Vector3& a,
     const Vector3& b,
@@ -108,12 +146,33 @@ __host__ __device__ inline float pcg_float(
     return (a_hash + b_hash) * 0.5f;
 }
 
+__host__ __device__ inline float pcg_float_in_range(
+    const Vector3& a,
+    const Vector3& b,
+    const float min = 0.0f,
+    const float max = 1.0f,
+    const uint32_t seed   = 0u,
+    const uint32_t stream = 0u
+) {
+    return pcg_float(a, b, seed, stream) * (max - min) + min;
+}
+
 __host__ __device__ inline float pcg_float(
     const Ray& ray, 
     const uint32_t seed = 0u,
     const uint32_t stream = 0u
 ) {
     return pcg_float(ray.origin(), ray.direction(), seed, stream);
+}
+
+__host__ __device__ inline float pcg_float_in_range(
+    const Ray& ray, 
+    const float min = 0.0f,
+    const float max = 1.0f,
+    const uint32_t seed   = 0u,
+    const uint32_t stream = 0u
+) {
+    return pcg_float(ray, seed, stream) * (max - min) + min;
 }
 
 // ############################################################################

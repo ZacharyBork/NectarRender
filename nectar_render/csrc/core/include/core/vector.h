@@ -213,6 +213,7 @@ public:
     __host__ __device__ Vec2Core(float e0, float e1) : e{ e0, e1 } {}
     
     __host__ Vec2Core(std::array<float, 2> e) : e{e[0], e[1]} {}
+    __host__ Vec2Core(std::array<int,   2> e) : e{(float)e[0], (float)e[1]} {}
     __host__ Vec2Core(float e[4]) : e{e[0], e[1]} {}
 
     template <typename OtherType>
@@ -227,6 +228,16 @@ public:
     __device__ static VecType sample_square(Generator& gen) {
         return VecType(gen.random_float()-0.5, gen.random_float()-0.5);
     }
+
+    // __device__ static VecType sample_square_stratified(
+    //     uint32_t s_i,
+    //     uint32_t s_j,
+    //     Generator& gen
+    // ) {
+    //     float px = (((float)s_i + gen.random_float()) * recip_sqrt_spp);
+    //     float py = (((float)s_j + gen.random_float()) * recip_sqrt_spp);
+    //     return VecType(px - 0.5f, py - 0.5f);
+    // }
 
     __device__ static VecType random_in_unit_disk(Generator& gen) {
         while (true) {

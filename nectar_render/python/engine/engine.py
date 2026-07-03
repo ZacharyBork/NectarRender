@@ -21,6 +21,7 @@ SampleMode: TypeAlias = root.SampleMode
 
 class RenderEngine:
     ENGINE: Engine = None
+    CAMERA: Camera = None
     SILENT:   bool = False
         
     def __init__(
@@ -31,8 +32,9 @@ class RenderEngine:
         silent:    bool = False
     ) -> None:        
         self.__setattr__('SILENT', silent)
+        self.__setattr__('CAMERA', camera)
         self.__setattr__('ENGINE', Engine(
-            camera, max_depth, 
+            self.CAMERA, max_depth, 
             seed if seed is not None 
             else np.random.random_integers(0, 999999)
         ))
@@ -43,7 +45,7 @@ class RenderEngine:
         
     def on_frame_finished(self: Self, frame_idx: int) -> None:
         if not self.SILENT:
-            progress.pbar('render', self.num_samples).update(frame_idx)
+            progress.pbar('render', self.CAMERA.n_samples).update(frame_idx)
         
     def sample(
         self:  Self, 
@@ -56,12 +58,10 @@ class RenderEngine:
     def render(
         self:    Self, 
         scene:   Scene, 
-        samples: int = 100,
         mode:    SampleMode = SampleMode.ACCUMULATE
     ) -> Self:
-        self.num_samples = samples
         start = time.time()
-        self.ENGINE.render(scene, samples, mode)
+        self.ENGINE.render(scene, mode)
         core.cuda_synchronize()
         self.log(f'Render complete. Time taken: {(time.time() - start):.4f}')
         return self

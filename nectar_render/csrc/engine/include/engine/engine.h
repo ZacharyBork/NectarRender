@@ -23,13 +23,15 @@ public:
         Camera&  camera,
         uint32_t ray_depth = 8u,
         uint32_t seed      = 54321u
-    ) : aovs(RenderLayers(camera.resolution)),
+    ) : cam(camera),
+        aovs(RenderLayers(cam.resolution)),
         sample_aovs(RenderLayers(&aovs))
     { 
-        config.H = (size_t)camera.resolution[0];
-        config.W = (size_t)camera.resolution[1];
+        config.H = (size_t)cam.resolution[0];
+        config.W = (size_t)cam.resolution[1];
         
-        config.camera = camera.device_camera();
+        cam._construct();
+        config.camera = cam.device_camera();
         config.aovs   = sample_aovs.aovs();
 
         config.max_depth = ray_depth;
@@ -55,12 +57,11 @@ public:
 
     void render(
         Scene& scene, 
-        uint32_t num_samples = 100u,
         SampleMode mode = SampleMode::ACCUMULATE
     ) {
         aovs.pin_buffer(LayerType::BEAUTY);
         
-        for (int s = 0; s < num_samples; s++) {
+        for (int s = 0; s < cam.n_samples; s++) {
             sample(scene, mode);
             on_frame_finished(config.frame);
         }
@@ -70,6 +71,7 @@ public:
 
 private:
 
+    Camera cam;
     TraceConfig config;
     RenderLayers aovs, sample_aovs;
 

@@ -22,6 +22,11 @@ void register_core(py::module_& m) {
     m_utils.def("free_cuda_memory",     &free_cuda_memory,     "");
     m_utils.def("cuda_synchronize",     &cuda_synchronize,     "");
 
+    /* RNG */
+
+    auto m_random = m_core.def_submodule("random", "Core RNG submodule.");
+    py::class_<Generator>(m_random, "Generator");
+
     /* VECTORS */
 
     auto m_vec = m_core.def_submodule("vector", "Vector module.");
@@ -40,6 +45,10 @@ void register_core(py::module_& m) {
             py::arg("x") = 0.0f,
             py::arg("y") = 0.0f
         )
+        .def("__repr__", [](const Vector2& v) {
+            return "Vector2(" + std::to_string(v.x()) + ", " 
+                              + std::to_string(v.y()) + ")";
+        })
         .def("x", &Vector2::x)
         .def("y", &Vector2::y)
         .def("u", &Vector2::u)
@@ -60,6 +69,11 @@ void register_core(py::module_& m) {
             py::arg("y") = 0.0f,
             py::arg("z") = 0.0f
         )
+        .def("__repr__", [](const Vector3& v) {
+            return "Vector3(" + std::to_string(v.x()) + ", " 
+                              + std::to_string(v.y()) + ", " 
+                              + std::to_string(v.z()) + ")";
+        })
         .def("x", &Vector3::x)
         .def("y", &Vector3::y)
         .def("z", &Vector3::z)
@@ -77,6 +91,11 @@ void register_core(py::module_& m) {
             py::arg("g") = 0.0f,
             py::arg("b") = 0.0f
         )
+        .def("__repr__", [](const Color& c) {
+            return "Color(" + std::to_string(c.r()) + ", " 
+                            + std::to_string(c.g()) + ", " 
+                            + std::to_string(c.b()) + ")";
+        })
         .def("r",      &Color::r)
         .def("g",      &Color::g)
         .def("b",      &Color::b)

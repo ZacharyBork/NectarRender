@@ -18,7 +18,7 @@ struct TraceConfig {
     uint32_t max_depth = 8u;
     uint32_t seed      = 54321u;
     uint32_t frame     = 0u;
-    
+
     __host__ void increment() { frame++; }
 
     __host__ void update_scene_graph(SceneGraph* graph) {

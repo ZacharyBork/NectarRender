@@ -62,54 +62,43 @@ void register_engine(py::module_& m) {
 
     auto m_camera = m_engine.def_submodule("camera", "Camera submodule.");
 
-    py::class_<CameraParams>(m_camera, "CameraParams")
-        .def(py::init<>()) 
+    py::class_<Camera>(m_camera, "Camera")
         .def(py::init([](
             std::array<int,   2> resolution,
-            std::array<float, 3> position,
-            std::array<float, 3> rotation,
-            float focal_length,
-            float focus_distance,
-            float aperture,
-            float sensor_width,
-            float shutter_speed
+            std::array<float, 3> position   = { 0.0f, 0.0f, 0.0f },
+            std::array<float, 3> rotation   = { 0.0f, 0.0f, 0.0f },
+            uint32_t samples_per_pixel = 500u,
+            float focal_length   = 5.0f,
+            float focus_distance = 10.0f,
+            float aperture       = 0.01f,
+            float sensor_width   = 2.0f,
+            float shutter_speed  = 1.0f
         ) {
-            CameraParams p;
-            p.resolution     = resolution;
-            p.position       = position;
-            p.rotation       = rotation;
-            p.focal_length   = focal_length;
-            p.focus_distance = focus_distance;
-            p.aperture       = aperture;
-            p.sensor_width   = sensor_width;
-            p.shutter_speed  = shutter_speed;
-            return p;
+            return Camera(
+                resolution, position, rotation, samples_per_pixel, 
+                focal_length, focus_distance, aperture, sensor_width, 
+                shutter_speed
+            );
         }),
-            py::arg("resolution") = std::array<int,   2>{512, 512},
-            py::arg("position")   = std::array<float, 3>{0.0f, 0.0f, 0.0f},
-            py::arg("rotation")   = std::array<float, 3>{0.0f, 0.0f, 0.0f},
+            py::arg("resolution") = std::array<int,   2>{ 512, 512 },
+            py::arg("position")   = std::array<float, 3>{ 0.0f, 0.0f, 0.0f },
+            py::arg("rotation")   = std::array<float, 3>{ 0.0f, 0.0f, 0.0f },
+            py::arg("samples_per_pixel") = 500u,
             py::arg("focal_length")   = 5.0f,
             py::arg("focus_distance") = 10.0f,
             py::arg("aperture")       = 0.01f,
             py::arg("sensor_width")   = 2.0f,
             py::arg("shutter_speed")  = 1.0f
         )
-        .def_readwrite("resolution",     &CameraParams::resolution)
-        .def_readwrite("position",       &CameraParams::position)
-        .def_readwrite("rotation",       &CameraParams::rotation)
-        .def_readwrite("focal_length",   &CameraParams::focal_length)
-        .def_readwrite("focus_distance", &CameraParams::focus_distance)
-        .def_readwrite("aperture",       &CameraParams::aperture)
-        .def_readwrite("sensor_width",   &CameraParams::sensor_width)
-        .def_readwrite("shutter_speed",  &CameraParams::shutter_speed);
-
-    py::class_<Camera>(m_camera, "Camera")
-        .def(py::init([](const CameraParams& p) {
-            return Camera(p);
-        }),
-            py::arg("p") = CameraParams()
-        )
-        .def_readwrite("resolution", &Camera::resolution);
+        .def_readwrite("resolution",     &Camera::resolution)
+        .def_readwrite("position",       &Camera::position)
+        .def_readwrite("rotation",       &Camera::rotation)
+        .def_readwrite("n_samples",      &Camera::n_samples)
+        .def_readwrite("focal_length",   &Camera::focal_length)
+        .def_readwrite("focus_distance", &Camera::focus_distance)
+        .def_readwrite("aperture",       &Camera::aperture)
+        .def_readwrite("sensor_width",   &Camera::sensor_width)
+        .def_readwrite("shutter_speed",  &Camera::shutter_speed);
 
 // ############################################################################
 // RENDER LAYERS
@@ -303,13 +292,11 @@ void register_engine(py::module_& m) {
         .def("render", ([](
             RenderEngine& self, 
             Scene&        scene, 
-            uint32_t      num_samples,
             SampleMode    mode
         ) {
-            self.render(scene, num_samples, mode);
+            self.render(scene, mode);
         }),
             py::arg("scene"), 
-            py::arg("num_samples") = 100u,
             py::arg("mode") = SampleMode::ACCUMULATE
         )
         .def("layers", &RenderEngine::layers, return_policy::reference)

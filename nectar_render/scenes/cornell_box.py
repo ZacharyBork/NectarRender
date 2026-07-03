@@ -97,10 +97,12 @@ class CornellBox(RenderEngine):
   
     def __init__(
         self:      Self, 
+        samples:   int = 500,
         max_depth: int = 8,
         seed:      int | None = None,
         silent:    bool = False
     ) -> None:
+        self.CAMERA.n_samples = samples
         super().__init__(
             camera    = self.CAMERA,
             max_depth = max_depth,
@@ -108,6 +110,6 @@ class CornellBox(RenderEngine):
             silent    = silent
         )
         
-    def render(self: Self, samples: int = 500) -> Self:
-        return super().render(self.SCENE, samples)
+    def render(self: Self) -> Self:
+        return super().render(self.SCENE)
 

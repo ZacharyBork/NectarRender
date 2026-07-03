@@ -3,7 +3,7 @@
 #include "hittable/include/hittable/hittable.h"
 #include "material/include/material/material.h"
 #include "material/include/material/texture.h"
-#include "engine/include/engine/hash.h"
+#include "random/include/hash.h"
 
 class ConstantMedium : public Hittable {
 public:
