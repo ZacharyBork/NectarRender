@@ -8,26 +8,28 @@
 #include "hittable/include/hittable/hittable.h"
 #include "hittable/include/bvh/node.h"
 
-static constexpr int STACK_SIZE = 64;
-
 struct SceneGraph {
     BVHNode*   bvh_nodes;
     Hittable** objects;
-    SkyLight   skylight;
+    
+    SkyLight skylight;
+
+    size_t n_objects;
+    size_t n_nodes;
 
     __device__ bool hit(
         const Ray&  ray,
         Interval    ray_t,
         HitRecord&  rec
     ) const {
-        int stack[STACK_SIZE];
-        int stack_ptr = 0;
-        stack[stack_ptr++] = 0;
+        uint8_t stack[STACK_SIZE];
+        uint8_t stack_ptr  = 0u;
+        stack[stack_ptr++] = 0u;
 
         bool hit_anything = false;
 
         while (stack_ptr > 0) {
-            int idx = stack[--stack_ptr];
+            uint8_t idx = stack[--stack_ptr];
             const BVHNode& node = bvh_nodes[idx];
 
             if (!node.bbox.hit(ray, ray_t)) continue;
@@ -50,61 +52,53 @@ struct SceneGraph {
         }
         return hit_anything;
     }
+
+private:
+
+    static constexpr uint8_t STACK_SIZE = 64u;
+
 };
 
 class Scene {
 public:
 
-    SkyLight skylight;
+    SceneGraph* graph;
 
     __host__ Scene(
         std::vector<Hittable*>& hittables,
         SkyLight& skylight
-    ) : skylight(skylight) { build(hittables); }
+    ) {
+        SceneGraph tmp;
 
-    __host__ void build(std::vector<Hittable*>& hittables) {
-        n_objects = hittables.size();
+        tmp.skylight  = skylight;
+        tmp.n_objects = hittables.size();
 
         BVH bvh;
         bvh.build(hittables);
 
-        std::vector<Hittable*> device_obj_ptrs(n_objects);
-        for (int i = 0; i < n_objects; i++)
+        std::vector<Hittable*> device_obj_ptrs(tmp.n_objects);
+        for (int i = 0; i < tmp.n_objects; i++)
             device_obj_ptrs[i] = hittables[i]->build();
 
-        cudaMalloc(&objects, n_objects * sizeof(Hittable*));
+        cudaMalloc(&tmp.objects, tmp.n_objects * sizeof(Hittable*));
         cudaMemcpy(
-            objects, device_obj_ptrs.data(),
-            n_objects * sizeof(Hittable*), 
+            tmp.objects, device_obj_ptrs.data(),
+            tmp.n_objects * sizeof(Hittable*), 
             cudaMemcpyHostToDevice
         );
 
-        n_nodes = bvh.nodes.size();
-        cudaMalloc(&bvh_nodes, n_nodes * sizeof(BVHNode));
+        tmp.n_nodes = bvh.nodes.size();
+        cudaMalloc(&tmp.bvh_nodes, tmp.n_nodes * sizeof(BVHNode));
         cudaMemcpy(
-            bvh_nodes, bvh.nodes.data(),
-            n_nodes * sizeof(BVHNode), 
+            tmp.bvh_nodes, bvh.nodes.data(),
+            tmp.n_nodes * sizeof(BVHNode), 
             cudaMemcpyHostToDevice
         );
+
+        size_t n_bytes = sizeof(tmp);
+        cudaMalloc(&graph, n_bytes);
+        cudaMemcpy(graph, &tmp, n_bytes, cudaMemcpyHostToDevice);
     }
-
-    __host__ SceneGraph* graph() {
-        SceneGraph graph{ bvh_nodes, objects, skylight };
-        SceneGraph* d_graph_ptr;
-        size_t n_bytes = sizeof(graph);
-
-        cudaMalloc(&d_graph_ptr, n_bytes);
-        cudaMemcpy(d_graph_ptr, &graph, n_bytes, cudaMemcpyHostToDevice);
-
-        return d_graph_ptr;
-    }
-
-private:
-
-    BVHNode*   bvh_nodes;
-    Hittable** objects;
-    uint32_t n_objects;
-    uint32_t n_nodes;
 
 };
 

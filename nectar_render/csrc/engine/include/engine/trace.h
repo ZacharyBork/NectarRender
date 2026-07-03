@@ -8,17 +8,22 @@
 #include "engine/include/engine/light.h"
 
 struct TraceConfig {
-    DeviceCamera* camera;
-    SceneGraph*   scene;
-    AOVs          aovs; 
-    uint32_t      max_depth;
-    uint32_t      seed;
-    uint32_t      frame = 0u;
+    size_t H = (size_t)512;
+    size_t W = (size_t)512;
 
-    size_t H = aovs.H;
-    size_t W = aovs.W;
+    DeviceCamera* camera = nullptr;
+    SceneGraph*   scene  = nullptr;
+    AOVs*         aovs   = nullptr; 
+
+    uint32_t max_depth = 8u;
+    uint32_t seed      = 54321u;
+    uint32_t frame     = 0u;
     
     __host__ void increment() { frame++; }
+
+    __host__ void update_scene_graph(SceneGraph* graph) {
+        if (!scene) scene = graph;
+    }
 
 };
 

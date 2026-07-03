@@ -313,7 +313,6 @@ void register_engine(py::module_& m) {
             py::arg("mode") = SampleMode::ACCUMULATE
         )
         .def("layers", &RenderEngine::layers, return_policy::reference)
-        .def_readonly("max_depth",   &RenderEngine::max_depth)
         .def_readwrite("on_frame_finished", &RenderEngine::on_frame_finished);
 }
 

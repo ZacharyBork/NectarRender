@@ -37,7 +37,7 @@ __host__ __device__ inline uint32_t hash_lookup(uint32_t idx) {
     return HASH_CONSTANTS[idx & 63u];
 }
 
-__host__ __device__ inline uint32_t hash_mix(
+__host__ __device__ inline uint32_t __hash_mix(
     uint32_t val, 
     uint32_t constant_idx
 ) {
@@ -45,26 +45,33 @@ __host__ __device__ inline uint32_t hash_mix(
     return val^(val >> 13u);
 }
 
-// ############################################################################
-// PCG HASHING (FLOAT)
-// ############################################################################
+__host__ __device__ inline uint32_t __pcg_hash_int(
+    const uint32_t i,
+    const uint32_t seed   = 0u,
+    const uint32_t stream = 0u
+) {
+    uint32_t s = (seed * 1759274928u) ^ (stream * 2246822519u);
+    s = i ^ s;
+    s = __hash_mix(s, stream * 3u);
+    s = __hash_mix(s, stream * 3u + 1u);
+    s = __hash_mix(s, stream * 3u + 2u);
+
+    uint32_t state = s * 747796405u + 2891336453u;
+    uint32_t word  = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+}
 
 __host__ __device__ inline uint32_t __pcg_hash_fp(
     const float    f,
     const uint32_t seed   = 0u,
     const uint32_t stream = 0u
 ) {
-    uint32_t f_int = float_as_uint(f);
-    uint32_t s = (seed * 1759274928u) ^ (stream * 2246822519u);
-    s = f_int ^ s;
-    s = hash_mix(s, stream * 3u);
-    s = hash_mix(s, stream * 3u + 1u);
-    s = hash_mix(s, stream * 3u + 2u);
-
-    uint32_t state = s * 747796405u + 2891336453u;
-    uint32_t word  = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
-    return (word >> 22u) ^ word;
+    return __pcg_hash_int(float_as_uint(f), seed, stream);
 }
+
+// ############################################################################
+// PCG HASHING (FLOAT)
+// ############################################################################
 
 __host__ __device__ inline float pcg_float(
     const float    f,
@@ -107,5 +114,55 @@ __host__ __device__ inline float pcg_float(
     const uint32_t stream = 0u
 ) {
     return pcg_float(ray.origin(), ray.direction(), seed, stream);
+}
+
+// ############################################################################
+// DEVICE-ONLY
+// ############################################################################
+
+__device__ inline float device_pcg_float(
+    const uint32_t seed = 0u,
+    const uint32_t stream = 0u
+) {
+    ProcessIndex p_idx = get_process_index();
+    return pcg_float(Vector3(p_idx.x, p_idx.y, p_idx.z), seed, stream);
+}
+
+__device__ inline uint32_t device_pcg_int(
+    const uint32_t min    = 0u,
+    const uint32_t max    = 99u,
+    const uint32_t seed   = 0u,
+    const uint32_t stream = 0u
+) {
+    ProcessIndex p_idx = get_process_index();
+    uint32_t hash = seed * 1759274928u;
+    hash += __pcg_hash_int(p_idx.x, seed + 0u, stream);
+    hash += __pcg_hash_int(p_idx.y, seed + 1u, stream);
+    hash += __pcg_hash_int(p_idx.z, seed + 2u, stream);
+    return (hash % (max - min)) + min;
+}
+
+__device__ inline Vector3 device_pcg_vector3(
+    const uint32_t seed = 0u,
+    const uint32_t stream = 0u
+) {
+    ProcessIndex p_idx = get_process_index();
+    return Vector3(
+        pcg_float((float)p_idx.x, seed + 0u, stream),
+        pcg_float((float)p_idx.y, seed + 1u, stream),
+        pcg_float((float)p_idx.z, seed + 2u, stream)
+    );
+}
+
+__device__ inline Color device_pcg_color(
+    const uint32_t seed = 0u,
+    const uint32_t stream = 0u
+) {
+    ProcessIndex p_idx = get_process_index();
+    return Color(
+        pcg_float((float)p_idx.x, seed + 0u, stream),
+        pcg_float((float)p_idx.y, seed + 1u, stream),
+        pcg_float((float)p_idx.z, seed + 2u, stream)
+    );
 }
 

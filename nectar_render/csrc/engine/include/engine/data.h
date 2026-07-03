@@ -306,11 +306,21 @@ public:
         const RenderLayersConfig& cfg = {}
     ) : RenderLayers(t->H, t->W, t->cfg) { }
 
-    __host__ AOVs aovs() {
-        return AOVs(
+    __host__ AOVs* aovs() {
+        AOVs aovs_obj(
             H, W, beauty, diffuse, specular, normal, 
             shadow, depth, emission, object_id
         );
+
+        AOVs* d_aov_ptr;
+        size_t n_bytes = sizeof(aovs_obj);
+        cudaMalloc(&d_aov_ptr, n_bytes);
+        cudaMemcpy(
+            reinterpret_cast<void*>(d_aov_ptr), 
+            &aovs_obj, n_bytes, cudaMemcpyHostToDevice);
+
+        return d_aov_ptr;
+
     }
 
     __host__ std::array<DataObject*, N_RENDER_LAYERS> get_data() {

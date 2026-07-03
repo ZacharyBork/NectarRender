@@ -37,7 +37,7 @@ __global__ void trace_kernel(TraceConfig cfg) {
     for (int bounce = 0; bounce < cfg.max_depth; bounce++)
         if (!trace_ray(cfg.scene, ray, color, atten, gen)) break;
 
-    cfg.aovs.beauty.set_color(color);
+    cfg.aovs->beauty.set_color(color);
 }
 
 void trace(TraceConfig cfg) {

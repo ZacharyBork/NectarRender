@@ -79,6 +79,16 @@ class CornellBox(RenderEngine):
                     Vector3(0.3, 0.6, 0.3),
                     Material.LAMBERTIAN(Color.white())
                 ),
+                5.0, 
+                Color.white()
+            ),
+            Volumetric.CONSTANT(
+                Hittable.CUBE(
+                    Vector3(0.2, -0.35, 0.2), 
+                    Vector3(0.0, 35.0, 0.0),
+                    Vector3(0.3),
+                    Material.LAMBERTIAN(Color.white())
+                ),
                 10.0, 
                 Color.white()
             ),
