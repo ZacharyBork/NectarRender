@@ -282,12 +282,17 @@ void register_engine(py::module_& m) {
         )
         .def("sample", ([](
             RenderEngine& self, 
-            Scene&        scene, 
-            SampleMode    mode
+            Scene&     scene, 
+            uint32_t   s_x,
+            uint32_t   s_y,
+            SampleMode mode
         ) {
-            self.sample(scene, mode);
+            self.sample(scene, s_x, s_y, mode);
         }),
-            py::arg("scene"), py::arg("mode") = SampleMode::ACCUMULATE
+            py::arg("scene"), 
+            py::arg("s_x")  = 0u,
+            py::arg("s_y")  = 0u,
+            py::arg("mode") = SampleMode::ACCUMULATE
         )
         .def("render", ([](
             RenderEngine& self, 
@@ -300,6 +305,7 @@ void register_engine(py::module_& m) {
             py::arg("mode") = SampleMode::ACCUMULATE
         )
         .def("layers", &RenderEngine::layers, return_policy::reference)
+        .def_readonly("cam", &RenderEngine::cam)
         .def_readwrite("on_frame_finished", &RenderEngine::on_frame_finished);
 }
 

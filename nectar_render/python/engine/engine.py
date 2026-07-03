@@ -21,7 +21,6 @@ SampleMode: TypeAlias = root.SampleMode
 
 class RenderEngine:
     ENGINE: Engine = None
-    CAMERA: Camera = None
     SILENT:   bool = False
         
     def __init__(
@@ -32,20 +31,23 @@ class RenderEngine:
         silent:    bool = False
     ) -> None:        
         self.__setattr__('SILENT', silent)
-        self.__setattr__('CAMERA', camera)
         self.__setattr__('ENGINE', Engine(
-            self.CAMERA, max_depth, 
+            camera, max_depth, 
             seed if seed is not None 
             else np.random.random_integers(0, 999999)
         ))
         self.ENGINE.on_frame_finished = self.on_frame_finished
+
+    @property
+    def n_samples(self: Self) -> int:
+        return self.ENGINE.cam.n_samples
 
     def log(self: Self, log_string: str) -> None:
         if not self.SILENT: print(log_string)
         
     def on_frame_finished(self: Self, frame_idx: int) -> None:
         if not self.SILENT:
-            progress.pbar('render', self.CAMERA.n_samples).update(frame_idx)
+            progress.pbar('render', self.n_samples).update(frame_idx)
         
     def sample(
         self:  Self, 

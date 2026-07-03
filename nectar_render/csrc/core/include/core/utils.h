@@ -60,6 +60,12 @@ struct ColorIndex {
         data_ptr[g] = c.g();
         data_ptr[b] = c.b();
     }
+
+    __host__ __device__ void add_color(float* data_ptr, Color c) const {
+        data_ptr[r] += c.r();
+        data_ptr[g] += c.g();
+        data_ptr[b] += c.b();
+    }
 };
 
 // ############################################################################
@@ -89,6 +95,10 @@ __host__ __device__ inline Vector3 rad2deg(const Vector3& radians) {
         rad2deg(radians.z())
     );
 }
+
+// ############################################################################
+// VALUE INTERPRETATION
+// ############################################################################
 
 __host__ __device__ inline uint32_t float_as_uint(float f) {
     uint32_t u;

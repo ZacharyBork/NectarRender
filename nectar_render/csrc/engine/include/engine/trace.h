@@ -19,10 +19,18 @@ struct TraceConfig {
     uint32_t seed      = 54321u;
     uint32_t frame     = 0u;
 
+    uint32_t s_x = 0u;
+    uint32_t s_y = 0u;
+
     __host__ void increment() { frame++; }
 
     __host__ void update_scene_graph(SceneGraph* graph) {
         if (!scene) scene = graph;
+    }
+
+    __host__ void set_sample_index(uint32_t x, uint32_t y) {
+        s_x = x;
+        s_y = y;
     }
 
 };

@@ -10,7 +10,7 @@
 #include "core/include/core.h"
 
 // ============================================================================
-// DATA OBJECT CLASS
+// DATAVIEW
 // ============================================================================
 
 struct DataView {
@@ -28,8 +28,17 @@ struct DataView {
         ColorIndex idx = ColorIndex::from_process(C, H, W);
         idx.set_color(ptr, color);
     }
+
+    __device__ DataView& operator+=(const Color& color) {
+        ColorIndex idx = ColorIndex::from_process(C, H, W);
+        idx.add_color(ptr, color);
+    }
     
 };
+
+// ============================================================================
+// DATA OBJECT CLASS
+// ============================================================================
 
 class DataObject {
 public:

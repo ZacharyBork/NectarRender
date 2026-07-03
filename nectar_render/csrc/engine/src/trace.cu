@@ -6,8 +6,8 @@
 
 __device__ bool trace_ray(
     SceneGraph* scene,
+    AOVs*       aovs,
     Ray&        ray,
-    Color&      color,
     Color&      atten,
     Generator&  gen
 ) {
@@ -15,11 +15,11 @@ __device__ bool trace_ray(
     bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
 
     if (!hit) {
-        color += atten * scene->skylight.sample(ray);
+        aovs->beauty += atten * scene->skylight.sample(ray);
         return false;
     }
 
-    color += atten * rec.mat->emitted(rec.uv, rec.p);
+    aovs->beauty += atten * rec.mat->emitted(rec.uv, rec.p);
     return hit & rec.mat->scatter(rec, ray, atten, gen);
 }
 
@@ -28,16 +28,12 @@ __global__ void trace_kernel(TraceConfig cfg) {
     if (p_idx.x >= cfg.W || p_idx.y >= cfg.H) return;
     uint32_t pixel_idx = p_idx.y * cfg.W + p_idx.x;
 
-    Generator gen(cfg.seed, pixel_idx + cfg.frame * (cfg.W * cfg.H));
-    Ray ray = cfg.camera->get_ray(p_idx.x, p_idx.y, gen);
-
-    Color color = Color::black();
     Color atten = Color::white();
+    Generator gen(cfg.seed, pixel_idx + cfg.frame * (cfg.W * cfg.H));
+    Ray ray = cfg.camera->get_ray(p_idx.x, p_idx.y, cfg.s_x, cfg.s_y, gen);
 
     for (int bounce = 0; bounce < cfg.max_depth; bounce++)
-        if (!trace_ray(cfg.scene, ray, color, atten, gen)) break;
-
-    cfg.aovs->beauty.set_color(color);
+        if (!trace_ray(cfg.scene, cfg.aovs, ray, atten, gen)) break;
 }
 
 void trace(TraceConfig cfg) {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <optional>
 #include <stdint.h>
 #include <cuda_runtime.h>
 #include <pybind11/functional.h>
@@ -17,6 +16,7 @@ enum class SampleMode{ ACCUMULATE, COMBINE };
 class RenderEngine {
 public:
 
+    Camera cam;
     std::function<void(uint32_t)> on_frame_finished;
 
     RenderEngine(
@@ -30,7 +30,7 @@ public:
         config.H = (size_t)cam.resolution[0];
         config.W = (size_t)cam.resolution[1];
         
-        cam._construct();
+        cam.__construct();
         config.camera = cam.device_camera();
         config.aovs   = sample_aovs.aovs();
 
@@ -40,9 +40,12 @@ public:
 
     void sample(
         Scene& scene, 
+        uint32_t s_x = 0u,
+        uint32_t s_y = 0u,
         SampleMode mode = SampleMode::ACCUMULATE
     ) {
         config.update_scene_graph(scene.graph);
+        config.set_sample_index(s_x, s_y);
         config.increment();
 
         trace(config);
@@ -61,9 +64,12 @@ public:
     ) {
         aovs.pin_buffer(LayerType::BEAUTY);
         
-        for (int s = 0; s < cam.n_samples; s++) {
-            sample(scene, mode);
-            on_frame_finished(config.frame);
+        uint32_t n_samples_stratified = cam.sqrt_n_samples();
+        for (uint32_t s_y = 0; s_y < n_samples_stratified; s_y++) {
+            for (uint32_t s_x = 0; s_x < n_samples_stratified; s_x++) {
+                sample(scene, s_x, s_y, mode);
+                on_frame_finished(config.frame);
+            }
         }
     }
 
@@ -71,7 +77,6 @@ public:
 
 private:
 
-    Camera cam;
     TraceConfig config;
     RenderLayers aovs, sample_aovs;
 
