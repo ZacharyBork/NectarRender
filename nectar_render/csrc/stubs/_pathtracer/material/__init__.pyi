@@ -11,10 +11,10 @@ class Dielectric(Material):
         ...
 class Emissive(Material):
     @typing.overload
-    def __init__(self, albedo: _pathtracer.core.vector.Color = ...) -> None:
+    def __init__(self, albedo: _pathtracer.core.vector.Color = ..., brightness: typing.SupportsFloat | typing.SupportsIndex = 35.0) -> None:
         ...
     @typing.overload
-    def __init__(self, arg0: texture.Texture) -> None:
+    def __init__(self, texture: texture.Texture, brightness: typing.SupportsFloat | typing.SupportsIndex = 35.0) -> None:
         ...
 class Isotropic(Material):
     @typing.overload

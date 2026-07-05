@@ -27,13 +27,9 @@ public:
         aovs(RenderLayers(cam.resolution)),
         sample_aovs(RenderLayers(&aovs))
     { 
+        cam.__construct();
         config.H = (size_t)cam.resolution[0];
         config.W = (size_t)cam.resolution[1];
-        
-        cam.__construct();
-        config.camera = cam.device_camera();
-        config.aovs   = sample_aovs.aovs();
-
         config.max_depth = ray_depth;
         config.seed = seed;
     }
@@ -44,14 +40,12 @@ public:
         uint32_t s_y = 0u,
         SampleMode mode = SampleMode::ACCUMULATE
     ) {
-        config.update_scene_graph(scene.graph);
         config.set_sample_index(s_x, s_y);
-        config.increment();
 
-        trace(config);
+        trace(config, cam.device_camera(), scene.graph, sample_aovs.aovs());
 
         if (mode == SampleMode::ACCUMULATE) 
-            aovs.accumulate(sample_aovs, config.frame);
+            aovs.accumulate(sample_aovs, config.n_samples);
         else aovs.combine(sample_aovs);
         sample_aovs.clear();
 
@@ -68,7 +62,7 @@ public:
         for (uint32_t s_y = 0; s_y < n_samples_stratified; s_y++) {
             for (uint32_t s_x = 0; s_x < n_samples_stratified; s_x++) {
                 sample(scene, s_x, s_y, mode);
-                on_frame_finished(config.frame);
+                on_frame_finished(config.n_samples);
             }
         }
     }

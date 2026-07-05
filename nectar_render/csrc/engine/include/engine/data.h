@@ -13,27 +13,99 @@
 // DATAVIEW
 // ============================================================================
 
-struct DataView {
-    float*  ptr;
-    size_t  C, H, W;
-    bool    enabled;
+struct ColorIndex { 
+    int r, g, b; 
 
-    __host__ __device__ size_t n_pixels()   const { return H * W; }
-    __host__ __device__ size_t n_elements() const { return C * n_pixels(); }
-    __host__ __device__ size_t n_bytes()    const { 
+    __device__ ColorIndex(
+        size_t C,
+        size_t H,
+        size_t W
+    ) {
+        ProcessIndex p_idx = get_process_index();
+        r = p_idx.z * (C * H * W) + 0 * (H * W) + p_idx.y * W + p_idx.x;
+        g = p_idx.z * (C * H * W) + 1 * (H * W) + p_idx.y * W + p_idx.x; 
+        b = p_idx.z * (C * H * W) + 2 * (H * W) + p_idx.y * W + p_idx.x;
+    }
+};
+
+struct DataView {
+public:
+
+    float* ptr;
+    size_t C, H, W;
+    bool   enabled;
+
+    /* CONSTRUCTORS */
+
+    __host__ DataView() : ptr(nullptr), C(0), H(0), W(0), enabled(false) { }
+
+    __host__ DataView(
+        float* data_ptr,
+        const size_t channels,
+        const size_t height,
+        const size_t width,
+        const bool is_enabled
+    ) : ptr(data_ptr), 
+        C(channels),
+        H(height), 
+        W(width), 
+        enabled(is_enabled)
+    { }
+
+    /* INSPECTION UTILITIES */
+
+    __device__ size_t n_pixels()   const { return H * W; }
+    __device__ size_t n_elements() const { return C * n_pixels(); }
+    __device__ size_t n_bytes()    const { 
         return n_elements() * sizeof(float); 
     }
 
-    __device__ void set_color(Color color) {
-        ColorIndex idx = ColorIndex::from_process(C, H, W);
-        idx.set_color(ptr, color);
+    /* GETTERS / SETTERS */
+
+    __device__ Color get_color() {
+        ColorIndex idx(C, H, W);
+        return Color(ptr[idx.r], ptr[idx.g], ptr[idx.b]);
     }
 
-    __device__ DataView& operator+=(const Color& color) {
-        ColorIndex idx = ColorIndex::from_process(C, H, W);
-        idx.add_color(ptr, color);
+    __device__ void set_color(const Color& c) {
+        ColorIndex idx(C, H, W);
+        ptr[idx.r] = c.r();
+        ptr[idx.g] = c.g();
+        ptr[idx.b] = c.b();
+    }
+
+    __device__ void set_color(const float r, const float g, const float b) {
+        set_color(Color(r, g, b));
+    }
+
+    /* OPERATORS */
+
+    __device__ DataView& operator+=(const Color& c) {
+        ColorIndex idx(C, H, W);
+        ptr[idx.r] += c.r();
+        ptr[idx.g] += c.g();
+        ptr[idx.b] += c.b();
+        return *this;
     }
     
+    __device__ DataView& operator+=(const float v) { 
+        *this += Color(v); 
+        return *this;
+    }
+
+    __device__ DataView& operator*=(const Color& c) {
+        ColorIndex idx(C, H, W);
+        ptr[idx.r] += c.r();
+        ptr[idx.g] += c.g();
+        ptr[idx.b] += c.b();
+        return *this;
+    }
+
+    __device__ DataView& operator*=(const float v) { 
+        *this *= Color(v);
+        return *this;
+    }
+
 };
 
 // ============================================================================
@@ -200,17 +272,12 @@ private:
 };
 
 void run_combine_data(DataView a, DataView b);
-void run_accumulate_samples(DataView a, DataView b,uint32_t current_sample);
-
-void run_norm_by_samples(DataView data, uint32_t samples);
-void run_linear_to_gamma(DataView data);
-void run_tonemap(DataView data, float exposure);
-
 inline void DataObject::combine(DataObject& other) {
     if (this->enabled && other.enabled) 
         run_combine_data(this->view(), other.view()); 
 }
 
+void run_accumulate_samples(DataView a, DataView b,uint32_t current_sample);
 inline void DataObject::accumulate_samples(
     DataObject& other,
     uint32_t current_sample
@@ -220,14 +287,17 @@ inline void DataObject::accumulate_samples(
     }
 }
 
+void run_norm_by_samples(DataView data, uint32_t samples);
 inline void DataObject::normalize_by_samples(uint32_t samples) {
     if (this->enabled) run_norm_by_samples(this->view(), samples);
 }
 
+void run_linear_to_gamma(DataView data);
 inline void DataObject::linear_to_gamma() { 
     if (this->enabled) run_linear_to_gamma(this->view()); 
 }
 
+void run_tonemap(DataView data, float exposure);
 inline void DataObject::tonemap(float exposure) { 
     if (this->enabled) run_tonemap(this->view(), exposure); 
 }

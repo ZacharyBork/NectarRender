@@ -25,50 +25,6 @@ struct ProcessIndex {
 __device__ ProcessIndex get_process_index();
 
 // ############################################################################
-// COLOR UTILITIES
-// ############################################################################
-
-struct ColorIndex { 
-    int r, g, b; 
-
-    /* CONSTRUCTION */
-
-    __host__ __device__ ColorIndex(int r, int g, int b) 
-        : r(r), g(g), b(b) { }
-
-    __device__ static ColorIndex from_process(
-        uint32_t C,
-        uint32_t H,
-        uint32_t W
-    ) {
-        ProcessIndex p_idx = get_process_index();
-        return ColorIndex(
-            p_idx.z * (C * H * W) + 0 * (H * W) + p_idx.y * W + p_idx.x, 
-            p_idx.z * (C * H * W) + 1 * (H * W) + p_idx.y * W + p_idx.x, 
-            p_idx.z * (C * H * W) + 2 * (H * W) + p_idx.y * W + p_idx.x
-        );
-    }
-
-    /* UTILITIES */
-
-    __host__ __device__ Color get_color(float* data_ptr) const {
-        return Color(data_ptr[r], data_ptr[g], data_ptr[b]);
-    }
-
-    __host__ __device__ void set_color(float* data_ptr, Color c) const {
-        data_ptr[r] = c.r();
-        data_ptr[g] = c.g();
-        data_ptr[b] = c.b();
-    }
-
-    __host__ __device__ void add_color(float* data_ptr, Color c) const {
-        data_ptr[r] += c.r();
-        data_ptr[g] += c.g();
-        data_ptr[b] += c.b();
-    }
-};
-
-// ############################################################################
 // VALUE CONVERSION
 // ############################################################################
 

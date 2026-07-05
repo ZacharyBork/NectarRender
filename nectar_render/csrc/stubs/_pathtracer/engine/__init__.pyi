@@ -117,7 +117,7 @@ class SampleMode:
     def value(self) -> int:
         ...
 class Scene:
-    def __init__(self, hittables: list, skylight: lights.SkyLight) -> None:
+    def __init__(self, hittables: list, lights: list, skylight: lights.SkyLight) -> None:
         ...
 class Transform:
     def R(self) -> _pathtracer.core.matrix.Matrix3:

@@ -13,10 +13,11 @@ PYBIND11_MODULE(_pathtracer, m) {
     m.doc() = "NectarRender C++ host module.";
 
     register_core(m);
-    register_engine(m);
+    
     register_material(m);
     register_hittable(m);
-
+    register_engine(m);
+    
     register_host(m);
 }
 

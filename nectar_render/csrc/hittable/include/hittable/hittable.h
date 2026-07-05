@@ -89,7 +89,7 @@ public:
         Ray r = ray.to_object_space(xform);
 
         bool hit_obj = hit(r, Interval(EPS, FMAX), rec);
-        rec.to_world_space(xform, r, ray);
+        rec.to_world_space(xform, r, ray, true);
         
         return hit_obj;
     }
@@ -108,6 +108,20 @@ public:
         if (delta.p().length() < 1e-16) return xform.p();
         Ray motion(xform.p(), delta.p());
         return motion.at(time);
+    }
+
+    __device__ virtual float pdf_value(
+        const Vector3& origin,
+        const Vector3& direction
+    ) const {
+        return 0.0f;
+    }
+
+    __device__ virtual Vector3 random(
+        const Vector3& origin,
+        Generator& gen
+    ) const {
+        return Vector3(1.0f, 0.0f, 0.0f);
     }
 
 };

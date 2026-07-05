@@ -2,6 +2,7 @@
 
 #include "engine/include/engine/scene.h"
 #include "hittable/include/hittable.h"
+#include "engine/include/engine/light.h"
 
 // ############################################################################
 // DEVICE-SIDE OBJECT CONSTRUCTION
@@ -33,12 +34,18 @@ template ConstantMedium* device_build<ConstantMedium>(
     Transform, Transform, Material*, Hittable*, float
 );
 
+// LIGHTS =====================================================================
+
+template ObjectLight* device_build<ObjectLight>(
+    Transform, Transform, Material*, Hittable*
+);
+
 // MATERIALS ================================================================== 
 
 template Lambertian* device_build<Lambertian>(Texture*);
 template Metal*      device_build<Metal>(Color, float);
 template Dielectric* device_build<Dielectric>(float);
-template Emissive*   device_build<Emissive>(Texture*);
+template Emissive*   device_build<Emissive>(Texture*, float);
 template Isotropic*  device_build<Isotropic>(Texture*);
 
 // TEXTURES ===================================================================

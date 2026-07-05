@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hittable/include/hittable/hittable.h"
+#include "random/include/hash.h"
 
 class Quad : public Hittable {
 public:
@@ -43,6 +44,7 @@ public:
         Vector3 n = cross(u, v);
         normal = normalize(n);
         w = n / dot(n, n);
+        area = n.length();
     }
 
     __host__ Hittable* build() const override {
@@ -72,9 +74,37 @@ public:
         return is_interior(rec);
     }
 
+    __device__ float pdf_value(
+        const Vector3& origin, 
+        const Vector3& direction
+    ) const override {
+        HitRecord rec;
+        Ray world_ray(origin, direction);
+        if (!hit_test(world_ray, rec)) return 0.0f;
+
+        float distance_squared = rec.t * rec.t * direction.length_squared();
+        float cosine = fabsf(dot(direction, rec.n) / direction.length());
+        if (cosine < 1e-8f) return 0.0f;
+
+        float world_area = area * xform.scale().x() * xform.scale().z();
+        return distance_squared / (cosine * world_area);
+    }
+
+
+    __device__ Vector3 random(
+        const Vector3& origin,
+        Generator& gen
+    ) const override {
+        Vector3 corner = -0.5f * u - 0.5f * v;
+        Vector3 p = corner + (gen.random_float()*u) + (gen.random_float()*v);
+        p = xform.R() * (p * xform.scale()) + xform.p();
+        return p - origin;
+    }
+
 private:
 
     Vector3 u, v, w, normal;
+    float area;
 
     __device__ bool is_interior(HitRecord& rec) const {
         Interval unit_interval(-0.5f, 0.5f);

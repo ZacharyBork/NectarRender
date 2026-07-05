@@ -26,7 +26,8 @@ public:
     __device__ void to_world_space(
         const Transform& xform,
         const Ray& object_ray,
-        const Ray& world_ray
+        const Ray& world_ray,
+        bool apply_bias = false
     ) {
         p = xform.R() * (p * xform.scale()) + xform.pos();
         
@@ -35,8 +36,8 @@ public:
         n = normalize(xform.R() * (n * xform.inv_s()));
         
         front_face = dot(world_ray.direction(), n) < 0.0f;
-        n  = front_face ? n : -n;
-        p += n * EPS;
+        n = front_face ? n : -n;
+        if (apply_bias) p += n * EPS;
 
         t = dot(
             p - world_ray.origin(), world_ray.direction()

@@ -205,9 +205,7 @@ void register_engine(py::module_& m) {
 
     auto m_lights = m_engine.def_submodule("lights", "Lights submodule.");
 
-    py::class_<Light>(m_lights, "Light");
-
-    py::class_<SkyLight, Light>(m_lights, "SkyLight")
+    py::class_<SkyLight>(m_lights, "SkyLight")
         .def(py::init<>())
         .def(py::init([](
             const Color& start_color, 
@@ -220,6 +218,32 @@ void register_engine(py::module_& m) {
         )
         .def("black", &SkyLight::black);
 
+    py::class_<Light, Hittable>(m_lights, "Light");
+
+    py::class_<ObjectLight, Light>(m_lights, "ObjectLight")
+        .def(py::init([](
+            Hittable& obj,
+            float brightness,
+            const Color& albedo
+        ) {
+            return ObjectLight(obj, brightness, albedo);
+        }),
+            py::arg("obj"),
+            py::arg("brightness") = 35.0f,
+            py::arg("albedo") = Color(1.0f, 1.0f, 1.0f)
+        )
+        .def(py::init([](
+            Hittable& obj,
+            float brightness,
+            const Texture& texture
+        ) {
+            return ObjectLight(obj, brightness, texture);
+        }),
+            py::arg("obj"),
+            py::arg("brightness") = 35.0f,
+            py::arg("texture") = ConstantTexture(Color(1.0f, 1.0f, 1.0f))
+        );
+
 // ############################################################################
 // SCENE
 // ############################################################################
@@ -227,16 +251,23 @@ void register_engine(py::module_& m) {
     py::class_<Scene>(m_engine, "Scene")
         .def(py::init([](
             py::list hittables,
+            py::list lights,
             SkyLight skylight
         ) {
-            std::vector<Hittable*> ptrs;
-            ptrs.reserve(hittables.size());
+            std::vector<Hittable*> obj_ptrs;
+            obj_ptrs.reserve(hittables.size());
             for (auto& item : hittables)
-                ptrs.push_back(item.cast<Hittable*>());
+                obj_ptrs.push_back(item.cast<Hittable*>());
 
-            return Scene(ptrs, skylight);
+            std::vector<Light*> light_ptrs;
+            light_ptrs.reserve(lights.size());
+            for (auto& item : lights)
+                light_ptrs.push_back(item.cast<Light*>());
+
+            return Scene(obj_ptrs, light_ptrs, skylight);
         }),
             py::arg("hittables"), 
+            py::arg("lights"), 
             py::arg("skylight")
         );
 

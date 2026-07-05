@@ -101,14 +101,24 @@ void register_material(py::module_& m) {
         );
 
     py::class_<Emissive, Material>(m_material, "Emissive")
-        .def(py::init([](const Color& albedo) {
-            return Emissive(albedo);
+        .def(py::init([](
+            const Color& albedo,
+            const float brightness
+        ) {
+            return Emissive(albedo, brightness);
         }),
-            py::arg("albedo") = Color(0.8f, 0.8f, 0.8f)
+            py::arg("albedo")     = Color(0.8f, 0.8f, 0.8f),
+            py::arg("brightness") = 35.0f
         )
-        .def(py::init([](const Texture& texture) {
-            return Emissive(texture);
-        }));
+        .def(py::init([](
+            const Texture& texture,
+            const float brightness
+        ) {
+            return Emissive(texture, brightness);
+        }),
+            py::arg("texture"),
+            py::arg("brightness") = 35.0f
+        );
 
     py::class_<Isotropic, Material>(m_material, "Isotropic")
         .def(py::init([](const Color& albedo) {

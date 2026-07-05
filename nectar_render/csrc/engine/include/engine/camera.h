@@ -102,9 +102,9 @@ private:
         Generator& gen
     ) {
         Vector2 offset = sample_square_stratified(s_x, s_y, gen);
-        float u = ((float)x + offset.x() - (resolution.x() - 1) * 0.5f) 
+        float u = ((float)x + offset.x() - (resolution.x() - 1.0f) * 0.5f) 
                 * (uvw.x() / resolution.x());
-        float v = ((float)y + offset.y() - (resolution.y() - 1) * 0.5f) 
+        float v = ((float)y + offset.y() - (resolution.y() - 1.0f) * 0.5f) 
                 * (uvw.y() / resolution.y());
         float w = -focal_length;
 

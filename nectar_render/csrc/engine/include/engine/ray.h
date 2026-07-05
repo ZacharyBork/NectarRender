@@ -29,6 +29,8 @@ public:
         return Ray(origin, direction, tm);
     }
 
+    __device__ Ray clone() { return Ray(orig, dir, tm); }
+
 private:
 
     Vector3 orig;

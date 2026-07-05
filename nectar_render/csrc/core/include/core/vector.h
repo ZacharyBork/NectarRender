@@ -22,14 +22,18 @@ public:
 
     __host__ __device__ Vector() { }
 
-    __host__ __device__ float   operator[](int i) const { 
+    /* INDEX OPERATORS */
+
+    __host__ __device__ float operator[](int i) const { 
         auto& self = derived();
         return self.e[i]; 
     }
-    __host__ __device__ float&  operator[](int i) { 
+    __host__ __device__ float& operator[](int i) { 
         auto& self = derived();
         return self.e[i]; 
     }
+
+    /* IN-PLACE MATH OPS */
 
     __host__ __device__ VecType operator-() const { 
         VecType result = derived();
@@ -75,6 +79,8 @@ public:
         return *this *= 1.0f / (t + FMIN);
     }
 
+    /* INSPECTION UTILITIES */
+
     __host__ __device__ float length() const {
         return sqrtf(length_squared());
     }
@@ -93,12 +99,57 @@ public:
         return derived().length() < eps;
     }
 
+    /* VALUE UTLITIES */
+
     __host__ __device__ VecType& exp() const {
-        VecType result = derived();
+        auto& self = derived();
         #pragma unroll
         for (size_t i = 0; i < component_count<VecType>; ++i)
-            result.e[i] = expf(result.e[i]);
-        return result;
+            self.e[i] = expf(self.e[i]);
+        return self;
+    }
+
+    __host__ __device__ VecType& minimum(const float other) const {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] = fminf(self.e[i], other);
+        return self;
+    }
+
+    __host__ __device__ VecType& minimum(const VecType& other) const {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] = fminf(self.e[i], other.e[i]);
+        return self;
+    }
+
+    __host__ __device__ VecType& maximum(const float other) const {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] = fmaxf(self.e[i], other);
+        return self;
+    }
+
+    __host__ __device__ VecType& maximum(const VecType& other) const {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] = fmaxf(self.e[i], other.e[i]);
+        return self;
+    }
+
+    __host__ __device__ VecType& clamp(
+        const float min = -FMAX, 
+        const float max =  FMAX
+    ) const {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] = fmaxf(min, fminf(self.e[i], max));
+        return self;
     }
 
 private:
@@ -212,6 +263,8 @@ public:
     __host__ __device__ Vec2Core(float e) : e{ e, e } {}
     __host__ __device__ Vec2Core(float e0, float e1) : e{ e0, e1 } {}
     
+    __host__ __device__ Vec2Core(const VecType& v) : e{ v[0], v[1] } {}
+
     __host__ Vec2Core(std::array<float, 2> e) : e{e[0], e[1]} {}
     __host__ Vec2Core(std::array<int,   2> e) : e{(float)e[0], (float)e[1]} {}
     __host__ Vec2Core(float e[4]) : e{e[0], e[1]} {}
@@ -257,6 +310,8 @@ public:
     __host__ __device__ Vec3Core(
         float e0, float e1, float e2
     ) : e{ e0, e1, e2 } {}
+
+    __host__ __device__ Vec3Core(const VecType& v) : e{ v[0], v[1], v[2] } {}
 
     __host__ Vec3Core(std::array<float, 3> e) : e{e[0], e[1], e[2]} {}
     __host__ Vec3Core(float e[4]) : e{e[0], e[1], e[2]} {}
@@ -366,4 +421,16 @@ __device__ inline Vector3 random_on_hemisphere(
         return on_unit_sphere;
     else
         return -on_unit_sphere;
+}
+
+__device__ inline Vector3 random_cosine_direction(Generator& gen) {
+    float r1 = gen.random_float();
+    float r2 = gen.random_float();
+
+    float phi = PI2 * r1;
+    float x = cosf(phi) * sqrtf(r2);
+    float y = sinf(phi) * sqrtf(r2);
+    float z = sqrtf(1.0f - r2);
+
+    return Vector3(x, y, z);
 }

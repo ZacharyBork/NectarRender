@@ -5,11 +5,9 @@
 // ============================================================================
 
 __global__ void linear_to_gamma_kernel(DataView data) {
-    ColorIndex c_idx = ColorIndex::from_process(data.C, data.H, data.W);
 
-    float* data_ptr = data.ptr;
-    Color curr = c_idx.get_color(data_ptr);
-    c_idx.set_color(data_ptr, Color(
+    Color curr = data.get_color();
+    data.set_color(Color(
         curr.r() > 0.0f ? sqrtf(curr.r()) : 0.0f,
         curr.g() > 0.0f ? sqrtf(curr.g()) : 0.0f,
         curr.b() > 0.0f ? sqrtf(curr.b()) : 0.0f
@@ -27,10 +25,8 @@ void run_linear_to_gamma(DataView data) {
 // ============================================================================
 
 __global__ void combine_data_kernel(DataView a, DataView b) {
-    ColorIndex c_idx = ColorIndex::from_process(a.C, a.H, a.W);
-    float* a_data = a.ptr;
-    Color a_color = c_idx.get_color(a_data);
-    c_idx.set_color(a_data, a_color + c_idx.get_color(b.ptr));
+    Color a_color = a.get_color();
+    a.set_color(a_color + b.get_color());
 }
 
 void run_combine_data(DataView a, DataView b) {
@@ -43,16 +39,14 @@ __global__ void accumulate_samples_kernel(
     DataView a, 
     DataView b,
     uint32_t current_sample
-) {
-    ColorIndex c_idx = ColorIndex::from_process(a.C, a.H, a.W);
-    
-    Color avg    = c_idx.get_color(a.ptr);
-    Color sample = c_idx.get_color(b.ptr);
+) {    
+    Color avg    = a.get_color();
+    Color sample = b.get_color();
 
     float fn = static_cast<float>(current_sample);
     Color result = avg * ((fn - 1.0f) / fn) + sample * (1.0f / fn);
     
-    c_idx.set_color(a.ptr, result);
+    a.set_color(result);
 }
 
 void run_accumulate_samples(
@@ -73,10 +67,8 @@ __global__ void norm_by_samples_kernel(
     DataView data, 
     uint32_t samples
 ) {
-    ColorIndex c_idx = ColorIndex::from_process(data.C, data.H, data.W);
-    float* data_ptr = data.ptr;
-    Color c = c_idx.get_color(data_ptr) * (1.0 / (float)samples);
-    c_idx.set_color(data_ptr, c);
+    Color c = data.get_color() * (1.0f / (float)samples);
+    data.set_color(c);
 }
 
 void run_norm_by_samples(
@@ -93,10 +85,8 @@ void run_norm_by_samples(
 // ============================================================================
 
 __global__ void tonemap_reinhard_kernel(DataView data) {
-    ColorIndex c_idx = ColorIndex::from_process(data.C, data.H, data.W);
-    float* data_ptr = data.ptr;
-    Color c = c_idx.get_color(data_ptr);
-    c_idx.set_color(data_ptr, c / (c + 1.0f));
+    Color c = data.get_color();
+    data.set_color(c / (c + 1.0f));
 }
 
 void run_tonemap(

@@ -22,7 +22,18 @@ public:
         return false; 
     }
 
-    __device__ virtual Color emitted(Vector2 uv, const Vector3& p) const {
+    __device__ virtual float scattering_pdf(
+        const HitRecord& rec,
+        const Ray& r_in,
+        const Ray& r_scattered
+    ) const { 
+        return 0.0f; 
+    }
+
+    __device__ virtual Color emitted(
+        const Ray&       ray,
+        const HitRecord& rec
+    ) const {
         return Color::black();
     }
 };
@@ -52,12 +63,23 @@ public:
         Color&     attenuation,
         Generator& gen
     ) const override { 
-        Vector3 dir = rec.n + random_unit_vector(gen);
+        ONB uvw(rec.n);
+
+        Vector3 dir = uvw.transform(random_cosine_direction(gen));
         dir = dir.near_zero() ? rec.n : dir;
         
         ray = Ray(rec.p, dir, ray.time());
         attenuation *= texture->sample(rec.uv, rec.p);
         return true;
+    }
+
+    __device__ float scattering_pdf(
+        const HitRecord& rec,
+        const Ray& r_in,
+        const Ray& r_scattered
+    ) const override { 
+        float cosine = dot(rec.n, normalize(r_scattered.direction()));
+        return fmaxf(0.0f, cosine / PI);
     }
 
 private:
@@ -154,25 +176,33 @@ private:
 class Emissive : public Material {
 public:
 
-    __host__ Emissive(const Color& albedo) 
-        : texture(ConstantTexture(albedo).build()) {}
+    __host__ Emissive(const Color& albedo, const float brightness = 35.0f) 
+        : texture(ConstantTexture(albedo).build()), brightness(brightness) {}
 
     template<typename T>
-    __host__ Emissive(const T& texture) : texture(texture.build()) {}
+    __host__ Emissive(const T& texture, const float brightness = 35.0f) 
+        : texture(texture.build()), brightness(brightness) {}
 
-    __device__ Emissive(Texture* texture) : texture(texture) { }
+    __device__ Emissive(Texture* texture, float brightness) 
+        : texture(texture), brightness(brightness) { }
 
     __host__ Material* build() const override {
-        return device_build<Emissive>(texture);
+        return device_build<Emissive>(texture, brightness);
     }
 
-    __device__ Color emitted(Vector2 uv, const Vector3& p) const override {
-        return texture->sample(uv, p);
+    __device__ Color emitted(
+        const Ray&       ray,
+        const HitRecord& rec
+    ) const override {
+        if (!rec.front_face) return Color::black();
+        return texture->sample(rec.uv, rec.p) * brightness;
     }
 
 private:
 
     Texture* texture;
+    float    brightness;
+
 };
 
 // ############################################################################
@@ -203,6 +233,14 @@ public:
         ray = Ray(rec.p, random_unit_vector(gen), ray.time());
         attenuation *= texture->sample(rec.uv, rec.p);
         return true;
+    }
+
+    __device__ float scattering_pdf(
+        const HitRecord& rec,
+        const Ray& r_in,
+        const Ray& r_scattered
+    ) const override { 
+        return 1.0f / PI4;
     }
 
 private:
