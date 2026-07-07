@@ -2,23 +2,70 @@
 #include "engine/include/engine/pdf.h"
 
 // ============================================================================
-// PROBABILITY DENSITY FUNCTION
+// TRACE SHADOW RAYS
 // ============================================================================
 
-__device__ MixturePDF build_pdf(
+__device__ Color trace_shadow_rays(
     SceneGraph* scene,
     HitRecord&  rec,
+    uint32_t    n_shadow_rays,
     Generator&  gen
 ) {
-    HittablePDF<Light> light_pdf(scene->lights, rec.p, gen);
-    CosinePDF cosine_pdf(rec.n, gen);
-    MixturePDF pdf(&light_pdf, &cosine_pdf, gen);
-    return pdf;
+    Color shadow_atten = Color::white();
+
+    for (int i = 0; i < n_shadow_rays; i++) {
+        Light* light = scene->lights[gen.random_int(0, scene->n_lights)];
+
+        Vector3 to_light  = light->random(rec.p, gen);
+        float   dist      = to_light.length();
+        Vector3 light_dir = to_light / dist;
+
+        HitRecord tmp_rec;
+        Ray r_shadow(rec.p, light_dir);
+        bool occluded = scene->hit(r_shadow, Interval(EPS, dist-EPS), tmp_rec);
+
+        if (occluded) {
+            shadow_atten -= 1.0f / (float)n_shadow_rays;
+        }
+    }
+
+    return shadow_atten;
 }
 
 // ============================================================================
 // TRACE SINGLE RAY
 // ============================================================================
+
+__device__ const bool sample_pdf(
+    SceneGraph*    scene,
+    Ray&           ray,
+    Ray&           r_in,
+    Color&         atten,
+    HitRecord&     rec,
+    ScatterRecord& srec,
+    Generator&     gen
+) {
+    Vector3 direction;
+    float   pdf_value;
+
+    if (scene->n_lights > 0) {
+        Hittable** lights = reinterpret_cast<Hittable**>(scene->lights);
+        MixturePDF pdf(srec.pdf, PDF::hittable(lights, rec.p));
+        direction = pdf.generate(gen);
+        pdf_value = pdf.value(direction);
+    } else {
+        direction = srec.pdf.generate(gen);
+        pdf_value = srec.pdf.value(direction);
+    }
+
+    if (pdf_value <= 0.0f) return false;
+
+    ray = Ray(rec.p, direction, r_in.time());
+    float scattering_pdf = rec.mat->scattering_pdf(rec, r_in, ray);
+    atten *= (scattering_pdf * srec.atten) / pdf_value;
+
+    return true;
+}
 
 __device__ bool trace_ray(
     SceneGraph* scene,
@@ -35,22 +82,21 @@ __device__ bool trace_ray(
         return false;
     }
 
+    ScatterRecord srec;
     Ray r_in = ray.clone();
-    Color sample_color = Color::white();
-    
+
     aovs->beauty += atten * rec.mat->emitted(ray, rec);
-    if (!rec.mat->scatter(rec, ray, sample_color, gen)) {
+    if (!rec.mat->scatter(rec, ray, srec, gen)) {
         return false;
     }
 
-    MixturePDF pdf = build_pdf(scene, rec, gen);
-    if (pdf.value <= 0.0f) return false;
-    
-    ray = Ray(rec.p, pdf.direction, r_in.time());
-    float scatter_pdf = rec.mat->scattering_pdf(rec, r_in, ray);
-    atten *= (scatter_pdf * sample_color) / pdf.value;
+    if (srec.skip_pdf) {
+        atten *= srec.atten;
+        ray = srec.skip_pdf_ray;
+        return true;
+    }
 
-    return true;
+    return sample_pdf(scene, ray, r_in, atten, rec, srec, gen);
 }
 
 // ============================================================================

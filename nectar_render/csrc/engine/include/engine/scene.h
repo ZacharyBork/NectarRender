@@ -22,7 +22,7 @@ struct SceneGraph {
         const Ray&  ray,
         Interval    ray_t,
         HitRecord&  rec
-    ) const {
+    ) {
         uint8_t stack[STACK_SIZE];
         uint8_t stack_ptr  = 0u;
         stack[stack_ptr++] = 0u;

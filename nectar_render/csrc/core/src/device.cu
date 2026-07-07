@@ -40,6 +40,21 @@ template ObjectLight* device_build<ObjectLight>(
     Transform, Transform, Material*, Hittable*
 );
 
+// NOISE ======================================================================
+
+template Perlin* device_build<Perlin>(
+    Vector3* rv, int* perm_x, int* perm_y, int* perm_z
+);
+
+// TEXTURES ===================================================================
+
+template ConstantTexture* device_build<ConstantTexture>(Color);
+template CheckerTexture*  device_build<CheckerTexture>(Color, Color, float);
+template NoiseTexture*    device_build<NoiseTexture>(Perlin*, float, int);
+template ImageTexture*    device_build<ImageTexture>(
+    uint8_t*, size_t, size_t, size_t
+);
+
 // MATERIALS ================================================================== 
 
 template Lambertian* device_build<Lambertian>(Texture*);
@@ -48,19 +63,5 @@ template Dielectric* device_build<Dielectric>(float);
 template Emissive*   device_build<Emissive>(Texture*, float);
 template Isotropic*  device_build<Isotropic>(Texture*);
 
-// TEXTURES ===================================================================
+template PBRMaterial* device_build<PBRMaterial>(PBRDescription);
 
-template ConstantTexture* device_build<ConstantTexture>(Color);
-template CheckerTexture*  device_build<CheckerTexture>(Color, Color, float);
-template ImageTexture*    device_build<ImageTexture>(
-    uint8_t*, size_t, size_t, size_t
-);
-template NoiseTexture* device_build<NoiseTexture>(
-    Perlin*, float, int
-);
-
-// NOISE ======================================================================
-
-template Perlin* device_build<Perlin>(
-    Vector3* rv, int* perm_x, int* perm_y, int* perm_z
-);

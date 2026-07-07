@@ -5,23 +5,19 @@
 #include "engine/include/engine/ray.h"
 
 class Material;
+class Hittable;
 
 class HitRecord {
 public:
+
+    Hittable* hit_object = nullptr;
+
     Vector3 p;               // Position
     Vector3 n;               // Normals
     Vector2 uv;              // UVs
     float   t;               // Distance
     bool    front_face;      // Front / Back face
     Material* mat = nullptr; // Material reference
-
-    __device__ void set_face_normal(
-        const Ray& ray, 
-        const Vector3& outward_normal
-    ) {
-        front_face = dot(ray.direction(), outward_normal) < 0.0f;
-        n = front_face ? outward_normal : -outward_normal;
-    }
 
     __device__ void to_world_space(
         const Transform& xform,

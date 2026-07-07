@@ -109,6 +109,16 @@ public:
         return self;
     }
 
+    __host__ __device__ VecType& pow(float exponent = 2.0f) const {
+        auto& self = derived();
+
+        VecType out;
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            out.e[i] = powf(self.e[i], exponent);
+        return out;
+    }
+
     __host__ __device__ VecType& minimum(const float other) const {
         auto& self = derived();
         #pragma unroll
@@ -267,7 +277,7 @@ public:
 
     __host__ Vec2Core(std::array<float, 2> e) : e{e[0], e[1]} {}
     __host__ Vec2Core(std::array<int,   2> e) : e{(float)e[0], (float)e[1]} {}
-    __host__ Vec2Core(float e[4]) : e{e[0], e[1]} {}
+    __host__ __device__ Vec2Core(float e[4]) : e{e[0], e[1]} {}
 
     template <typename OtherType>
     __host__ __device__ explicit Vec2Core(const Vec2Core<OtherType>& other)
@@ -314,7 +324,7 @@ public:
     __host__ __device__ Vec3Core(const VecType& v) : e{ v[0], v[1], v[2] } {}
 
     __host__ Vec3Core(std::array<float, 3> e) : e{e[0], e[1], e[2]} {}
-    __host__ Vec3Core(float e[4]) : e{e[0], e[1], e[2]} {}
+    __host__ __device__ Vec3Core(float e[4]) : e{e[0], e[1], e[2]} {}
     
 
     template <typename OtherType>
@@ -353,9 +363,15 @@ public:
 class Vector3 : public Vec3Core<Vector3> { using Vec3Core::Vec3Core; };
 class Color   : public Vec3Core<Color>   { using Vec3Core::Vec3Core; 
 public:
+
+    bool is_rgb = true;
+
     __host__ __device__ float r() const { return e[0]; }
     __host__ __device__ float g() const { return e[1]; }
     __host__ __device__ float b() const { return e[2]; }
+    __host__ __device__ float h() const { return e[0]; }
+    __host__ __device__ float s() const { return e[1]; }
+    __host__ __device__ float v() const { return e[2]; }
 
     __host__ __device__ static Color black()  {return Color(0.0f, 0.0f, 0.0f);}
     __host__ __device__ static Color white()  {return Color(1.0f, 1.0f, 1.0f);}
@@ -365,6 +381,61 @@ public:
     __host__ __device__ static Color purple() {return Color(1.0f, 0.0f, 1.0f);}
     __host__ __device__ static Color yellow() {return Color(1.0f, 1.0f, 0.0f);}
     __host__ __device__ static Color teal()   {return Color(0.0f, 1.0f, 1.0f);}
+
+    __host__ __device__ Vector3 as_vector() { return Vector3(e); }
+
+    __host__ __device__ void rgb_to_hsv() {
+        if (!is_rgb) return;
+        is_rgb = !is_rgb;
+
+        float cmax = fmaxf(fmaxf(r(), g()), b());
+        float cmin = fminf(fminf(r(), g()), b());
+        float delta = cmax - cmin;
+
+        float h = 0.0f;
+        float s = (cmax == 0.0f) ? 0.0f : delta / cmax;
+        float v = cmax;
+        
+        if (delta != 0.0f) {
+            if (cmax == r()) h = fmodf((g() - b()) / delta, 6.0f);
+            if (cmax == g()) h = (b() - r()) / delta + 2.0f; 
+            else h = (r() - g()) / delta + 4.0f;
+        }
+
+        h /= 6.0f;
+        if (h < 0.0f) h += 1.0f;
+
+        e[0] = h; e[1] = s; e[2] = v;
+    }
+
+    __host__ __device__ void hsv_to_rgb() {
+        if (!is_rgb) return;
+        is_rgb = !is_rgb;
+
+        float h = r();
+        float s = g();
+        float v = b();
+
+        if (s == 0.0f) {
+            e[0] = e[1] = e[2] = v;
+            return;
+        }
+
+        float i = floorf(h * 6.0f);
+        float f = h * 6.0f - i;
+        float p = v * (1.0f - s);
+        float q = v * (1.0f - f * s);
+        float t = v * (1.0f - (1.0f - f) * s);
+
+        switch ((int)i % 6) {
+            case 0: e[0] = v; e[1] = t; e[2] = p; break;
+            case 1: e[0] = q; e[1] = v; e[2] = p; break;
+            case 2: e[0] = p; e[1] = v; e[2] = t; break;
+            case 3: e[0] = p; e[1] = q; e[2] = v; break;
+            case 4: e[0] = t; e[1] = p; e[2] = v; break;
+            case 5: e[0] = v; e[1] = p; e[2] = q; break;
+        }
+    }
 };
 
 // MATH =======================================================================

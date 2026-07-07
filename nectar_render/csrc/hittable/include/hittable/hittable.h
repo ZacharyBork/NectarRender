@@ -17,6 +17,8 @@ public:
     Material* material = nullptr;
     AABB      bbox;
 
+    Hittable* self_ref = this;
+
     /* CONSTRUCTORS */
 
     __host__ Hittable() : material(Lambertian(Color::purple()).build()) { }
@@ -89,6 +91,7 @@ public:
         Ray r = ray.to_object_space(xform);
 
         bool hit_obj = hit(r, Interval(EPS, FMAX), rec);
+        if (hit_obj) rec.hit_object = self_ref;
         rec.to_world_space(xform, r, ray, true);
         
         return hit_obj;

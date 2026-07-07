@@ -130,6 +130,30 @@ void register_material(py::module_& m) {
             return Isotropic(texture);
         }));
 
+    py::class_<PBRMaterial, Material>(m_material, "PBRMaterial")
+        .def(py::init([](
+            const Texture& albedo,
+            const Texture& roughness,
+            const Texture& metallic,
+            const Texture& normal,
+            float normal_strength,
+            const Texture& ambient_occlusion,
+            float ao_power
+        ) {
+            return PBRMaterial(
+                albedo, roughness, metallic, normal, normal_strength,
+                ambient_occlusion, ao_power 
+            );
+        }),
+            py::arg("albedo")    = ConstantTexture(Color::white()),
+            py::arg("roughness") = ConstantTexture(Color(0.8f)),
+            py::arg("metallic")  = ConstantTexture(Color(0.0f)),
+            py::arg("normal")    = ConstantTexture(Color(0.0f, 0.0f, 1.0f)),
+            py::arg("normal_strength")   = 1.0f,
+            py::arg("ambient_occlusion") = ConstantTexture(Color(1.0f)),
+            py::arg("ao_power") = 1.0f
+        );
+
 
 }
 
