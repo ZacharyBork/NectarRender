@@ -326,7 +326,7 @@ public:
         );
 
         srec.atten = desc.albedo->sample(rec.uv, rec.p);
-        srec.pdf   = PDF::cosine(rec.n);
+        srec.pdf   = PDF::phong(rec.n, 1.0f);
         srec.skip_pdf = false;
 
         return true;

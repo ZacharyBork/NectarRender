@@ -305,7 +305,7 @@ void register_engine(py::module_& m) {
             uint32_t ray_depth,
             uint32_t seed
         ) { 
-            return RenderEngine(camera, ray_depth, seed); 
+            return std::make_unique<RenderEngine>(camera, ray_depth, seed);
         }),
             py::arg("camera"),
             py::arg("ray_depth") = 8u,
@@ -330,13 +330,20 @@ void register_engine(py::module_& m) {
             Scene&        scene, 
             SampleMode    mode
         ) {
+            py::gil_scoped_release release;
             self.render(scene, mode);
         }),
             py::arg("scene"), 
             py::arg("mode") = SampleMode::ACCUMULATE
         )
-        .def("layers", &RenderEngine::layers, return_policy::reference)
-        .def_readonly("cam", &RenderEngine::cam)
-        .def_readwrite("on_frame_finished", &RenderEngine::on_frame_finished);
+        .def("request_cancel", &RenderEngine::request_cancel)
+        .def("is_cancelled",   &RenderEngine::is_cancelled)
+        .def("is_rendering",   &RenderEngine::is_cancelled)
+        .def("reset",          &RenderEngine::reset)
+        .def("layers",         &RenderEngine::layers, return_policy::reference)
+        .def_readonly("cam",   &RenderEngine::cam)
+        .def_readwrite("on_frame_finished",  &RenderEngine::on_frame_finished)
+        .def_readwrite("on_render_finished", &RenderEngine::on_render_finished)
+        .def_readwrite("on_canceled",        &RenderEngine::on_canceled);
 }
 

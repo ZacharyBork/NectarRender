@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/include/core/onb.h"
 #include "hittable/include/hittable/hittable.h"
 #include "hittable/include/hittable/primitives.h"
 
@@ -67,9 +68,53 @@ public:
         return true;
     }
 
+    __device__ float pdf_value(
+        const Vector3& origin, 
+        const Vector3& direction
+    ) const override {
+        HitRecord rec;
+        if (!this->hit(Ray(origin, direction), Interval(EPS, FMAX), rec))
+            return 0.0f;
+
+        float rad_sq = radius * radius;
+        float dist_squared = (xform.p() - origin).length_squared();
+        float cos_theta_max = sqrtf(1.0f - rad_sq / dist_squared);
+        float solid_angle = PI2 * (1.0f - cos_theta_max);
+
+        return 1.0f / solid_angle;
+    }
+
+    __device__ Vector3 random(
+        const Vector3& origin, 
+        Generator& gen
+    ) const override {
+        Vector3 direction = xform.p() - origin;
+        auto distance_squared = direction.length_squared();
+        ONB uvw(direction);
+        return uvw.transform(random_to_sphere(radius, distance_squared, gen));
+    }
+
 private:
 
     float radius;
+
+    __device__ static Vector3 random_to_sphere(
+        float radius, 
+        float distance_squared,
+        Generator& gen
+    ) {
+        float r1 = gen.random_float();
+        float r2 = gen.random_float();
+        float rad_sq = radius * radius;
+        float z = 1.0f + r2 * (sqrtf(1.0f - rad_sq / distance_squared) - 1.0f);
+
+        float phi = PI2 * r1;
+        float x = cosf(phi) * sqrtf(1.0f - z * z);
+        float y = sinf(phi) * sqrtf(1.0f - z * z);
+
+        return Vector3(x, y, z);
+    }
+
 };
 
 class Cube : public Hittable {

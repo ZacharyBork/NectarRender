@@ -36,5 +36,5 @@ class Metal(Material):
     def __init__(self, albedo: _pathtracer.core.vector.Color = ..., fuzz: typing.SupportsFloat | typing.SupportsIndex = 0.0) -> None:
         ...
 class PBRMaterial(Material):
-    def __init__(self, albedo: texture.Texture = ...) -> None:
+    def __init__(self, albedo: texture.Texture = ..., roughness: texture.Texture = ..., metallic: texture.Texture = ..., normal: texture.Texture = ..., normal_strength: typing.SupportsFloat | typing.SupportsIndex = 1.0, ambient_occlusion: texture.Texture = ..., ao_power: typing.SupportsFloat | typing.SupportsIndex = 1.0) -> None:
         ...

@@ -13,7 +13,8 @@ public:
     Hittable* hit_object = nullptr;
 
     Vector3 p;               // Position
-    Vector3 n;               // Normals
+    Vector3 n;               // Surface normal vector
+    Vector3 tangent;         // Surface tangent vector
     Vector2 uv;              // UVs
     float   t;               // Distance
     bool    front_face;      // Front / Back face
@@ -26,6 +27,7 @@ public:
         bool apply_bias = false
     ) {
         p = xform.R() * (p * xform.scale()) + xform.pos();
+        // tangent = normalize(xform.R() * (tangent * xform.scale()));
         
         front_face = dot(object_ray.direction(), n) < 0.0f;
         n = front_face ? n : -n;
@@ -33,6 +35,8 @@ public:
         
         front_face = dot(world_ray.direction(), n) < 0.0f;
         n = front_face ? n : -n;
+        
+        // tangent = normalize(tangent - n * dot(tangent, n));
         if (apply_bias) p += n * EPS;
 
         t = dot(

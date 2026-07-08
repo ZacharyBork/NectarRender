@@ -60,6 +60,23 @@ void run_accumulate_samples(
 }
 
 // ============================================================================
+// ERROR CORRECTION
+// ============================================================================
+
+__global__ void replace_invalid_kernel(DataView data) {
+    Color c = data.get_color();
+    for (int channel = 0; channel < data.C; channel++)
+        if (isnan(c[channel])) c[channel] = 0.0f;
+    data.set_color(c);
+}
+
+void run_replace_invalid(DataView data) {
+    dim3 block(BS2D, BS2D, 1);
+    dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
+    replace_invalid_kernel<<<grid, block>>>(data);
+}
+
+// ============================================================================
 // NORMALIZATION
 // ============================================================================
 
@@ -98,4 +115,30 @@ void run_tonemap(
     tonemap_reinhard_kernel<<<grid, block>>>(data);
 }
 
+// ============================================================================
+// IMAGE CONVERSION
+// ============================================================================
+
+__global__ void to_image_kernel(DataView data, uint8_t* result) {
+    ColorIndex idx = data.get_color_index();
+    Color c = data.get_color();
+
+    for (int channel = 0; channel < data.C; channel++) {
+        if (isnan(c[channel])) c[channel] = 0.0f;
+        c[channel] = fmaxf(0.0f, fminf(1.0f, c[channel]));
+        c[channel] *= 255.0f;
+    }
+
+    idx.set_color(result,
+        static_cast<uint8_t>(c.r()),
+        static_cast<uint8_t>(c.g()),
+        static_cast<uint8_t>(c.b())
+    );
+}
+
+void to_image(DataView data, uint8_t* result) {
+    dim3 block(BS2D, BS2D, 1);
+    dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
+    to_image_kernel<<<grid, block>>>(data, result);
+}
 

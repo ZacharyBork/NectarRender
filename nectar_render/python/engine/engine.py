@@ -38,16 +38,31 @@ class RenderEngine:
         ))
         self.ENGINE.on_frame_finished = self.on_frame_finished
 
+    ### PROPERTIES ###
+
     @property
     def n_samples(self: Self) -> int:
         return self.ENGINE.cam.n_samples
 
+    ### UTILITIES ###
+
     def log(self: Self, log_string: str) -> None:
         if not self.SILENT: print(log_string)
+        
+    ### HOOKS ###
         
     def on_frame_finished(self: Self, frame_idx: int) -> None:
         if not self.SILENT:
             progress.pbar('render', self.n_samples).update(frame_idx)
+        
+    ### UTILITIES ###
+    
+    def reset         (self: Self) -> None: self.ENGINE.reset()
+    def request_cancel(self: Self) -> None: self.ENGINE.request_cancel()
+    def is_canceled   (self: Self) -> bool: return self.ENGINE.is_cancelled()
+    def is_rendering  (self: Self) -> bool: return self.ENGINE.is_rendering()
+        
+    ### SAMPLING / RENDERING ###
         
     def sample(
         self:  Self, 
@@ -58,9 +73,9 @@ class RenderEngine:
         return self
             
     def render(
-        self:    Self, 
-        scene:   Scene, 
-        mode:    SampleMode = SampleMode.ACCUMULATE
+        self:  Self, 
+        scene: Scene, 
+        mode:  SampleMode = SampleMode.ACCUMULATE
     ) -> Self:
         start = time.time()
         self.ENGINE.render(scene, mode)
@@ -68,10 +83,14 @@ class RenderEngine:
         self.log(f'Render complete. Time taken: {(time.time() - start):.4f}')
         return self
     
+    ### DENOISING ###
+    
     def denoise(self: Self, denoiser: Denoiser = TVDenoiser()) -> Self:
         layers = self.ENGINE.layers()
         denoiser.run(layers.beauty)
         return self
+
+    ### DATA UTILITIES ###
 
     def get_data(self: Self) -> ndarray:
         layers  = self.ENGINE.layers()
@@ -79,18 +98,18 @@ class RenderEngine:
         pinned  = beauty.is_pinned()
         C, H, W = beauty.shape()
         
-        beauty.tonemap(1.0)
+        # beauty.tonemap(1.0)
         # beauty.linear_to_gamma()
         
         if not pinned: arr = beauty.numpy()
         else:
             ptr = beauty.readback_pinned()
             arr = np.ctypeslib.as_array(
-                (ctypes.c_float * beauty.n_elements()).from_address(ptr)
-            ).copy()
+                (ctypes.c_uint8 * beauty.n_elements()).from_address(ptr)
+            )
             
-        image = (arr.reshape(C, H, W).transpose(1, 2, 0) * 255)
-        return image.astype(np.uint8)
+        arr = arr.reshape(C, H, W).transpose(1, 2, 0)
+        return np.ascontiguousarray(arr)
 
     def save_image(self: Self, path: PathLike) -> Self:
         path = Path(path).resolve()

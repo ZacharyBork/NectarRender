@@ -10,7 +10,7 @@
 #include "core/include/core.h"
 
 // ============================================================================
-// DATAVIEW
+// DEVICE COLOR INDEX UTIL
 // ============================================================================
 
 struct ColorIndex { 
@@ -26,7 +26,28 @@ struct ColorIndex {
         g = p_idx.z * (C * H * W) + 1 * (H * W) + p_idx.y * W + p_idx.x; 
         b = p_idx.z * (C * H * W) + 2 * (H * W) + p_idx.y * W + p_idx.x;
     }
+
+    __device__ Color get_color(float* ptr) {
+        return Color(ptr[r], ptr[g], ptr[b]);
+    }
+
+    __device__ void set_color(float* ptr, const Color& c) {
+        ptr[r] = c.r(); ptr[g] = c.g(); ptr[b] = c.b();
+    }
+
+    __device__ void set_color(
+        uint8_t* ptr, 
+        const uint8_t new_r,
+        const uint8_t new_g,
+        const uint8_t new_b
+    ) {
+        ptr[r] = new_r; ptr[g] = new_g; ptr[b] = new_b;
+    }
 };
+
+// ============================================================================
+// DATAVIEW
+// ============================================================================
 
 struct DataView {
 public:
@@ -60,18 +81,18 @@ public:
         return n_elements() * sizeof(float); 
     }
 
+    /* INDEX UTILITIES */
+
+    __device__ ColorIndex get_color_index() { return ColorIndex(C, H, W); }
+
     /* GETTERS / SETTERS */
 
-    __device__ Color get_color() {
-        ColorIndex idx(C, H, W);
-        return Color(ptr[idx.r], ptr[idx.g], ptr[idx.b]);
+    __device__ Color get_color() { 
+        return ColorIndex(C, H, W).get_color(ptr); 
     }
 
     __device__ void set_color(const Color& c) {
-        ColorIndex idx(C, H, W);
-        ptr[idx.r] = c.r();
-        ptr[idx.g] = c.g();
-        ptr[idx.b] = c.b();
+        ColorIndex(C, H, W).set_color(ptr, c);
     }
 
     __device__ void set_color(const float r, const float g, const float b) {
@@ -82,9 +103,7 @@ public:
 
     __device__ DataView& operator+=(const Color& c) {
         ColorIndex idx(C, H, W);
-        ptr[idx.r] += c.r();
-        ptr[idx.g] += c.g();
-        ptr[idx.b] += c.b();
+        idx.set_color(ptr, idx.get_color(ptr) + c);
         return *this;
     }
     
@@ -95,9 +114,7 @@ public:
 
     __device__ DataView& operator*=(const Color& c) {
         ColorIndex idx(C, H, W);
-        ptr[idx.r] += c.r();
-        ptr[idx.g] += c.g();
-        ptr[idx.b] += c.b();
+        idx.set_color(ptr, idx.get_color(ptr) * c);
         return *this;
     }
 
@@ -107,6 +124,14 @@ public:
     }
 
 };
+
+void run_combine_data(DataView a, DataView b);
+void run_norm_by_samples(DataView data, uint32_t samples);
+void run_accumulate_samples(DataView a, DataView b,uint32_t current_sample);
+void run_replace_invalid(DataView data);
+void run_linear_to_gamma(DataView data);
+void run_tonemap(DataView data, float exposure);
+void to_image(DataView data, uint8_t* result);
 
 // ============================================================================
 // DATA OBJECT CLASS
@@ -142,6 +167,7 @@ public:
         enabled = other.enabled;
         d_ptr   = other.d_ptr;
         pinned_buffer   = other.pinned_buffer;
+        image_buffer    = other.image_buffer;
         transfer_stream = other.transfer_stream;
 
         other.d_ptr = 0;
@@ -155,6 +181,7 @@ public:
             enabled         = other.enabled;
             d_ptr           = other.d_ptr;
             pinned_buffer   = other.pinned_buffer;
+            image_buffer    = other.image_buffer;
             transfer_stream = other.transfer_stream;
             other.d_ptr         = 0;
             other.pinned_buffer = nullptr;
@@ -193,7 +220,8 @@ public:
 
     __host__ void pin_buffer() {
         if (pinned_buffer) return;
-        cudaMallocHost(&pinned_buffer, n_bytes());
+        cudaMallocHost(&pinned_buffer, n_elements() * sizeof(uint8_t));
+        cudaMalloc(&image_buffer, n_elements() * sizeof(uint8_t));
         cudaStreamCreate(&transfer_stream);
     }
 
@@ -205,28 +233,38 @@ public:
                 "DataObject::device_ptr() instead."
             );
 
+        to_image(view(), image_buffer);
+
         cudaMemcpyAsync(
-            pinned_buffer,
-            reinterpret_cast<void*>(d_ptr),
-            n_bytes(),
+            pinned_buffer, image_buffer,
+            n_elements() * sizeof(uint8_t),
             cudaMemcpyDeviceToHost,
             transfer_stream
         );
+
         cudaStreamSynchronize(transfer_stream);
         return reinterpret_cast<uintptr_t>(pinned_buffer);
     }
 
-    /* KERNEL WRAPPERS */
+    /* KERNEL UTILITIES */
 
-    __host__ void combine(DataObject& other);
-    __host__ void accumulate_samples(
-        DataObject& other,
-        uint32_t current_sample
-    );
+    void combine(DataObject& other) {
+        if (enabled && other.enabled) run_combine_data(view(), other.view()); 
+    }
 
-    __host__ void normalize_by_samples(uint32_t samples);
-    __host__ void linear_to_gamma();
-    __host__ void tonemap(float exposure);
+    void normalize_by_samples(uint32_t samples) {
+        if (enabled) run_norm_by_samples(view(), samples);
+    }
+
+    void accumulate_samples(DataObject& other, uint32_t current_sample) {
+        if (enabled && other.enabled) {
+            run_accumulate_samples(view(), other.view(), current_sample); 
+        }
+    }
+
+    void replace_invalid() { if (enabled) run_replace_invalid(view()); }
+    void linear_to_gamma() { if (enabled) run_linear_to_gamma(view()); }
+    void tonemap(float exposure) {if (enabled) run_tonemap(view(), exposure);}
 
     /* HOST UTILITIES */
 
@@ -242,14 +280,19 @@ public:
                 "DataObject::readback_pinned() instead."
             );
 
-        cuda_synchronize();
-
-        auto result = pybind11::array_t<float>(shape());
-        auto buf = result.request();
-        
         cudaDeviceSynchronize();
-        cudaMemcpy(buf.ptr, reinterpret_cast<void*>(d_ptr),
-            n_bytes(), cudaMemcpyDeviceToHost);
+
+        uint8_t* image_ptr;
+        cudaMalloc(&image_ptr, n_elements() * sizeof(uint8_t));
+        to_image(view(), image_ptr);
+
+        auto result = pybind11::array_t<uint8_t>(shape());
+        cudaMemcpy(
+            result.request().ptr, image_ptr, 
+            n_elements() * sizeof(uint8_t), 
+            cudaMemcpyDeviceToHost
+        );
+        cudaFree(image_ptr);
 
         return result;
     }
@@ -258,49 +301,19 @@ private:
 
     bool enabled = true;
     uintptr_t d_ptr = 0;
-    float* pinned_buffer = nullptr;
+    uint8_t* pinned_buffer = nullptr;
+    uint8_t* image_buffer  = nullptr;
     cudaStream_t transfer_stream;
 
     __host__ void free_pinned_buffer() {
         if (pinned_buffer) {
-            cudaFreeHost(pinned_buffer);
-            pinned_buffer = nullptr;
+            cudaFreeHost(pinned_buffer); pinned_buffer = nullptr;
+            cudaFree(image_buffer);      image_buffer  = nullptr;
             cudaStreamDestroy(transfer_stream);
         }
     }
 
 };
-
-void run_combine_data(DataView a, DataView b);
-inline void DataObject::combine(DataObject& other) {
-    if (this->enabled && other.enabled) 
-        run_combine_data(this->view(), other.view()); 
-}
-
-void run_accumulate_samples(DataView a, DataView b,uint32_t current_sample);
-inline void DataObject::accumulate_samples(
-    DataObject& other,
-    uint32_t current_sample
-) {
-    if (this->enabled && other.enabled) {
-        run_accumulate_samples(this->view(), other.view(), current_sample); 
-    }
-}
-
-void run_norm_by_samples(DataView data, uint32_t samples);
-inline void DataObject::normalize_by_samples(uint32_t samples) {
-    if (this->enabled) run_norm_by_samples(this->view(), samples);
-}
-
-void run_linear_to_gamma(DataView data);
-inline void DataObject::linear_to_gamma() { 
-    if (this->enabled) run_linear_to_gamma(this->view()); 
-}
-
-void run_tonemap(DataView data, float exposure);
-inline void DataObject::tonemap(float exposure) { 
-    if (this->enabled) run_tonemap(this->view(), exposure); 
-}
 
 // ============================================================================
 // RENDER LAYERS CLASS
@@ -434,6 +447,11 @@ public:
                 cudaMemset(obj->data_ptr(), 0, obj->n_bytes());
     }
 
+    __host__ void replace_invalid_values() {
+        for (DataObject* obj : get_data())
+            if (obj->is_enabled()) obj->replace_invalid();
+    }
+
     __host__ void normalize_by_samples(uint32_t total_samples) {
         for (DataObject* obj : get_data())
             if (obj->is_enabled()) obj->normalize_by_samples(total_samples);
@@ -441,14 +459,14 @@ public:
 
     __host__ DataObject* get_layer(LayerType layer_type) {
         switch (layer_type) {
-        case LayerType::BEAUTY:     return &beauty;
-        case LayerType::DIFFUSE:    return &diffuse;
-        case LayerType::SPECULAR:   return &specular;
-        case LayerType::NORMAL:     return &normal;
-        case LayerType::SHADOW:     return &shadow;
-        case LayerType::DEPTH:      return &depth;
-        case LayerType::EMISSION:   return &emission;
-        case LayerType::OBJECT_ID:  return &object_id;
+        case LayerType::BEAUTY:    return &beauty;
+        case LayerType::DIFFUSE:   return &diffuse;
+        case LayerType::SPECULAR:  return &specular;
+        case LayerType::NORMAL:    return &normal;
+        case LayerType::SHADOW:    return &shadow;
+        case LayerType::DEPTH:     return &depth;
+        case LayerType::EMISSION:  return &emission;
+        case LayerType::OBJECT_ID: return &object_id;
         default:
             throw std::runtime_error(
                 "DataObject::get_layer() encountered invalid LayerType.");
