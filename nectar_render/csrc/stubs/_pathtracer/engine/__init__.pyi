@@ -10,7 +10,53 @@ from . import camera
 from . import data
 from . import denoise
 from . import lights
-__all__: list[str] = ['LayerType', 'RenderEngine', 'SampleMode', 'Scene', 'Transform', 'camera', 'data', 'denoise', 'lights']
+__all__: list[str] = ['EngineState', 'LayerType', 'RenderEngine', 'SampleMode', 'Scene', 'Transform', 'camera', 'data', 'denoise', 'lights']
+class EngineState:
+    """
+    Members:
+    
+      IDLE
+    
+      RENDERING
+    
+      PAUSED
+    
+      CANCELLED
+    
+      REFRESHING
+    """
+    CANCELLED: typing.ClassVar[EngineState]  # value = <EngineState.CANCELLED: 3>
+    IDLE: typing.ClassVar[EngineState]  # value = <EngineState.IDLE: 0>
+    PAUSED: typing.ClassVar[EngineState]  # value = <EngineState.PAUSED: 2>
+    REFRESHING: typing.ClassVar[EngineState]  # value = <EngineState.REFRESHING: 4>
+    RENDERING: typing.ClassVar[EngineState]  # value = <EngineState.RENDERING: 1>
+    __members__: typing.ClassVar[dict[str, EngineState]]  # value = {'IDLE': <EngineState.IDLE: 0>, 'RENDERING': <EngineState.RENDERING: 1>, 'PAUSED': <EngineState.PAUSED: 2>, 'CANCELLED': <EngineState.CANCELLED: 3>, 'REFRESHING': <EngineState.REFRESHING: 4>}
+    def __eq__(self, other: typing.Any) -> bool:
+        ...
+    def __getstate__(self) -> int:
+        ...
+    def __hash__(self) -> int:
+        ...
+    def __index__(self) -> int:
+        ...
+    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __int__(self) -> int:
+        ...
+    def __ne__(self, other: typing.Any) -> bool:
+        ...
+    def __repr__(self) -> str:
+        ...
+    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __str__(self) -> str:
+        ...
+    @property
+    def name(self) -> str:
+        ...
+    @property
+    def value(self) -> int:
+        ...
 class LayerType:
     """
     Members:
@@ -69,10 +115,23 @@ class LayerType:
 class RenderEngine:
     on_canceled: collections.abc.Callable[[], None]
     on_frame_finished: collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex], None]
+    on_paused: collections.abc.Callable[[], None]
+    on_refreshed: collections.abc.Callable[[], None]
     on_render_finished: collections.abc.Callable[[], None]
+    on_render_started: collections.abc.Callable[[], None]
     def __init__(self, camera: camera.Camera, ray_depth: typing.SupportsInt | typing.SupportsIndex = 8, seed: typing.SupportsInt | typing.SupportsIndex = 54321) -> None:
         ...
+    def camera(self) -> camera.Camera:
+        ...
+    def get_state(self) -> EngineState:
+        ...
     def is_cancelled(self) -> bool:
+        ...
+    def is_idle(self) -> bool:
+        ...
+    def is_paused(self) -> bool:
+        ...
+    def is_refreshing(self) -> bool:
         ...
     def is_rendering(self) -> bool:
         ...
@@ -82,12 +141,15 @@ class RenderEngine:
         ...
     def request_cancel(self) -> None:
         ...
+    def request_pause(self) -> None:
+        ...
+    def request_refresh(self) -> None:
+        ...
     def reset(self) -> None:
         ...
     def sample(self, scene: Scene, s_x: typing.SupportsInt | typing.SupportsIndex = 0, s_y: typing.SupportsInt | typing.SupportsIndex = 0, mode: SampleMode = ...) -> None:
         ...
-    @property
-    def cam(self) -> camera.Camera:
+    def scene(self) -> Scene:
         ...
 class SampleMode:
     """

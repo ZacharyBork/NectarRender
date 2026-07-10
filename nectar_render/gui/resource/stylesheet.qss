@@ -17,6 +17,8 @@ QWidget#viewport, QWidget[role="viewport"] {
     border: 1px solid #2a2d36;
 }
 
+/* MENUBAR ====================================== */
+
 QMenuBar {
     background-color: #16181d;
     border-bottom: 1px solid #2a2d36;
@@ -37,6 +39,8 @@ QMenuBar::item:pressed {
     background-color: #2a2d36;
     color: #ff5e3a;
 }
+
+/* MENU ====================================== */
 
 QMenu {
     background-color: #16181d;
@@ -65,6 +69,8 @@ QMenu::separator {
 QMenu::icon {
     padding-left: 6px;
 }
+
+/* TOOLBAR ====================================== */
 
 QToolBar {
     background-color: #16181d;
@@ -98,6 +104,8 @@ QToolButton:pressed, QToolButton:checked {
     color: #ff5e3a;
 }
 
+/* STATUS BAR ====================================== */
+
 QStatusBar {
     background-color: #16181d;
     border-top: 1px solid #2a2d36;
@@ -107,6 +115,8 @@ QStatusBar {
 QStatusBar::item {
     border: none;
 }
+
+/* DOCK ====================================== */
 
 QDockWidget {
     background-color: #16181d;
@@ -134,6 +144,8 @@ QDockWidget::close-button:hover, QDockWidget::float-button:hover {
     background-color: #2a2d36;
     border-radius: 3px;
 }
+
+/* TAB WIDGET ====================================== */
 
 QTabWidget::pane {
     background-color: #16181d;
@@ -165,6 +177,8 @@ QTabBar::tab:selected {
     border-bottom: 2px solid #ff5e3a;
 }
 
+/* GROUP BOX ====================================== */
+
 QGroupBox {
     background-color: #16181d;
     border: 1px solid #2a2d36;
@@ -184,12 +198,21 @@ QGroupBox::title {
     background-color: #16181d;
 }
 
+/* FRAME ====================================== */
+
 QFrame[frameShape="4"], QFrame[frameShape="5"] {
     background-color: #2a2d36;
     max-height: 1px;
     min-height: 1px;
     border: none;
 }
+
+QFrame#top_bar_frame {
+    background-color: #16181d;
+    border-radius: 6px;
+}
+
+/* LABEL ====================================== */
 
 QLabel {
     background-color: transparent;
@@ -205,6 +228,8 @@ QLabel[role="value"] {
     font-family: "JetBrains Mono", "Consolas", monospace;
     color: #3ad6c4;
 }
+
+/* PUSHBUTTON ====================================== */
 
 QPushButton {
     background-color: #1f2128;
@@ -230,43 +255,22 @@ QPushButton:disabled {
     border: 1px solid #1f2128;
 }
 
-QPushButton[role="primary"] {
-    background-color: #ff5e3a;
-    color: #0d0e12;
-    border: 1px solid #ff5e3a;
-    font-weight: 600;
-}
+/*
 
-QPushButton[role="primary"]:hover {
-    background-color: #ff7757;
-    border: 1px solid #ff7757;
-}
-
-QPushButton[role="primary"]:pressed {
-    background-color: #e54f2d;
-}
-
-QPushButton[role="danger"] {
-    background-color: transparent;
-    color: #ff6b6b;
-    border: 1px solid #4a2a2a;
-}
-
-QPushButton[role="danger"]:hover {
-    background-color: #2a1818;
-    border: 1px solid #ff6b6b;
-}
-
-QToolButton#playButton, QPushButton#playButton {
+QPushButton#play {
     background-color: #ff5e3a;
     border: 1px solid #ff5e3a;
     border-radius: 18px;
     color: #0d0e12;
 }
 
-QToolButton#playButton:hover, QPushButton#playButton:hover {
+QToolButton#play:hover, QPushButton#play:hover {
     background-color: #ff7757;
 }
+
+*/
+
+/* LINEEDIT ====================================== */
 
 QLineEdit, QTextEdit, QPlainTextEdit {
     background-color: #1f2128;
@@ -295,6 +299,8 @@ QLineEdit[role="numeric"] {
     font-family: "JetBrains Mono", "Consolas", monospace;
     color: #3ad6c4;
 }
+
+/* SPIN BOX ====================================== */
 
 QSpinBox, QDoubleSpinBox {
     background-color: #1f2128;
@@ -354,6 +360,8 @@ QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
     border-top: 4px solid #9aa0ad;
 }
 
+/* COMBO BOX ====================================== */
+
 QComboBox {
     background-color: #1f2128;
     color: #e8e9ed;
@@ -398,6 +406,8 @@ QComboBox QAbstractItemView {
     outline: none;
 }
 
+/* CHECK BOX ====================================== */
+
 QCheckBox {
     spacing: 8px;
     background-color: transparent;
@@ -425,6 +435,8 @@ QCheckBox::indicator:disabled {
     border: 1px solid #2a2d36;
 }
 
+/* RADIO BUTTON ====================================== */
+
 QRadioButton {
     spacing: 8px;
     background-color: transparent;
@@ -450,6 +462,8 @@ QRadioButton::indicator:checked {
 QRadioButton::indicator:checked::after {
     content: "";
 }
+
+/* SLIDER ====================================== */
 
 QSlider::groove:horizontal {
     background-color: #2a2d36;
@@ -513,6 +527,8 @@ QSlider::handle:vertical:hover {
     background-color: #ff5e3a;
 }
 
+/* PROGRESS BAR ====================================== */
+
 QProgressBar {
     background-color: #1f2128;
     border: 1px solid #2a2d36;
@@ -526,6 +542,8 @@ QProgressBar::chunk {
     background-color: #3ad6c4;
     border-radius: 4px;
 }
+
+/* SCROLLBAR ====================================== */
 
 QScrollBar:vertical {
     background-color: #16181d;
@@ -582,6 +600,8 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
 QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
     background: none;
 }
+
+/* TREE/LIST/TABLE VIEW ====================================== */
 
 QTreeView, QListView, QTableView {
     background-color: #16181d;

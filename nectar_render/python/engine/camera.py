@@ -20,8 +20,5 @@ class Camera(root.Camera):
             resolution, position, rotation, num_samples, focal_length,
             focus_distance, aperture, sensor_width, shutter_speed
         )
-        
-        # super().__init__(*[
-        #     v for k, v in locals().items() 
-        #     if not k in ['__class__', 'self']]
-        # )
+
+

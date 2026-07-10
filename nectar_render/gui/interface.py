@@ -1,115 +1,99 @@
-from nectar_render import (
-    RenderEngine, Camera, Vector3, Color, Material, Texture, 
-    Hittable, Scene, SkyLight, TVDenoiser
-)
-
 import sys
 import threading
 from typing  import Self
 from pathlib import Path
 
-import numpy as np
-
-from PySide6 import QtWidgets
-from PySide6.QtCore    import QFile, QObject, Signal, Slot
+from PySide6 import QtWidgets as W
+from PySide6.QtCore    import Qt, QFile, QObject, Signal, Slot, QSize
+from PySide6.QtGui     import QKeyEvent, QIcon, QPixmap
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtGui import QShortcut, QKeySequence, QImage, QPixmap
 
+from nectar_render import RenderEngine, Camera, Vector3
+from nectar_render.gui.bridge  import RenderBridge
+from nectar_render.gui.widgets import ViewportWidget, ProgressBar
 from nectar_render.scenes.cornell_box import CornellBox
 
-
-class RenderBridge(QObject):
-    frame_ready = Signal(int)
-
+###############################################################################
+# INTERFACE CLASS
+###############################################################################
 
 class Interface(QObject):    
     def __init__(self: Self) -> None:
         super().__init__()
         
-        self.bridge = RenderBridge()
-        self.bridge.frame_ready.connect(self._on_frame_finished)
-
-        self.num_samples = 256
+        self.viewport:  ViewportWidget = None
+        self.progress_bar: ProgressBar = None
         
-        self.engine = RenderEngine(
-            camera    = Camera(
-                resolution   = (512, 512),
-                position     = (0.0, 0.0, 2.0),
-                rotation     = (0.0, 0.0, 0.0),
-                num_samples  = self.num_samples,
-                focal_length = 3.0
-            ),
-            max_depth = 6,
-            seed      = None,
-            silent    = True
-        )
-        self.engine.ENGINE.on_frame_finished = (
-            self._on_frame_ready_worker_thread
-        )
-        
-        self.engine.ENGINE.on_render_finished = self._on_render_finished
-        self.engine.ENGINE.on_canceled = self._on_canceled
-        
-        self.scene = CornellBox.SCENE
-        
-        self.reset_render_thread()
-
-    def reset_render_thread(self: Self) -> None:
-        self.render_thread = threading.Thread(
-            target = self.engine.render, 
-            args   = (self.scene,), 
-            daemon = True
+        self.scene  = CornellBox.SCENE
+        self.camera = Camera(
+            resolution   = (512, 512),
+            position     = (0.0, 0.0, 2.0),
+            rotation     = (0.0, 0.0, 0.0),
+            num_samples  = 256,
+            focal_length = 3.0
         )
 
-    ### ENGINE HOOKS ###
+        self.max_depth:   int = 6
+        self.seed: int | None = None
+
+        self.bridge = RenderBridge(
+            self.scene, self.camera, self.max_depth, self.seed
+        )
+        self.bridge.signals.paused.connect(self._on_paused)
+        self.bridge.signals.canceled.connect(self._on_canceled)
+        self.bridge.signals.frame_finished.connect(self._on_frame_finished)
+        self.bridge.signals.render_finished.connect(self._on_render_finished)
+
+#### ENGINE UTILITIES #########################################################
+
+    def update_engine(self: Self) -> None:
+        self.viewport.update_camera()
+        
+#### ENGINE HOOKS #############################################################
     
-    def _on_frame_ready_worker_thread(self: Self, frame_idx: int) -> None:
-        self.bridge.frame_ready.emit(frame_idx)
-
     @Slot(int)
     def _on_frame_finished(self: Self, frame_idx: int) -> None:
-        data = np.ascontiguousarray(self.engine.get_data())
-        H, W, _ = data.shape
-        
-        qimg = QImage(data.data, W, H, data.strides[0], QImage.Format_RGB888)
-        qimg = qimg.copy()
-        pixmap = QPixmap.fromImage(qimg)
-        self.find(QtWidgets.QLabel, 'image_label').setPixmap(pixmap)
-        self.find(QtWidgets.QProgressBar, 'progress_bar').setValue(
-            int(frame_idx / self.num_samples * 100.0)
-        )
+        self.viewport.update_image()
+        self.progress_bar.update(frame_idx, self.camera.n_samples)
+        self.update_engine()
         
     def _on_render_finished(self: Self) -> None:
-        self.engine.reset()
-        self.reset_render_thread()
+        self.bridge.reset()
         
-    def _on_canceled(self: Self) -> None:
-        self.engine.reset()
+        self.find(W.QPushButton, 'play').setEnabled(True)
+        self.find(W.QPushButton, 'pause').setEnabled(False)
+        self.find(W.QPushButton, 'stop').setEnabled(False)
+      
+    def _on_paused  (self: Self) -> None: pass
+    def _on_canceled(self: Self) -> None: self.bridge.reset()
         
-    ### ENGINE UTILITIES ###
+#### CALLBACKS ################################################################
 
-    def render(self: Self) -> None:
-        if self.render_thread.is_alive():
-            self.stop_render()
-            
-        self.find(QtWidgets.QProgressBar, 'progress_bar').setValue(0)
-        self.render_thread.start()
+    def play_button(self: Self) -> None:
+        self.bridge.start()
+        self.find(W.QPushButton, 'play').setEnabled(False)
+        self.find(W.QPushButton, 'pause').setEnabled(True)
+        self.find(W.QPushButton, 'stop').setEnabled(True)
+        
+    def pause_button(self: Self) -> None:
+        self.bridge.pause()
+        self.find(W.QPushButton, 'play').setEnabled(True)
+        self.find(W.QPushButton, 'pause').setEnabled(False)
+        self.find(W.QPushButton, 'stop').setEnabled(True)
+        
+    def stop_button(self: Self) -> None:
+        self.bridge.stop()
+        self.find(W.QPushButton, 'play').setEnabled(True)
+        self.find(W.QPushButton, 'pause').setEnabled(False)
+        self.find(W.QPushButton, 'stop').setEnabled(False)
+        
+    def refresh(self: Self) -> None:
+        self.bridge.request_refresh()
+        
+#### INITIALIZATION ###########################################################
 
-    def stop_render(self: Self) -> None:
-        self.engine.request_cancel()
-        self.render_thread.join()
-        self.reset_render_thread()
-
-    ### CAMERA UTILITIES ###
-    
-    def _update_camera(self: Self) -> None:
-        pass
-
-
-    ### INITIALIZATION ###
-
-    def _init_mainwidget(self: Self) -> QtWidgets.QWidget:
-        path = Path(__file__).parent.resolve() / 'resource/mainwidget.ui'
+    def _init_mainwidget(self: Self) -> W.QWidget:
+        path = Path(__file__).parent.resolve() / 'resource/mainwidget2.ui'
         if not path.exists():
             msg = f'Unable to locate UI file: {path.resolve().as_posix()}'
             raise FileNotFoundError(msg)
@@ -129,35 +113,59 @@ class Interface(QObject):
         with open(path.as_posix(), 'r') as file:
             self.app.setStyleSheet(file.read())
 
-    def _init_callbacks(self: Self) -> None:
-        self.find(QtWidgets.QPushButton, 'render').clicked.connect(self.render)
-        self.find(QtWidgets.QPushButton, 'stop').clicked.connect(self.stop_render)
+    def _build_viewport(self: Self) -> None:
+        self.viewport = ViewportWidget(self.bridge)
+        frame = self.find(W.QFrame, 'viewport_frame')
+        frame.layout().addWidget(self.viewport)
 
-    def _init_shortcuts(self: Self) -> None:
-        key_W = QShortcut('W', self.mainwidget)
-        key_W.activated.connect(lambda : print('w pressed'))
+    def _init_callbacks(self: Self) -> None:        
+        connect_button = lambda name, fn : (
+            self.find(W.QPushButton, name).clicked.connect(fn)
+        )
         
-        key_A = QShortcut('A', self.mainwidget)
-        key_A.activated.connect(lambda : print('a pressed'))
+        connect_button('play',     self.play_button)
+        connect_button('pause',    self.pause_button)
+        connect_button('stop',     self.stop_button)
+        connect_button('refresh',  self.refresh)
         
-        key_S = QShortcut('S', self.mainwidget)
-        key_S.activated.connect(lambda : print('s pressed'))
+    def _build_control_bar(self: Self) -> None:
+        root = Path(__file__).parent.resolve() / 'resource/icons'
         
-        key_D = QShortcut('D', self.mainwidget)
-        key_D.activated.connect(lambda : print('d pressed'))
+        icon_paths = {
+            'play':        ('play.png',    (16, 16)),
+            'pause':       ('pause.png',   (16, 16)),
+            'stop':        ('stop.png',    (16, 16)),
+            'refresh':     ('refresh.png', (16, 16)),
+            'save_render': ('save.png',    (16, 16))
+        }
+        
+        for name, (file, size) in icon_paths.items():
+            path = root / file
+            btn = self.find(W.QPushButton, name)
+            btn.setIcon(QIcon(path.as_posix()))
+            btn.setIconSize(QSize(*size))
+            
+        self.find(W.QPushButton, 'pause').setEnabled(False)
+        self.find(W.QPushButton, 'stop').setEnabled(False)
 
-    ### ENTRYPOINT ###
+#### ENTRYPOINT ###############################################################
 
     def run(self: Self) -> None:
-        self.app = QtWidgets.QApplication(sys.argv)
+        self.app = W.QApplication(sys.argv)
         self._set_stylesheet()
 
         self.mainwidget = self._init_mainwidget()
         self.mainwidget.setWindowTitle('NectarRender')
+        self.mainwidget.menuBar().setNativeMenuBar(False)
         self.find = self.mainwidget.findChild
+        
+        self._build_viewport()
+        self._build_control_bar()
         self._init_callbacks()
-        self._init_shortcuts()
-
+        self.progress_bar = ProgressBar(
+            self.find(W.QFrame, 'progress_frame').layout()
+        )
+        
         self.mainwidget.show()
         sys.exit(self.app.exec())
 

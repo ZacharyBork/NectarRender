@@ -115,6 +115,12 @@ private:
 
 };
 
+void update_device_camera(
+    DeviceCamera* d_cam,
+    const Vector3& delta_position,
+    const Vector3& delta_rotation
+);
+
 // ############################################################################
 // HOST CAMERA
 // ############################################################################
@@ -135,6 +141,8 @@ public:
     float aperture;
     float sensor_width;
     float shutter_speed;
+
+    float movement_speed = 0.05;
 
     __host__ explicit Camera(
         std::array<int,   2> resolution = { 512, 512 },
@@ -178,6 +186,16 @@ public:
                 "Camera::device_camera() called before Camera::_construct(). "
                 "Camera::d_cam_ptr is null.");
         return d_cam_ptr;
+    }
+
+    __host__ void update(
+        const Vector3& delta_position,
+        const Vector3& delta_rotation
+    ) {
+        cudaDeviceSynchronize();
+        update_device_camera(
+            d_cam_ptr, delta_position, delta_rotation
+        );
     }
 
 private:
