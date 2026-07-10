@@ -1,9 +1,62 @@
 #pragma once
 
 #include <array>
+#include <algorithm>
 
 #include "core/include/core.h"
+#include "random/include/hash.h"
 #include "engine/include/engine/ray.h"
+
+// ############################################################################
+// SAMPLE GENERATION
+// ############################################################################
+
+class SampleGenerator {
+public:
+    __host__ void build(uint32_t n_samples, uint32_t seed) {
+        if (n_samples == cached_n && seed == cached_seed) return;
+
+        std::vector<Vector2> pattern = generate_n_rooks(n_samples, seed);
+
+        if (d_pattern) cudaFree(d_pattern);
+        cudaMalloc(&d_pattern, n_samples * sizeof(Vector2));
+        cudaMemcpy(
+            d_pattern, pattern.data(), 
+            n_samples * sizeof(Vector2), 
+            cudaMemcpyHostToDevice
+        );
+
+        cached_n    = n_samples;
+        cached_seed = seed;
+    }
+
+    __host__ Vector2* pattern() const { return d_pattern; }
+
+    ~SampleGenerator() { if (d_pattern) cudaFree(d_pattern); }
+
+private:
+    Vector2* d_pattern   = nullptr;
+    uint32_t cached_n    = 0;
+    uint32_t cached_seed = 0;
+
+    std::vector<Vector2> generate_n_rooks(uint32_t n, uint32_t seed) {
+        std::vector<uint32_t> column_perm(n);
+        std::iota(column_perm.begin(), column_perm.end(), 0);
+
+        std::mt19937 rng(seed);
+        std::shuffle(column_perm.begin(), column_perm.end(), rng);
+
+        std::uniform_real_distribution<float> jitter(0.0f, 1.0f);
+        std::vector<Vector2> samples(n);
+        for (uint32_t i = 0; i < n; i++) {
+            samples[i] = Vector2(
+                (i               + jitter(rng)) / (float)n,
+                (column_perm[i]  + jitter(rng)) / (float)n
+            );
+        }
+        return samples;
+    }
+};
 
 // ############################################################################
 // DEVICE CAMERA
@@ -20,7 +73,7 @@ public:
         const Vector2 resolution,
         const Vector3 position,
         const Matrix3 rotation,
-        float rsqrt_n_samples,
+        Vector2* sample_pattern,
         float focal_length,
         float focus_distance,
         float shutter_time,
@@ -30,7 +83,7 @@ public:
     ) : resolution(resolution),
         position(position),
         rotation(rotation),
-        rsqrt_n_samples(rsqrt_n_samples),
+        sample_pattern(sample_pattern),
         focal_length(focal_length),
         focus_distance(focus_distance),
         shutter_time(shutter_time),
@@ -40,31 +93,37 @@ public:
     { }
 
     __device__ Ray get_ray(
-        uint32_t x, 
-        uint32_t y, 
-        uint32_t s_x,
-        uint32_t s_y,  
+        uint32_t x,
+        uint32_t y,
+        uint32_t pixel_idx,
+        uint32_t sample_idx,
+        uint32_t seed,
         Generator& gen
     ) {
         Vector3 origin;
-        Vector3 focus_point = get_focus_point(x, y, s_x, s_y, gen);
-        
-        if (defocus_angle <= 0.0f) origin = position; 
+        Vector3 focus_point = get_focus_point(
+            x, y, pixel_idx, sample_idx, seed
+        );
+
+        if (defocus_angle <= 0.0f) origin = position;
         else {
             update_defocuse_disk();
             Vector2 p = Vector2::random_in_unit_disk(gen);
-            origin = position + (
-                p.x() * defocus_disk_u + p.y() * defocus_disk_v
-            );
+            Vector3 defocus = p.x() * defocus_disk_u + p.y() * defocus_disk_v;
+            origin = position + defocus;
         }
 
         float time = shutter_time > 0.0f ? gen.uniform() * shutter_time : 0.0f;
         return Ray(origin, normalize(focus_point - origin), time);
     }
 
+    __host__ __device__ void set_sample_pattern(Vector2* pattern) { 
+        sample_pattern = pattern; 
+    }
+
 private:
 
-    float rsqrt_n_samples;
+    Vector2* sample_pattern;
 
     float focal_length;
     float focus_distance;
@@ -75,16 +134,6 @@ private:
     Vector3 uvw;
     Vector3 defocus_disk_u, defocus_disk_v;
 
-    __device__ const Vector2 sample_square_stratified(
-        uint32_t s_x,
-        uint32_t s_y,
-        Generator& gen
-    ) {
-        float px = (((float)s_x + gen.random_float()) * rsqrt_n_samples);
-        float py = (((float)s_y + gen.random_float()) * rsqrt_n_samples);
-        return Vector2(px - 0.5f, py - 0.5f);
-    }
-
     __device__ void update_defocuse_disk() {
         defocus_disk_u = rotation.right() * defocus_radius;
         defocus_disk_v = rotation.up()    * defocus_radius;
@@ -94,17 +143,31 @@ private:
         return gen.uniform() * shutter_time;
     }
 
+    __device__ Vector2 sample_offset(
+        uint32_t sample_i, 
+        uint32_t pixel_idx, 
+        uint32_t render_seed
+    ) const {
+        Vector2 base  = sample_pattern[sample_i];
+        Vector2 shift = pcg_vector2(pixel_idx, render_seed);
+
+        return Vector2(
+            fmodf(base.x() + shift.x(), 1.0f),
+            fmodf(base.y() + shift.y(), 1.0f)
+        ) - 0.5f;
+    }
+
     __device__ Vector3 get_focus_point(
         uint32_t x, 
         uint32_t y, 
-        uint32_t s_x,
-        uint32_t s_y,
-        Generator& gen
+        uint32_t pixel_idx, 
+        uint32_t sample_idx, 
+        uint32_t render_seed
     ) {
-        Vector2 offset = sample_square_stratified(s_x, s_y, gen);
-        float u = ((float)x + offset.x() - (resolution.x() - 1.0f) * 0.5f) 
+        Vector2 offset = sample_offset(sample_idx, pixel_idx, render_seed);
+        float u = ((float)x + offset.x() - (resolution.x() - 1.0f) * 0.5f)
                 * (uvw.x() / resolution.x());
-        float v = ((float)y + offset.y() - (resolution.y() - 1.0f) * 0.5f) 
+        float v = ((float)y + offset.y() - (resolution.y() - 1.0f) * 0.5f)
                 * (uvw.y() / resolution.y());
         float w = -focal_length;
 
@@ -125,8 +188,6 @@ void update_device_camera(
 // HOST CAMERA
 // ############################################################################
 
-#include <iostream>
-
 class Camera {
 public:
 
@@ -142,7 +203,7 @@ public:
     float sensor_width;
     float shutter_speed;
 
-    float movement_speed = 0.05;
+    float movement_speed = 0.05f;
 
     __host__ explicit Camera(
         std::array<int,   2> resolution = { 512, 512 },
@@ -154,25 +215,38 @@ public:
         float aperture       = 0.01f,
         float sensor_width   = 2.0f,
         float shutter_speed  = 1.0f
-    ) : resolution(Vector2(resolution)),
-        position(Vector3(position)),
-        rotation(rotation_from_euler(deg2rad(Vector3(rotation)))),
-        n_samples(samples_per_pixel),
-        focal_length(focal_length),
-        focus_distance(focus_distance),
-        aperture(aperture),
-        sensor_width(sensor_width),
-        shutter_speed(shutter_speed)
+    ) : resolution     (Vector2(resolution)),
+        position       (Vector3(position)),
+        rotation       (rotation_from_euler(deg2rad(Vector3(rotation)))),
+        n_samples      (samples_per_pixel),
+        focal_length   (focal_length),
+        focus_distance (focus_distance),
+        aperture       (aperture),
+        sensor_width   (sensor_width),
+        shutter_speed  (shutter_speed)
     { }
 
-    __host__ uint32_t sqrt_n_samples() {
-        return (uint32_t)sqrtf((float)n_samples);
-    }
+    __host__ Camera(const Camera& other) 
+      : resolution     (other.resolution),
+        position       (other.position),
+        rotation       (other.rotation),
+        n_samples      (other.n_samples),
+        focal_length   (other.focal_length),
+        focus_distance (other.focus_distance),
+        aperture       (other.aperture),
+        sensor_width   (other.sensor_width),
+        shutter_speed  (other.shutter_speed)
+    { }
 
-    __host__ void __construct() {
-        get_true_sample_count();
+    __host__ ~Camera() { free_device_pointer(); }
+
+    Camera& operator=(const Camera&) = delete;
+
+    __host__ void __construct(const uint32_t seed) {
         free_device_pointer();
         
+        sample_generator.build(n_samples, seed);
+
         DeviceCamera d_cam = build_device_camera();
         size_t n_bytes = sizeof(d_cam);
         
@@ -201,24 +275,19 @@ public:
 private:
 
     DeviceCamera* d_cam_ptr = nullptr;
+    SampleGenerator sample_generator;
 
     __host__ void free_device_pointer() {
-        if (d_cam_ptr != nullptr)
+        if (d_cam_ptr) 
             cudaFree(reinterpret_cast<void*>(d_cam_ptr));
-            d_cam_ptr = nullptr;
-    }
-
-    __host__ void get_true_sample_count() {
-        uint32_t sqrt_ns = (uint32_t)sqrtf((float)n_samples);
-        n_samples = sqrt_ns * sqrt_ns;
+        d_cam_ptr = nullptr;
     }
 
     __host__ DeviceCamera build_device_camera() {
-        float rsqrt_n_samples = 1.0f / (float)sqrt_n_samples(); 
         float shutter_time    = 1.0f / (shutter_speed + FMIN);
         float aperture_radius = aperture / 2.0f;
         
-        float defocus_angle   = 2.0f * atanf(
+        float defocus_angle = 2.0f * atanf(
             aperture_radius / (focus_distance + FMIN)
         );
         float defocus_radius = focus_distance * tanf(defocus_angle / 2.0f);
@@ -227,8 +296,9 @@ private:
         Vector3 uvw(sensor_width, -sensor_width * aspect_ratio, 0.0f);
          
         return DeviceCamera(
-            resolution, position, rotation, rsqrt_n_samples, focal_length, 
-            focus_distance, shutter_time, defocus_angle, defocus_radius, uvw
+            resolution, position, rotation, sample_generator.pattern(), 
+            focal_length, focus_distance, shutter_time, defocus_angle, 
+            defocus_radius, uvw
         );
     }
 

@@ -42,7 +42,7 @@ class RenderEngine:
 
     @property
     def n_samples(self: Self) -> int:
-        return self.ENGINE.cam.n_samples
+        return self.ENGINE.camera().n_samples
 
     ### UTILITIES ###
 

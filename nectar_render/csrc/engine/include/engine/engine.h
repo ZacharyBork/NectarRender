@@ -30,7 +30,7 @@ public:
     /* CONSTRUCTION */
 
     RenderEngine(
-        Camera&  camera,
+        const Camera& camera,
         uint32_t ray_depth = 8u,
         uint32_t seed      = 54321u
     ) : cam(camera),
@@ -71,12 +71,11 @@ public:
     /* SAMPLING / RENDERING */
 
     void sample(
-        Scene& scene, 
-        uint32_t s_x = 0u,
-        uint32_t s_y = 0u,
+        Scene&     scene, 
+        uint32_t   sample_idx = 0u,
         SampleMode mode = SampleMode::ACCUMULATE
     ) {
-        config.set_sample_index(s_x, s_y);
+        config.set_sample_index(sample_idx);
 
         trace(config, cam.device_camera(), scene.graph, sample_aovs.aovs());
         sample_aovs.replace_invalid_values();
@@ -90,24 +89,20 @@ public:
     }
 
     void render(
-        Scene& scene, 
+        Scene&     scene, 
         SampleMode mode = SampleMode::ACCUMULATE
     ) {
         current_scene.emplace(scene);
         set_state(EngineState::RENDERING);
         with_gil_scoped_acquire(on_render_started);
-
-        uint32_t n_samples = cam.sqrt_n_samples();
         
-        for (uint32_t s_y = 0; s_y < n_samples - y_samples; s_y++) {            
-            for (uint32_t s_x = 0; s_x < n_samples - x_samples; s_x++) {
-                if (is_cancelled())  { cancel_render();        return; }
-                if (is_paused())     { pause_render(s_x, s_y); return; }
-                if (is_refreshing()) { break; }
+        for (uint32_t idx = 0; idx < cam.n_samples; idx++) {            
+            if (is_cancelled())  { cancel_render();        return; }
+            if (is_paused())     { pause_render(idx, idx); return; }
+            if (is_refreshing()) { break; }
 
-                sample(scene, s_x, s_y, mode);
-                with_gil_scoped_acquire(on_frame_finished, config.n_samples);
-            }
+            sample(scene, idx, mode);
+            with_gil_scoped_acquire(on_frame_finished, config.n_samples);
         }
 
         cuda_synchronize();
@@ -129,13 +124,13 @@ public:
     void reset() {
         set_state(EngineState::IDLE);
 
-        cam.__construct();
+        cam.__construct(seed);
         config.H = (size_t)cam.resolution[0];
         config.W = (size_t)cam.resolution[1];
         config.max_depth = ray_depth;
         config.seed = seed;
 
-        config.s_x = config.s_y = 0u;
+        config.sample_idx = 0u;
         config.n_samples = 0u;
 
         x_samples = 0u; y_samples = 0u;

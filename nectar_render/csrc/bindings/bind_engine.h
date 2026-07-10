@@ -313,7 +313,7 @@ void register_engine(py::module_& m) {
 
     py::class_<RenderEngine>(m_engine, "RenderEngine")
         .def(py::init([](
-            Camera   camera,
+            Camera&  camera,
             uint32_t ray_depth,
             uint32_t seed
         ) { 
@@ -326,15 +326,13 @@ void register_engine(py::module_& m) {
         .def("sample", ([](
             RenderEngine& self, 
             Scene&     scene, 
-            uint32_t   s_x,
-            uint32_t   s_y,
+            uint32_t   sample_idx,
             SampleMode mode
         ) {
-            self.sample(scene, s_x, s_y, mode);
+            self.sample(scene, sample_idx, mode);
         }),
             py::arg("scene"), 
-            py::arg("s_x")  = 0u,
-            py::arg("s_y")  = 0u,
+            py::arg("sample_idx") = 0u,
             py::arg("mode") = SampleMode::ACCUMULATE
         )
         .def("render", ([](

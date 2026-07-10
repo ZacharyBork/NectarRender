@@ -14,9 +14,8 @@ struct TraceConfig {
     uint32_t max_depth = 8u;
     uint32_t seed      = 54321u;
 
-    uint32_t s_x = 0u;       // X index of current sample
-    uint32_t s_y = 0u;       // Y index of current sample
-    uint32_t n_samples = 0u; // Total number of samples run
+    uint32_t sample_idx = 0u; // Index of current sample
+    uint32_t n_samples = 0u;  // Total number of samples run
 
     /* SAMPLE UTILITIES */
     
@@ -24,25 +23,23 @@ struct TraceConfig {
         n_samples = count;
     }
 
-    __host__ void set_sample_index(const uint32_t x, const uint32_t y) {
-        s_x = x; s_y = y;
+    __host__ void set_sample_index(const uint32_t idx) {
+        sample_idx = idx;
         n_samples++;
     }
     
     __host__ __device__ void reset_sample_indices(
-        const uint32_t x = 0u,
-        const uint32_t y = 0u
+        const uint32_t idx = 0u
     ) { 
-        s_x = x; s_y = y;
+        sample_idx = idx;
     }
 
     __host__ __device__ void reset_sample_parameters(
         const uint32_t count = 0u,
-        const uint32_t x = 0u,
-        const uint32_t y = 0u
+        const uint32_t idx = 0u
     ) { 
         n_samples = count;
-        s_x = x; s_y = y;
+        sample_idx = idx;
     }
 
 };

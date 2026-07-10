@@ -115,7 +115,9 @@ __global__ void trace_kernel(
 
     Color atten = Color::white();
     Generator gen(cfg.seed, pixel_idx + cfg.n_samples * (cfg.W * cfg.H));
-    Ray ray = cam->get_ray(p_idx.x, p_idx.y, cfg.s_x, cfg.s_y, gen);
+    Ray ray = cam->get_ray(
+        p_idx.x, p_idx.y, pixel_idx, cfg.sample_idx, cfg.seed, gen
+    );
 
     for (int bounce = 0; bounce < cfg.max_depth; bounce++)
         if (!trace_ray(scene, aovs, ray, atten, gen)) break;
