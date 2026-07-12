@@ -57,12 +57,12 @@ class RenderEngine:
         
     ### UTILITIES ###
     
-    def reset          (self: Self) -> None: self.ENGINE.reset()
-    def request_pause  (self: Self) -> None: self.ENGINE.request_pause()
-    def request_cancel (self: Self) -> None: self.ENGINE.request_cancel()
-    def request_refresh(self: Self) -> None: self.ENGINE.request_refresh()
-    def is_canceled    (self: Self) -> bool: return self.ENGINE.is_cancelled()
-    def is_rendering   (self: Self) -> bool: return self.ENGINE.is_rendering()
+    def reset         (self: Self) -> None: self.ENGINE.reset()
+    def request_pause (self: Self) -> None: self.ENGINE.request_pause()
+    def request_cancel(self: Self) -> None: self.ENGINE.request_cancel()
+    def request_reset (self: Self) -> None: self.ENGINE.request_reset()
+    def is_canceled   (self: Self) -> bool: return self.ENGINE.is_cancelled()
+    def is_rendering  (self: Self) -> bool: return self.ENGINE.is_rendering()
         
     ### SAMPLING / RENDERING ###
         

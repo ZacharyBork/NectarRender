@@ -107,16 +107,17 @@ __global__ void trace_kernel(
     TraceConfig   cfg, 
     DeviceCamera* cam,
     SceneGraph*   scene,
-    AOVs*         aovs
+    AOVs*         aovs,
+    uint32_t      sample_idx
 ) {
     ProcessIndex p_idx = get_process_index();
     if (p_idx.x >= cfg.W || p_idx.y >= cfg.H) return;
     uint32_t pixel_idx = p_idx.y * cfg.W + p_idx.x;
 
     Color atten = Color::white();
-    Generator gen(cfg.seed, pixel_idx + cfg.n_samples * (cfg.W * cfg.H));
+    Generator gen(cfg.seed, pixel_idx + sample_idx * (cfg.W * cfg.H));
     Ray ray = cam->get_ray(
-        p_idx.x, p_idx.y, pixel_idx, cfg.sample_idx, cfg.seed, gen
+        p_idx.x, p_idx.y, pixel_idx, sample_idx, cfg.seed, gen
     );
 
     for (int bounce = 0; bounce < cfg.max_depth; bounce++)
@@ -127,10 +128,11 @@ void trace(
     TraceConfig   cfg, 
     DeviceCamera* cam,
     SceneGraph*   scene,
-    AOVs*         aovs
+    AOVs*         aovs,
+    uint32_t      sample_idx
 ) {
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((cfg.W + BS2D - 1) / BS2D, (cfg.H + BS2D - 1) / BS2D, 1);
-    trace_kernel<<<grid, block>>>(cfg, cam, scene, aovs);
+    trace_kernel<<<grid, block>>>(cfg, cam, scene, aovs, sample_idx);
 }
 

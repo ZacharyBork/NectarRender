@@ -178,12 +178,6 @@ private:
 
 };
 
-void update_device_camera(
-    DeviceCamera* d_cam,
-    const Vector3& delta_position,
-    const Vector3& delta_rotation
-);
-
 // ############################################################################
 // HOST CAMERA
 // ############################################################################
@@ -203,8 +197,6 @@ public:
     float sensor_width;
     float shutter_speed;
 
-    float movement_speed = 0.05f;
-
     __host__ explicit Camera(
         std::array<int,   2> resolution = { 512, 512 },
         std::array<float, 3> position   = { 0.0f, 0.0f, 0.0f },
@@ -217,6 +209,9 @@ public:
         float shutter_speed  = 1.0f
     ) : resolution     (Vector2(resolution)),
         position       (Vector3(position)),
+        pitch_         (rotation[0]),
+        yaw_           (rotation[1]),
+        roll_          (rotation[2]),
         rotation       (rotation_from_euler(deg2rad(Vector3(rotation)))),
         n_samples      (samples_per_pixel),
         focal_length   (focal_length),
@@ -243,9 +238,9 @@ public:
     Camera& operator=(const Camera&) = delete;
 
     __host__ void __construct(const uint32_t seed) {
+        seed_ = seed;
         free_device_pointer();
-        
-        sample_generator.build(n_samples, seed);
+        sample_generator.build(n_samples, seed_);
 
         DeviceCamera d_cam = build_device_camera();
         size_t n_bytes = sizeof(d_cam);
@@ -264,18 +259,33 @@ public:
 
     __host__ void update(
         const Vector3& delta_position,
-        const Vector3& delta_rotation
+        const Vector3& delta_rotation,
+        float focal_length_
     ) {
         cudaDeviceSynchronize();
-        update_device_camera(
-            d_cam_ptr, delta_position, delta_rotation
-        );
+        
+        yaw_   -= delta_rotation.y();
+        pitch_ -= delta_rotation.x();
+        pitch_  = fmaxf(-89.0f, fminf(89.0f, pitch_));
+
+        rotation = rotation_y(deg2rad(yaw_)) * rotation_x(deg2rad(pitch_));
+
+        position += rotation * delta_position;
+
+        focal_length = focal_length_;
+        __construct(seed_);
     }
 
 private:
 
     DeviceCamera* d_cam_ptr = nullptr;
     SampleGenerator sample_generator;
+
+    uint32_t seed_ = 0u;
+
+    float pitch_ = 0.0f;
+    float yaw_   = 0.0f;
+    float roll_  = 0.0f;
 
     __host__ void free_device_pointer() {
         if (d_cam_ptr) 

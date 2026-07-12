@@ -4,7 +4,7 @@ from typing  import Self
 from pathlib import Path
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore    import Qt, QFile, QObject, Signal, Slot, QSize
+from PySide6.QtCore    import Qt, QFile, QObject, Signal, Slot, QSize, QTimer
 from PySide6.QtGui     import QKeyEvent, QIcon, QPixmap
 from PySide6.QtUiTools import QUiLoader
 
@@ -29,7 +29,7 @@ class Interface(QObject):
             resolution   = (512, 512),
             position     = (0.0, 0.0, 2.0),
             rotation     = (0.0, 0.0, 0.0),
-            num_samples  = 256,
+            num_samples  = 1024,
             focal_length = 3.0
         )
 
@@ -44,9 +44,14 @@ class Interface(QObject):
         self.bridge.signals.frame_finished.connect(self._on_frame_finished)
         self.bridge.signals.render_finished.connect(self._on_render_finished)
 
+        self.update_timer = QTimer(self)
+        self.update_timer.setInterval(16)
+        self.update_timer.timeout.connect(self._poll_updates)
+        
 #### ENGINE UTILITIES #########################################################
 
-    def update_engine(self: Self) -> None:
+    def _poll_updates(self: Self) -> None:
+        if not self.bridge.is_rendering(): return
         self.viewport.update_camera()
         
 #### ENGINE HOOKS #############################################################
@@ -55,7 +60,6 @@ class Interface(QObject):
     def _on_frame_finished(self: Self, frame_idx: int) -> None:
         self.viewport.update_image()
         self.progress_bar.update(frame_idx, self.camera.n_samples)
-        self.update_engine()
         
     def _on_render_finished(self: Self) -> None:
         self.bridge.reset()
@@ -88,7 +92,7 @@ class Interface(QObject):
         self.find(W.QPushButton, 'stop').setEnabled(False)
         
     def refresh(self: Self) -> None:
-        self.bridge.request_refresh()
+        self.bridge.request_reset()
         
 #### INITIALIZATION ###########################################################
 
@@ -114,7 +118,9 @@ class Interface(QObject):
             self.app.setStyleSheet(file.read())
 
     def _build_viewport(self: Self) -> None:
-        self.viewport = ViewportWidget(self.bridge)
+        self.viewport = ViewportWidget(
+            self.bridge, self.find(W.QGroupBox, 'camera_settings')
+        )
         frame = self.find(W.QFrame, 'viewport_frame')
         frame.layout().addWidget(self.viewport)
 
@@ -166,7 +172,9 @@ class Interface(QObject):
             self.find(W.QFrame, 'progress_frame').layout()
         )
         
+        self.update_timer.start()
         self.mainwidget.show()
+        
         sys.exit(self.app.exec())
 
 

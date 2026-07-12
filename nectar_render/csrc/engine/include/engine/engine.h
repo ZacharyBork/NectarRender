@@ -15,7 +15,7 @@
 #include "hittable/include/hittable/hittable.h"
 
 enum class SampleMode{ ACCUMULATE, COMBINE };
-enum class EngineState{ IDLE, RENDERING, PAUSED, CANCELLED, REFRESHING };
+enum class EngineState{ IDLE, RENDERING, PAUSED, CANCELLED, RESETTING };
 
 class RenderEngine {
 public:
@@ -25,7 +25,7 @@ public:
     std::function<void()>         on_render_finished = hook_no_op<>;
     std::function<void()>         on_paused          = hook_no_op<>;
     std::function<void()>         on_canceled        = hook_no_op<>;
-    std::function<void()>         on_refreshed       = hook_no_op<>;
+    std::function<void()>         on_reset           = hook_no_op<>;
 
     /* CONSTRUCTION */
 
@@ -62,26 +62,27 @@ public:
         return state.load(std::memory_order_relaxed);
     }
 
-    bool is_idle()       const { return get_state()==EngineState::IDLE;       }
-    bool is_rendering()  const { return get_state()==EngineState::RENDERING;  }
-    bool is_paused()     const { return get_state()==EngineState::PAUSED;     }
-    bool is_cancelled()  const { return get_state()==EngineState::CANCELLED;  }
-    bool is_refreshing() const { return get_state()==EngineState::REFRESHING; }
+    bool is_idle()      const { return get_state()==EngineState::IDLE;       }
+    bool is_rendering() const { return get_state()==EngineState::RENDERING;  }
+    bool is_paused()    const { return get_state()==EngineState::PAUSED;     }
+    bool is_cancelled() const { return get_state()==EngineState::CANCELLED;  }
+    bool is_resetting() const { return get_state()==EngineState::RESETTING; }
     
     /* SAMPLING / RENDERING */
 
     void sample(
         Scene&     scene, 
-        uint32_t   sample_idx = 0u,
+        uint32_t   sample_index = 1u,
         SampleMode mode = SampleMode::ACCUMULATE
     ) {
-        config.set_sample_index(sample_idx);
+        trace(
+            config, cam.device_camera(), scene.graph, 
+            sample_aovs.aovs(), sample_index
+        );
 
-        trace(config, cam.device_camera(), scene.graph, sample_aovs.aovs());
         sample_aovs.replace_invalid_values();
-
         if (mode == SampleMode::ACCUMULATE) 
-            aovs.accumulate(sample_aovs, config.n_samples);
+            aovs.accumulate(sample_aovs, sample_index);
         else aovs.combine(sample_aovs);
         sample_aovs.clear();
 
@@ -96,44 +97,48 @@ public:
         set_state(EngineState::RENDERING);
         with_gil_scoped_acquire(on_render_started);
         
-        for (uint32_t idx = 0; idx < cam.n_samples; idx++) {            
-            if (is_cancelled())  { cancel_render();        return; }
-            if (is_paused())     { pause_render(idx, idx); return; }
-            if (is_refreshing()) { break; }
+        uint32_t n_samples = cam.n_samples + 1u;
+
+        for (uint32_t idx = sample_idx; idx < n_samples; idx++) {
+            if (is_cancelled()) { cancel_render(); return; }
+            if (is_paused())    { pause_render();  return; }
+            if (is_resetting()) { 
+                cuda_synchronize();
+                reset();
+                with_gil_scoped_acquire(on_reset);
+
+                idx = 1u;
+                set_state(EngineState::RENDERING);
+            }
 
             sample(scene, idx, mode);
-            with_gil_scoped_acquire(on_frame_finished, config.n_samples);
+            with_gil_scoped_acquire(on_frame_finished, idx);
+            sample_idx++;
         }
 
         cuda_synchronize();
-        if (is_refreshing()) {
-            with_gil_scoped_acquire(on_refreshed);
-            render(scene, mode);
-        } else {
-            set_state(EngineState::IDLE);
-            with_gil_scoped_acquire(on_render_finished);
-        }
+        with_gil_scoped_acquire(on_render_finished);
+        set_state(EngineState::IDLE);
     }
 
     /* UTILITIES */
 
-    void request_pause()   { set_state(EngineState::PAUSED);    }
-    void request_cancel()  { set_state(EngineState::CANCELLED); }
-    void request_refresh() { set_state(EngineState::REFRESHING); }
-
     void reset() {
-        set_state(EngineState::IDLE);
-
         cam.__construct(seed);
+        
         config.H = (size_t)cam.resolution[0];
         config.W = (size_t)cam.resolution[1];
         config.max_depth = ray_depth;
         config.seed = seed;
 
-        config.sample_idx = 0u;
-        config.n_samples = 0u;
+        sample_idx = 1u;
+    }
 
-        x_samples = 0u; y_samples = 0u;
+    void request_pause()  { set_state(EngineState::PAUSED);    }
+    void request_cancel() { set_state(EngineState::CANCELLED); }
+    void request_reset()  { 
+        if (is_rendering()) set_state(EngineState::RESETTING);
+        else reset(); 
     }
 
 private:
@@ -145,8 +150,7 @@ private:
     RenderLayers aovs, sample_aovs;
     uint32_t     ray_depth, seed;
 
-    uint32_t x_samples = 0u;
-    uint32_t y_samples = 0u;
+    uint32_t sample_idx = 1u;
 
     std::optional<Scene> current_scene;
 
@@ -157,11 +161,11 @@ private:
     __host__ void cancel_render() {
         cuda_synchronize();
         with_gil_scoped_acquire(on_canceled);
+        set_state(EngineState::IDLE);
     }
 
-    __host__ void pause_render(uint32_t s_x, uint32_t s_y) {
+    __host__ void pause_render() {
         cuda_synchronize();
-        x_samples = s_x; y_samples = s_y;
         with_gil_scoped_acquire(on_paused);
     }
 

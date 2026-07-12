@@ -305,11 +305,11 @@ void register_engine(py::module_& m) {
         .value("COMBINE",    SampleMode::COMBINE);
 
     py::enum_<EngineState>(m_engine, "EngineState")
-        .value("IDLE",       EngineState::IDLE)
-        .value("RENDERING",  EngineState::RENDERING)
-        .value("PAUSED",     EngineState::PAUSED)
-        .value("CANCELLED",  EngineState::CANCELLED)
-        .value("REFRESHING", EngineState::REFRESHING);
+        .value("IDLE",      EngineState::IDLE)
+        .value("RENDERING", EngineState::RENDERING)
+        .value("PAUSED",    EngineState::PAUSED)
+        .value("CANCELLED", EngineState::CANCELLED)
+        .value("RESETTING", EngineState::RESETTING);
 
     py::class_<RenderEngine>(m_engine, "RenderEngine")
         .def(py::init([](
@@ -326,10 +326,10 @@ void register_engine(py::module_& m) {
         .def("sample", ([](
             RenderEngine& self, 
             Scene&     scene, 
-            uint32_t   sample_idx,
+            uint32_t   sample_index,
             SampleMode mode
         ) {
-            self.sample(scene, sample_idx, mode);
+            self.sample(scene, sample_index, mode);
         }),
             py::arg("scene"), 
             py::arg("sample_idx") = 0u,
@@ -349,21 +349,21 @@ void register_engine(py::module_& m) {
         .def("camera", &RenderEngine::camera, return_policy::reference)
         .def("layers", &RenderEngine::layers, return_policy::reference)
         .def("scene",  &RenderEngine::scene,  return_policy::reference)
-        .def("request_pause",   &RenderEngine::request_pause)
-        .def("request_cancel",  &RenderEngine::request_cancel)
-        .def("request_refresh", &RenderEngine::request_refresh)
-        .def("get_state",       &RenderEngine::get_state)
-        .def("is_idle",         &RenderEngine::is_idle)
-        .def("is_rendering",    &RenderEngine::is_rendering)
-        .def("is_paused",       &RenderEngine::is_paused)
-        .def("is_cancelled",    &RenderEngine::is_cancelled)
-        .def("is_refreshing",   &RenderEngine::is_refreshing)
-        .def("reset",           &RenderEngine::reset)
+        .def("request_pause",  &RenderEngine::request_pause)
+        .def("request_cancel", &RenderEngine::request_cancel)
+        .def("request_reset",  &RenderEngine::request_reset)
+        .def("get_state",      &RenderEngine::get_state)
+        .def("is_idle",        &RenderEngine::is_idle)
+        .def("is_rendering",   &RenderEngine::is_rendering)
+        .def("is_paused",      &RenderEngine::is_paused)
+        .def("is_cancelled",   &RenderEngine::is_cancelled)
+        .def("is_refreshing",  &RenderEngine::is_resetting)
+        .def("reset",          &RenderEngine::reset)
         .def_readwrite("on_render_started",  &RenderEngine::on_render_started)
         .def_readwrite("on_frame_finished",  &RenderEngine::on_frame_finished)
         .def_readwrite("on_render_finished", &RenderEngine::on_render_finished)
         .def_readwrite("on_paused",          &RenderEngine::on_paused)
         .def_readwrite("on_canceled",        &RenderEngine::on_canceled)
-        .def_readwrite("on_refreshed",       &RenderEngine::on_refreshed);
+        .def_readwrite("on_reset",           &RenderEngine::on_reset);
 }
 

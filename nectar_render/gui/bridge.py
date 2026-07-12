@@ -2,30 +2,59 @@ import _pathtracer
 root = _pathtracer.engine
 
 import threading
-from typing import Self
+from typing import Self, Any
+from collections.abc import Generator
+from contextlib import ContextDecorator
 
 from PySide6.QtCore import QObject, Signal
 
 from nectar_render.python import RenderEngine, Scene, Camera
 
+###############################################################################
+# RESET CONTEXT MANAGER
+###############################################################################
+
+class BridgeReset(ContextDecorator):
+    BRIDGE: "RenderBridge" = None
+    
+    def __enter__(self: Self) -> Self:
+        self.BRIDGE.join_thread()
+        return self
+
+    def __exit__(
+        self:     Self, 
+        *args:    tuple[Any, ...], 
+        **kwargs: dict[str, Any]
+    ) -> Generator[None, None, None]:
+        self.BRIDGE.request_reset()
+        self.BRIDGE.start()
+
+###############################################################################
+# SIGNAL INTERFACE
+###############################################################################
+
 class SignalInterface(QObject):
     render_started  = Signal()
     render_finished = Signal()
+    frame_finished  = Signal(int)
     canceled        = Signal()
     paused          = Signal()
-    refreshed       = Signal()
-    frame_finished  = Signal(int)
+    reset           = Signal()
     
     def __init__(self: Self, engine: root.RenderEngine) -> None:
         super().__init__()
+        engine.on_reset           = self.reset.emit
         engine.on_paused          = self.paused.emit
         engine.on_canceled        = self.canceled.emit
-        engine.on_refreshed       = self.refreshed.emit
         engine.on_render_started  = self.render_started.emit
         engine.on_render_finished = self.render_finished.emit
         engine.on_frame_finished  = (
             lambda frame_idx : self.frame_finished.emit(frame_idx)
         )
+    
+###############################################################################
+# RENDER BRIDGE CLASS
+###############################################################################
         
 class RenderBridge(RenderEngine):
     THREAD: threading.Thread = None
@@ -46,6 +75,8 @@ class RenderBridge(RenderEngine):
         self.signals = SignalInterface(self.ENGINE)
         self.update_scene(scene)
         self.build_thread()
+        
+        BridgeReset.BRIDGE = self
         
 #### PROPERTIES ###############################################################
         
@@ -87,7 +118,6 @@ class RenderBridge(RenderEngine):
         self.THREAD.start()
         
     def reset(self: Self) -> None:
-        self.ENGINE.reset()
+        self.request_reset()
         self.join_thread()
-        
         

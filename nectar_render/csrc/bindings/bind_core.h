@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pybind11/pybind11.h>
+#include <pybind11/operators.h>
 
 #include "core/include/core.h"
 #include "core/include/core/cublas_context.h"
@@ -79,7 +80,15 @@ void register_core(py::module_& m) {
         .def("z", &Vector3::z)
         .def("u", &Vector3::u)
         .def("v", &Vector3::v)
-        .def("w", &Vector3::w);
+        .def("w", &Vector3::w)
+        .def(py::self + py::self).def(py::self += py::self)
+        .def(py::self +  float()).def(py::self +=  float())
+        .def(py::self - py::self).def(py::self -= py::self)
+        .def(py::self -  float()).def(py::self -=  float())
+        .def(py::self * py::self).def(py::self *= py::self)
+        .def(py::self *  float()).def(py::self *=  float())
+        .def(py::self / py::self).def(py::self /= py::self)
+        .def(py::self /  float()).def(py::self /=  float());
 
     py::class_<Vector<Color>>(m_vec, "VectorBaseColor");
     py::class_<Vec3Core<Color>, Vector<Color>>(m_vec, "Vec3CoreColor");
