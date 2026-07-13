@@ -2,13 +2,16 @@ from typing import Self
 
 import threading
 import numpy as np
+from PIL import Image
+from pathlib import Path
 from dataclasses import dataclass, field
 
 from PySide6        import QtWidgets
 from PySide6.QtCore import Qt, QObject, Signal, Slot, QPointF
 from PySide6.QtGui  import QKeyEvent, QMouseEvent, QImage, QPixmap
 
-from nectar_render import RenderEngine, Scene, Vector3
+from nectar_render import RenderEngine, Scene, Vector3, HitRecord
+from nectar_render.gui.widgets.object_info import ObjectInfo
 from nectar_render.gui.bridge import RenderBridge, BridgeReset
 
 ###############################################################################
@@ -34,7 +37,11 @@ class CameraUpdateInfo:
     delta_p: list[float] = field(default_factory=lambda : [0.0, 0.0, 0.0])
     delta_r: list[float] = field(default_factory=lambda : [0.0, 0.0, 0.0])
     
-    focal_length: float = 5.0
+    focal_length:   float = 3.0
+    focus_distance: float = 10.0
+    aperture:       float = 0.01
+    sensor_width:   float = 2.0
+    shutter_speed:  float = 1.0
     
     prev: "CameraUpdateInfo" = None
 
@@ -52,10 +59,18 @@ class CameraUpdateInfo:
         )
     
     def copy(self: Self, other: Self) -> None:
-        self.focal_length = other.focal_length
+        self.focal_length   = other.focal_length
+        self.focus_distance = other.focus_distance
+        self.aperture       = other.aperture
+        self.sensor_width   = other.sensor_width
+        self.shutter_speed  = other.shutter_speed
 
     def __eq__(self: Self, other: Self) -> bool:
-        return self.focal_length == other.focal_length
+        return (self.focal_length   == other.focal_length
+            and self.focus_distance == other.focus_distance
+            and self.aperture       == other.aperture
+            and self.sensor_width   == other.sensor_width
+            and self.shutter_speed  == other.shutter_speed)
     
 ###############################################################################
 # VIEWPORT WIDGET
@@ -79,10 +94,12 @@ class ViewportWidget(QtWidgets.QLabel):
         
         self._looking = False
         self._curr_mouse_pos: QPointF | None = None
-        self._prev_mouse_pos:   QPointF | None = None
+        self._prev_mouse_pos: QPointF | None = None
         
         self._cam_data = CameraUpdateInfo()
         self._cam_data.prev = CameraUpdateInfo()
+        
+        self.object_info: ObjectInfo | None = None
         
         self.bridge.signals.paused.connect(self._run_camera_update)
         
@@ -95,7 +112,7 @@ class ViewportWidget(QtWidgets.QLabel):
         
     def _build_image_label(self: Self) -> None:
         self.image_label = QtWidgets.QLabel()
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter) 
         
         self.setLayout(QtWidgets.QVBoxLayout())
         self.layout().addWidget(self.image_label)
@@ -116,10 +133,20 @@ class ViewportWidget(QtWidgets.QLabel):
     
 #### MOUSE UTILITIES ##########################################################
     
+    def _handle_scene_interaction(self: Self, click_pos: QPointF) -> None:
+        size = self.size()
+        rec  = self.bridge.ENGINE.screen_space_ray(
+            click_pos.x() / size.width(), click_pos.y() / size.height()
+        )
+        self.object_info = ObjectInfo(rec, self.image_label)
+        self.object_info.raise_()
+    
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.RightButton:
             self._looking = True
             self._curr_mouse_pos = self._prev_mouse_pos = event.position()
+        elif event.button() == Qt.MouseButton.LeftButton:
+            self._build_object_info(event.position())
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self._looking:
@@ -131,7 +158,7 @@ class ViewportWidget(QtWidgets.QLabel):
 
 #### CAMERA UTILITIES #########################################################
     
-    def _update_cam_data(self: Self) -> None:
+    def _update_cam_transforms(self: Self) -> None:
         delta_p = self._cam_data.delta_p
         if self.is_held(Qt.Key.Key_W): delta_p[2] -= 1.0
         if self.is_held(Qt.Key.Key_S): delta_p[2] += 1.0
@@ -147,12 +174,22 @@ class ViewportWidget(QtWidgets.QLabel):
                 delta_r[0] = self._curr_mouse_pos.y()-self._prev_mouse_pos.y()
             self._prev_mouse_pos = self._curr_mouse_pos
                 
-        self._cam_data.focal_length = self.cam_settings.findChild(
-            QtWidgets.QDoubleSpinBox, 'focal_length'
+    def _parse_camera_settings(self: Self) -> None:
+        get_value = lambda name : self.cam_settings.findChild(
+            QtWidgets.QDoubleSpinBox, name
         ).value()
+        
+        self._cam_data.focal_length   = get_value('focal_length')
+        self._cam_data.focus_distance = get_value('focus_distance')        
+        self._cam_data.aperture       = get_value('aperture')
+        self._cam_data.sensor_width   = get_value('sensor_width')
+        self._cam_data.shutter_speed  = get_value('shutter_speed')
             
     def update_camera(self: Self) -> None:
-        self._update_cam_data()
+        if not self.bridge.is_rendering(): return
+        
+        self._update_cam_transforms()
+        self._parse_camera_settings()
         if self._cam_data.should_update():
             if self.bridge.ENGINE.is_rendering():
                 self.bridge.request_pause()
@@ -166,7 +203,11 @@ class ViewportWidget(QtWidgets.QLabel):
             self.bridge.camera.update(
                 Vector3(*self._cam_data.delta_p) * self.cam_movement_speed, 
                 Vector3(*self._cam_data.delta_r) * self.cam_look_sensitivity,
-                self._cam_data.focal_length
+                self._cam_data.focal_length,
+                self._cam_data.focus_distance,
+                self._cam_data.aperture,
+                self._cam_data.sensor_width,
+                self._cam_data.shutter_speed
             )
         
         self._cam_data.reset()
@@ -183,6 +224,21 @@ class ViewportWidget(QtWidgets.QLabel):
         qimg = qimg.copy()
         pixmap = QPixmap.fromImage(qimg)
         self.image_label.setPixmap(pixmap)
-
+        
+    def save_image(self: Self) -> None:
+        if self.buffer is None: return
+        
+        fp, _ = QtWidgets.QFileDialog.getSaveFileName()
+        if not fp: 
+            print('No file path selected.')
+            return
+        
+        fp = Path(fp).resolve()
+        if not fp.parent.exists():
+            print(f'Unable to locate parent directory at '
+                  f'{fp.parent.as_posix()}')
+            
+        Image.fromarray(self.buffer.data).save(fp)
+        
 
 

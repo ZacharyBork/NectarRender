@@ -7,6 +7,7 @@
 #include "hittable/include/hittable/primitives.h"
 #include "hittable/include/hittable/shapes.h"
 #include "hittable/include/hittable/volumes.h"
+#include "hittable/include/hittable/hit_record.h"
 
 namespace py = pybind11;
 
@@ -15,6 +16,18 @@ void register_hittable(py::module_& m) {
     auto m_hittable = m.def_submodule("hittable", "Hittable module.");
 
     py::class_<Hittable>(m_hittable, "Hittable");
+
+    py::class_<HitRecord>(m_hittable, "HitRecord")
+        .def(py::init<>())
+        .def("d_object_ptr",        &HitRecord::d_object_ptr)
+        .def_readonly("hit_object", &HitRecord::hit_object)
+        .def_readonly("p",          &HitRecord::p)
+        .def_readonly("n",          &HitRecord::n)
+        .def_readonly("tangent",    &HitRecord::tangent)
+        .def_readonly("uv",         &HitRecord::uv)
+        .def_readonly("t",          &HitRecord::t)
+        .def_readonly("front_face", &HitRecord::front_face)
+        .def_readonly("mat",        &HitRecord::mat);
 
     /* POLYGONAL */
 

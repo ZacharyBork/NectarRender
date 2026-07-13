@@ -8,7 +8,15 @@
 #include "material/include/material/material.h"
 #include "engine/include/engine/transform.h"
 
+// ============================================================================
+// UTILS
+// ============================================================================
+
 struct HitTestResult { bool hit; HitRecord& rec; };
+
+// ============================================================================
+// BASE HITTABLE CLASS
+// ============================================================================
 
 class Hittable {
 public:
@@ -127,6 +135,23 @@ public:
         return Vector3(1.0f, 0.0f, 0.0f);
     }
 
+    __host__ void update_xform(Transform& xform);
+    __host__ void update_material(Material* mat);
+
 };
+
+// ============================================================================
+// KERNEL WRAPPERS
+// ============================================================================
+
+void run_update_xform(Hittable* hittable, Transform& xform);
+__host__ inline void Hittable::update_xform(Transform& xform) {
+    run_update_xform(this, xform);
+}
+
+void run_update_material(Hittable* hittable, Material* mat);
+__host__ inline void Hittable::update_material(Material* mat) {
+    run_update_material(this, mat);
+}
 
 

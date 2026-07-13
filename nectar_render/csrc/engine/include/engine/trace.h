@@ -24,3 +24,11 @@ void trace(
     uint32_t      sample_idx
 );
 
+void hit_test_ray(
+    float u, 
+    float v, 
+    SceneGraph* scene, 
+    DeviceCamera* cam,
+    HitRecord* rec
+);
+

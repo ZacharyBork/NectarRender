@@ -31,3 +31,19 @@ void with_gil_scoped_release(F& func, Args... args) {
 template<typename... Args> 
 inline void hook_no_op(Args&&... args) {};
 
+// ############################################################################
+// PROFILING & STATISTICS
+// ############################################################################
+
+struct CUDAMemInfo { size_t used, free, total; };
+
+inline CUDAMemInfo get_cuda_meminfo() {
+    size_t free, total;
+    cudaMemGetInfo(&free, &total);
+    return CUDAMemInfo{ total - free, free, total };
+}
+
+inline size_t get_cuda_memory_used()  { return get_cuda_meminfo().used;  }
+inline size_t get_cuda_memory_free()  { return get_cuda_meminfo().free;  }
+inline size_t get_cuda_memory_total() { return get_cuda_meminfo().total; }
+

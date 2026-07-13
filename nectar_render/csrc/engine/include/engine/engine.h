@@ -1,5 +1,8 @@
 #pragma once
 
+#include <iostream>
+
+
 #include <atomic>
 #include <optional>
 #include <stdint.h>
@@ -93,6 +96,7 @@ public:
         Scene&     scene, 
         SampleMode mode = SampleMode::ACCUMULATE
     ) {
+        sample_mode = mode;
         current_scene.emplace(scene);
         set_state(EngineState::RENDERING);
         with_gil_scoped_acquire(on_render_started);
@@ -134,6 +138,35 @@ public:
         sample_idx = 1u;
     }
 
+    const uint32_t n_samples() const { return cam.n_samples; }
+    void set_n_samples(uint32_t n) {
+        cudaDeviceSynchronize();
+        cam.n_samples = n;
+        reset();
+    }
+
+    HitRecord screen_space_ray(float u, float v) {
+        HitRecord* d_rec;
+        cudaMalloc(&d_rec, sizeof(HitRecord));
+        hit_test_ray(
+            u, v, current_scene.value().graph, cam.device_camera(), d_rec
+        );
+
+        HitRecord rec;
+        cudaMemcpy(&rec, d_rec, sizeof(HitRecord), cudaMemcpyDeviceToHost);
+        cudaFree(d_rec);
+
+        request_reset();
+        cudaDeviceSynchronize();
+
+        rec.hit_object->update_material(
+            Lambertian(Color::purple()).build()
+        ); 
+
+        return rec;
+               
+    }
+
     void request_pause()  { set_state(EngineState::PAUSED);    }
     void request_cancel() { set_state(EngineState::CANCELLED); }
     void request_reset()  { 
@@ -146,6 +179,7 @@ private:
     std::atomic<EngineState> state { EngineState::IDLE };
 
     Camera       cam;
+    SampleMode   sample_mode = SampleMode::ACCUMULATE;
     TraceConfig  config;
     RenderLayers aovs, sample_aovs;
     uint32_t     ray_depth, seed;

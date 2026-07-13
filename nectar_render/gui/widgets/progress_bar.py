@@ -1,30 +1,23 @@
 from typing import Self
 
-import threading
-import numpy as np
+from PySide6 import QtWidgets as W
 
-from PySide6        import QtWidgets
-from PySide6.QtCore import Qt, QObject, Signal, Slot
-from PySide6.QtGui  import QKeyEvent, QImage, QPixmap
-
-from nectar_render import RenderEngine, Scene, Vector3
-from nectar_render.gui.bridge import RenderBridge
 
 ###############################################################################
 # PROGRESS BAR WIDGET
 ###############################################################################
 
-class ProgressBar(QtWidgets.QWidget):
+class ProgressBar(W.QWidget):
     
     def __init__(
         self:   Self, 
-        layout: QtWidgets.QLayout
+        layout: W.QLayout
     ) -> None:
         super().__init__()
-        self.progress_bar = QtWidgets.QProgressBar()
-        self.sample_counter = QtWidgets.QLabel('0/0 samples')
+        self.progress_bar = W.QProgressBar()
+        self.sample_counter = W.QLabel('0/0 samples')
         
-        hbox = QtWidgets.QHBoxLayout()
+        hbox = W.QHBoxLayout()
         hbox.setContentsMargins(3, 3, 3, 3)
         hbox.setSpacing(3)
         
@@ -40,6 +33,6 @@ class ProgressBar(QtWidgets.QWidget):
         
     def reset(self: Self) -> None:
         self.progress_bar.setValue(0)
-        self.sample_counter = QtWidgets.QLabel('0/0 samples')
+        self.sample_counter = W.QLabel('0/0 samples')
         
         

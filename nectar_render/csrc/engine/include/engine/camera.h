@@ -117,6 +117,17 @@ public:
         return Ray(origin, normalize(focus_point - origin), time);
     }
 
+    __device__ Ray screen_space_ray(float su, float sv) {
+        float x = su * resolution.x();
+        float y = sv * resolution.y();
+
+        float u = (x-(resolution.x()-1.0f) * 0.5f) * (uvw.x()/resolution.x());
+        float v = (y-(resolution.y()-1.0f) * 0.5f) * (uvw.y()/resolution.y());
+
+        Vector3 direction = normalize(rotation * Vector3(u, v, -focal_length));
+        return Ray(position, direction);
+    }
+
     __host__ __device__ void set_sample_pattern(Vector2* pattern) { 
         sample_pattern = pattern; 
     }
@@ -260,7 +271,11 @@ public:
     __host__ void update(
         const Vector3& delta_position,
         const Vector3& delta_rotation,
-        float focal_length_
+        float focal_length_,
+        float focus_distance_,
+        float aperture_,
+        float sensor_width_,
+        float shutter_speed_
     ) {
         cudaDeviceSynchronize();
         
@@ -272,7 +287,12 @@ public:
 
         position += rotation * delta_position;
 
-        focal_length = focal_length_;
+        focal_length   = focal_length_;
+        focus_distance = focus_distance_;
+        aperture       = aperture_;
+        sensor_width   = sensor_width_;
+        shutter_speed  = shutter_speed_;
+
         __construct(seed_);
     }
 
@@ -286,6 +306,8 @@ private:
     float pitch_ = 0.0f;
     float yaw_   = 0.0f;
     float roll_  = 0.0f;
+
+    Vector3 uvw = Vector3(0.0f, 0.0f, 0.0f);
 
     __host__ void free_device_pointer() {
         if (d_cam_ptr) 
@@ -303,7 +325,7 @@ private:
         float defocus_radius = focus_distance * tanf(defocus_angle / 2.0f);
         float aspect_ratio   = resolution.y() / resolution.x();
         
-        Vector3 uvw(sensor_width, -sensor_width * aspect_ratio, 0.0f);
+        uvw = Vector3(sensor_width, -sensor_width * aspect_ratio, 0.0f);
          
         return DeviceCamera(
             resolution, position, rotation, sample_generator.pattern(), 

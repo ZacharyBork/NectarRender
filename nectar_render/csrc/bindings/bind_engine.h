@@ -359,6 +359,11 @@ void register_engine(py::module_& m) {
         .def("is_cancelled",   &RenderEngine::is_cancelled)
         .def("is_refreshing",  &RenderEngine::is_resetting)
         .def("reset",          &RenderEngine::reset)
+        .def("n_samples",      &RenderEngine::n_samples)
+        .def("set_n_samples",  &RenderEngine::set_n_samples)
+
+        .def("screen_space_ray", &RenderEngine::screen_space_ray)
+
         .def_readwrite("on_render_started",  &RenderEngine::on_render_started)
         .def_readwrite("on_frame_finished",  &RenderEngine::on_frame_finished)
         .def_readwrite("on_render_finished", &RenderEngine::on_render_finished)

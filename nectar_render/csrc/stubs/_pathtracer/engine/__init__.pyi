@@ -4,6 +4,7 @@ Engine module.
 from __future__ import annotations
 import _pathtracer.core.matrix
 import _pathtracer.core.vector
+import _pathtracer.hittable
 import collections.abc
 import typing
 from . import camera
@@ -23,14 +24,14 @@ class EngineState:
     
       CANCELLED
     
-      REFRESHING
+      RESETTING
     """
     CANCELLED: typing.ClassVar[EngineState]  # value = <EngineState.CANCELLED: 3>
     IDLE: typing.ClassVar[EngineState]  # value = <EngineState.IDLE: 0>
     PAUSED: typing.ClassVar[EngineState]  # value = <EngineState.PAUSED: 2>
-    REFRESHING: typing.ClassVar[EngineState]  # value = <EngineState.REFRESHING: 4>
     RENDERING: typing.ClassVar[EngineState]  # value = <EngineState.RENDERING: 1>
-    __members__: typing.ClassVar[dict[str, EngineState]]  # value = {'IDLE': <EngineState.IDLE: 0>, 'RENDERING': <EngineState.RENDERING: 1>, 'PAUSED': <EngineState.PAUSED: 2>, 'CANCELLED': <EngineState.CANCELLED: 3>, 'REFRESHING': <EngineState.REFRESHING: 4>}
+    RESETTING: typing.ClassVar[EngineState]  # value = <EngineState.RESETTING: 4>
+    __members__: typing.ClassVar[dict[str, EngineState]]  # value = {'IDLE': <EngineState.IDLE: 0>, 'RENDERING': <EngineState.RENDERING: 1>, 'PAUSED': <EngineState.PAUSED: 2>, 'CANCELLED': <EngineState.CANCELLED: 3>, 'RESETTING': <EngineState.RESETTING: 4>}
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:
@@ -116,9 +117,9 @@ class RenderEngine:
     on_canceled: collections.abc.Callable[[], None]
     on_frame_finished: collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex], None]
     on_paused: collections.abc.Callable[[], None]
-    on_refreshed: collections.abc.Callable[[], None]
     on_render_finished: collections.abc.Callable[[], None]
     on_render_started: collections.abc.Callable[[], None]
+    on_reset: collections.abc.Callable[[], None]
     def __init__(self, camera: camera.Camera, ray_depth: typing.SupportsInt | typing.SupportsIndex = 8, seed: typing.SupportsInt | typing.SupportsIndex = 54321) -> None:
         ...
     def camera(self) -> camera.Camera:
@@ -137,19 +138,25 @@ class RenderEngine:
         ...
     def layers(self) -> data.RenderLayers:
         ...
+    def n_samples(self) -> int:
+        ...
     def render(self, scene: Scene, mode: SampleMode = ...) -> None:
         ...
     def request_cancel(self) -> None:
         ...
     def request_pause(self) -> None:
         ...
-    def request_refresh(self) -> None:
+    def request_reset(self) -> None:
         ...
     def reset(self) -> None:
         ...
-    def sample(self, scene: Scene, s_x: typing.SupportsInt | typing.SupportsIndex = 0, s_y: typing.SupportsInt | typing.SupportsIndex = 0, mode: SampleMode = ...) -> None:
+    def sample(self, scene: Scene, sample_idx: typing.SupportsInt | typing.SupportsIndex = 0, mode: SampleMode = ...) -> None:
         ...
     def scene(self) -> Scene:
+        ...
+    def screen_space_ray(self, arg0: typing.SupportsFloat | typing.SupportsIndex, arg1: typing.SupportsFloat | typing.SupportsIndex) -> _pathtracer.hittable.HitRecord:
+        ...
+    def set_n_samples(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
 class SampleMode:
     """

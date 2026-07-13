@@ -136,3 +136,29 @@ void trace(
     trace_kernel<<<grid, block>>>(cfg, cam, scene, aovs, sample_idx);
 }
 
+// ============================================================================
+// HIT TEST RAY
+// ============================================================================
+
+__global__ void hit_test_ray_kernel(
+    float u, 
+    float v, 
+    SceneGraph* scene, 
+    DeviceCamera* cam,
+    HitRecord* rec_out
+) {
+    HitRecord rec;
+    Ray ray = cam->screen_space_ray(u, v);
+    bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
+    *rec_out = rec;
+}
+
+void hit_test_ray(
+    float u, 
+    float v, 
+    SceneGraph* scene, 
+    DeviceCamera* cam,
+    HitRecord* rec
+) {
+    hit_test_ray_kernel<<<1, 1>>>(u, v, scene, cam, rec);
+}

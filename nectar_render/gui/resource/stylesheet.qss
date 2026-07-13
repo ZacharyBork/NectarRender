@@ -674,7 +674,8 @@ QTableCornerButton::section {
 }
 
 QSplitter::handle {
-    background-color: #0d0e12;
+    background-color: #2a2d36;
+    border-radius: 2px;
 }
 
 QSplitter::handle:horizontal {

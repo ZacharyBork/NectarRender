@@ -44,5 +44,9 @@ public:
         ) / world_ray.direction().length_squared();
     }
 
+    __host__ uintptr_t d_object_ptr() const {
+        return reinterpret_cast<uintptr_t>(hit_object);
+    }
+
 };
 

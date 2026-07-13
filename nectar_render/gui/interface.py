@@ -9,8 +9,8 @@ from PySide6.QtGui     import QKeyEvent, QIcon, QPixmap
 from PySide6.QtUiTools import QUiLoader
 
 from nectar_render import RenderEngine, Camera, Vector3
-from nectar_render.gui.bridge  import RenderBridge
-from nectar_render.gui.widgets import ViewportWidget, ProgressBar
+from nectar_render.gui.bridge  import RenderBridge, BridgeReset
+from nectar_render.gui.widgets import ViewportWidget, ProgressBar, Profiler
 from nectar_render.scenes.cornell_box import CornellBox
 
 ###############################################################################
@@ -23,21 +23,23 @@ class Interface(QObject):
         
         self.viewport:  ViewportWidget = None
         self.progress_bar: ProgressBar = None
+        self.profiler:        Profiler = None
         
-        self.scene  = CornellBox.SCENE
-        self.camera = Camera(
-            resolution   = (512, 512),
-            position     = (0.0, 0.0, 2.0),
-            rotation     = (0.0, 0.0, 0.0),
-            num_samples  = 1024,
-            focal_length = 3.0
-        )
-
-        self.max_depth:   int = 6
+        self.scene = CornellBox.SCENE
+        self.max_depth: int = 6
         self.seed: int | None = None
 
         self.bridge = RenderBridge(
-            self.scene, self.camera, self.max_depth, self.seed
+            self.scene, 
+            Camera(
+                resolution   = (512, 512),
+                position     = (0.0, 0.0, 2.0),
+                rotation     = (0.0, 0.0, 0.0),
+                num_samples  = 512,
+                focal_length = 3.0
+            ), 
+            self.max_depth, 
+            self.seed
         )
         self.bridge.signals.paused.connect(self._on_paused)
         self.bridge.signals.canceled.connect(self._on_canceled)
@@ -51,7 +53,6 @@ class Interface(QObject):
 #### ENGINE UTILITIES #########################################################
 
     def _poll_updates(self: Self) -> None:
-        if not self.bridge.is_rendering(): return
         self.viewport.update_camera()
         
 #### ENGINE HOOKS #############################################################
@@ -59,7 +60,7 @@ class Interface(QObject):
     @Slot(int)
     def _on_frame_finished(self: Self, frame_idx: int) -> None:
         self.viewport.update_image()
-        self.progress_bar.update(frame_idx, self.camera.n_samples)
+        self.progress_bar.update(frame_idx, self.bridge.n_samples)
         
     def _on_render_finished(self: Self) -> None:
         self.bridge.reset()
@@ -72,6 +73,16 @@ class Interface(QObject):
     def _on_canceled(self: Self) -> None: self.bridge.reset()
         
 #### CALLBACKS ################################################################
+
+    def toggle_groupbox_widgets(self: Self, name: str) -> None:
+        box = self.find(W.QGroupBox, name)
+        widgets = [i for i in box.children() if hasattr(i, 'setVisible')]
+        
+        for widget in widgets:
+            visible = not widget.isVisible()
+            widget.setVisible(visible)
+            if visible: box.setStyleSheet('padding: 3px;')
+            else: box.setStyleSheet('padding: -5px;')
 
     def play_button(self: Self) -> None:
         self.bridge.start()
@@ -93,11 +104,29 @@ class Interface(QObject):
         
     def refresh(self: Self) -> None:
         self.bridge.request_reset()
+
+    def set_n_samples(self: Self) -> None:
+        if self.bridge.ENGINE.is_rendering():
+            self.bridge.request_pause()
+        else: self._run_camera_update()
         
+    def set_n_samples(self: Self) -> None:
+        if self.bridge.ENGINE.is_rendering():
+            self.bridge.signals.paused.connect(self._set_n_samples)
+            self.bridge.request_pause()
+        else: self._set_n_samples()
+    
+    @Slot()
+    def _set_n_samples(self: Self) -> None:
+        with BridgeReset(): 
+            self.bridge.ENGINE.set_n_samples(
+                self.find(W.QSpinBox, 'n_samples').value()
+            )
+
 #### INITIALIZATION ###########################################################
 
     def _init_mainwidget(self: Self) -> W.QWidget:
-        path = Path(__file__).parent.resolve() / 'resource/mainwidget2.ui'
+        path = Path(__file__).parent.resolve() / 'resource/mainwidget.ui'
         if not path.exists():
             msg = f'Unable to locate UI file: {path.resolve().as_posix()}'
             raise FileNotFoundError(msg)
@@ -129,10 +158,26 @@ class Interface(QObject):
             self.find(W.QPushButton, name).clicked.connect(fn)
         )
         
-        connect_button('play',     self.play_button)
-        connect_button('pause',    self.pause_button)
-        connect_button('stop',     self.stop_button)
-        connect_button('refresh',  self.refresh)
+        connect_button('play',    self.play_button)
+        connect_button('pause',   self.pause_button)
+        connect_button('stop',    self.stop_button)
+        connect_button('refresh', self.refresh)
+        connect_button('save_render', self.viewport.save_image)
+        
+        connect_spinbox = lambda name, fn : (
+            self.find(W.QSpinBox, name).editingFinished.connect(fn)
+        )
+        
+        connect_spinbox('n_samples', self.set_n_samples)
+        
+        connect_groupbox = lambda name : (
+            self.find(W.QGroupBox, name).clicked.connect(
+                lambda : self.toggle_groupbox_widgets(name)
+            )
+        )
+
+        connect_groupbox('general_settings')
+        connect_groupbox('camera_settings')
         
     def _build_control_bar(self: Self) -> None:
         root = Path(__file__).parent.resolve() / 'resource/icons'
@@ -153,6 +198,10 @@ class Interface(QObject):
             
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
+        
+    def _build_profiler(self: Self) -> None:
+        tab = self.find(W.QWidget, 'profiler_tab')
+        self.profiler = Profiler(tab)
 
 #### ENTRYPOINT ###############################################################
 
@@ -167,6 +216,7 @@ class Interface(QObject):
         
         self._build_viewport()
         self._build_control_bar()
+        self._build_profiler()
         self._init_callbacks()
         self.progress_bar = ProgressBar(
             self.find(W.QFrame, 'progress_frame').layout()
