@@ -25,6 +25,8 @@ public:
     __host__ __device__ virtual ~Material() = default;
     __host__ virtual Material* build() const = 0;
 
+    __device__ virtual void update(Material* mat) = 0;
+
     __device__ virtual bool scatter(
         HitRecord& rec,
         Ray& ray,
@@ -69,6 +71,11 @@ public:
         return device_build<Lambertian>(texture);
     }
 
+    __device__ virtual void update(Material* mat) override {
+        Lambertian* other = reinterpret_cast<Lambertian*>(mat);
+        texture = other->texture;
+    };
+
     __device__ bool scatter(
         HitRecord& rec,
         Ray& ray,
@@ -110,6 +117,12 @@ public:
         return device_build<Metal>(albedo, fuzz);
     }
 
+    __device__ virtual void update(Material* mat) override {
+        Metal* other = reinterpret_cast<Metal*>(mat);
+        albedo = other->albedo;
+        fuzz = other->fuzz;
+    };
+
     __device__ bool scatter(
         HitRecord& rec,
         Ray& ray,
@@ -143,6 +156,11 @@ public:
     __host__ Material* build() const override {
         return device_build<Dielectric>(ior);
     }
+
+    __device__ virtual void update(Material* mat) override {
+        Dielectric* other = reinterpret_cast<Dielectric*>(mat);
+        ior = other->ior;
+    };
 
     __device__ bool scatter(
         HitRecord& rec,
@@ -204,6 +222,12 @@ public:
         return device_build<Emissive>(texture, brightness);
     }
 
+    __device__ virtual void update(Material* mat) override {
+        Emissive* other = reinterpret_cast<Emissive*>(mat);
+        texture = other->texture;
+        brightness = other->brightness;
+    };
+
     __device__ Color emitted(
         const Ray&       ray,
         const HitRecord& rec
@@ -237,6 +261,11 @@ public:
     __host__ Material* build() const override {
         return device_build<Isotropic>(texture);
     }
+
+    __device__ virtual void update(Material* mat) override {
+        Isotropic* other = reinterpret_cast<Isotropic*>(mat);
+        texture = other->texture;
+    };
 
     __device__ bool scatter(
         HitRecord& rec,
@@ -313,6 +342,8 @@ public:
     __host__ Material* build() const override {
         return device_build<PBRMaterial>(desc);
     }
+
+    __device__ virtual void update(Material* mat) override { };
 
     __device__ bool scatter(
         HitRecord& rec,

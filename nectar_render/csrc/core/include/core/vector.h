@@ -110,13 +110,11 @@ public:
     }
 
     __host__ __device__ VecType& pow(float exponent = 2.0f) const {
-        auto& self = derived();
-
-        VecType out;
+        VecType result = derived();
         #pragma unroll
         for (size_t i = 0; i < component_count<VecType>; ++i)
-            out.e[i] = powf(self.e[i], exponent);
-        return out;
+            result.e[i] = powf(result.e[i], exponent);
+        return result;
     }
 
     __host__ __device__ VecType& minimum(const float other) const {

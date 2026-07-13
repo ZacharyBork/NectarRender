@@ -212,6 +212,11 @@ QFrame#top_bar_frame {
     border-radius: 6px;
 }
 
+QFrame#object_info {
+    background-color: rgba(70, 70, 70, 75);
+    border-radius: 6px;
+}
+
 /* LABEL ====================================== */
 
 QLabel {

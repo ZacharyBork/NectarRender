@@ -361,7 +361,9 @@ void register_engine(py::module_& m) {
         .def("reset",          &RenderEngine::reset)
         .def("n_samples",      &RenderEngine::n_samples)
         .def("set_n_samples",  &RenderEngine::set_n_samples)
-
+        .def("max_depth",      &RenderEngine::max_depth)
+        .def("set_max_depth",  &RenderEngine::set_max_depth)
+        
         .def("screen_space_ray", &RenderEngine::screen_space_ray)
 
         .def_readwrite("on_render_started",  &RenderEngine::on_render_started)

@@ -134,19 +134,23 @@ class ViewportWidget(QtWidgets.QLabel):
 #### MOUSE UTILITIES ##########################################################
     
     def _handle_scene_interaction(self: Self, click_pos: QPointF) -> None:
+        if self.object_info is not None:
+            self.object_info.deleteLater()
+        
         size = self.size()
-        rec  = self.bridge.ENGINE.screen_space_ray(
+        interface = self.bridge.ENGINE.screen_space_ray(
             click_pos.x() / size.width(), click_pos.y() / size.height()
         )
-        self.object_info = ObjectInfo(rec, self.image_label)
+        self.object_info = ObjectInfo(self.bridge, interface, self.image_label)
+        self.object_info.show()
         self.object_info.raise_()
-    
+        
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.RightButton:
             self._looking = True
             self._curr_mouse_pos = self._prev_mouse_pos = event.position()
         elif event.button() == Qt.MouseButton.LeftButton:
-            self._build_object_info(event.position())
+            self._handle_scene_interaction(event.position())
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self._looking:

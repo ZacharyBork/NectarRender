@@ -35,7 +35,7 @@ class Interface(QObject):
                 resolution   = (512, 512),
                 position     = (0.0, 0.0, 2.0),
                 rotation     = (0.0, 0.0, 0.0),
-                num_samples  = 512,
+                num_samples  = 2048,
                 focal_length = 3.0
             ), 
             self.max_depth, 
@@ -118,10 +118,29 @@ class Interface(QObject):
     
     @Slot()
     def _set_n_samples(self: Self) -> None:
+        self.bridge.signals.paused.disconnect(self._set_n_samples)
         with BridgeReset(): 
             self.bridge.ENGINE.set_n_samples(
                 self.find(W.QSpinBox, 'n_samples').value()
             )
+            
+    def set_max_depth(self: Self) -> None:
+        if self.bridge.ENGINE.is_rendering():
+            self.bridge.signals.paused.connect(self._set_max_depth)
+            self.bridge.request_pause()
+        else: self._set_max_depth()
+    
+    @Slot()
+    def _set_max_depth(self: Self) -> None:
+        self.bridge.signals.paused.disconnect(self._set_max_depth)
+        with BridgeReset(): 
+            self.bridge.ENGINE.set_max_depth(
+                self.find(W.QSpinBox, 'max_depth').value()
+            )
+            
+    def _select_render_pass(self: Self, index: int) -> None:
+        # TODO: Implement render pass switching
+        pass
 
 #### INITIALIZATION ###########################################################
 
@@ -169,6 +188,7 @@ class Interface(QObject):
         )
         
         connect_spinbox('n_samples', self.set_n_samples)
+        connect_spinbox('max_depth', self.set_max_depth)
         
         connect_groupbox = lambda name : (
             self.find(W.QGroupBox, name).clicked.connect(
@@ -199,9 +219,14 @@ class Interface(QObject):
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
         
+        render_pass = self.find(W.QComboBox, 'render_pass')
+        render_pass.currentIndexChanged.connect(self._select_render_pass)
+        render_pass.addItem('Beauty')
+        render_pass.addItem('Normal (WS)')
+        
     def _build_profiler(self: Self) -> None:
         tab = self.find(W.QWidget, 'profiler_tab')
-        self.profiler = Profiler(tab)
+        self.profiler = Profiler(tab)        
 
 #### ENTRYPOINT ###############################################################
 

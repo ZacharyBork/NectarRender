@@ -137,7 +137,7 @@ public:
 
     __host__ void update_xform(Transform& xform);
     __host__ void update_material(Material* mat);
-
+    
 };
 
 // ============================================================================

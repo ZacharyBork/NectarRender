@@ -62,3 +62,39 @@ __host__ __device__ inline uint32_t float_as_uint(float f) {
     return u;
 }
 
+// ############################################################################
+// ACCESS GUARDING
+// ############################################################################
+
+template<typename T>
+class Guarded {
+public:
+
+    __host__ Guarded(const char* label = "resource") 
+        : ptr_(nullptr), label_(label) {}
+    
+        __host__ explicit Guarded(T* ptr, const char* label = "resource") 
+        : ptr_(ptr), label_(label) {}
+
+    __host__ void enable(T* ptr)     { ptr_ = ptr; }
+    __host__ void disable()          { ptr_ = nullptr; }
+    __host__ bool is_enabled() const { return ptr_ != nullptr; }
+
+    __host__ T* operator->() const {
+        if (!ptr_)
+            throw std::runtime_error(
+                std::string("Invalid access to disabled/uninitialized ") 
+                + label_
+            );
+        return ptr_;
+    }
+
+private:
+
+    T*          ptr_;
+    const char* label_;
+
+};
+
+
+

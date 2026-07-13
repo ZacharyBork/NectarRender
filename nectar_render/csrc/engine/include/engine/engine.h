@@ -1,8 +1,5 @@
 #pragma once
 
-#include <iostream>
-
-
 #include <atomic>
 #include <optional>
 #include <stdint.h>
@@ -16,6 +13,7 @@
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/trace.h"
 #include "hittable/include/hittable/hittable.h"
+#include "interface/include/object_interface.h"
 
 enum class SampleMode{ ACCUMULATE, COMBINE };
 enum class EngineState{ IDLE, RENDERING, PAUSED, CANCELLED, RESETTING };
@@ -65,10 +63,10 @@ public:
         return state.load(std::memory_order_relaxed);
     }
 
-    bool is_idle()      const { return get_state()==EngineState::IDLE;       }
-    bool is_rendering() const { return get_state()==EngineState::RENDERING;  }
-    bool is_paused()    const { return get_state()==EngineState::PAUSED;     }
-    bool is_cancelled() const { return get_state()==EngineState::CANCELLED;  }
+    bool is_idle()      const { return get_state()==EngineState::IDLE;      }
+    bool is_rendering() const { return get_state()==EngineState::RENDERING; }
+    bool is_paused()    const { return get_state()==EngineState::PAUSED;    }
+    bool is_cancelled() const { return get_state()==EngineState::CANCELLED; }
     bool is_resetting() const { return get_state()==EngineState::RESETTING; }
     
     /* SAMPLING / RENDERING */
@@ -145,7 +143,14 @@ public:
         reset();
     }
 
-    HitRecord screen_space_ray(float u, float v) {
+    const uint32_t max_depth() const { return ray_depth; }
+    void set_max_depth(uint32_t value) {
+        cudaDeviceSynchronize();
+        ray_depth = value;
+        reset();
+    }
+
+    ObjectInterface screen_space_ray(float u, float v) {
         HitRecord* d_rec;
         cudaMalloc(&d_rec, sizeof(HitRecord));
         hit_test_ray(
@@ -159,12 +164,9 @@ public:
         request_reset();
         cudaDeviceSynchronize();
 
-        rec.hit_object->update_material(
-            Lambertian(Color::purple()).build()
-        ); 
+        ObjectInterface interface(rec);
 
-        return rec;
-               
+        return interface;  
     }
 
     void request_pause()  { set_state(EngineState::PAUSED);    }

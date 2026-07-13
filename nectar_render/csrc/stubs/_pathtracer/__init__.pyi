@@ -6,5 +6,6 @@ from . import core
 from . import engine
 from . import hittable
 from . import host
+from . import interface
 from . import material
-__all__: list[str] = ['core', 'engine', 'hittable', 'host', 'material']
+__all__: list[str] = ['core', 'engine', 'hittable', 'host', 'interface', 'material']
