@@ -10,7 +10,7 @@ from PySide6        import QtWidgets
 from PySide6.QtCore import Qt, QObject, Signal, Slot, QPointF
 from PySide6.QtGui  import QKeyEvent, QMouseEvent, QImage, QPixmap
 
-from nectar_render import RenderEngine, Scene, Vector3, HitRecord
+from nectar_render import Vector3, HitRecord, ObjectInterface
 from nectar_render.gui.widgets.object_info import ObjectInfo
 from nectar_render.gui.bridge import RenderBridge, BridgeReset
 
@@ -100,6 +100,7 @@ class ViewportWidget(QtWidgets.QLabel):
         self._cam_data.prev = CameraUpdateInfo()
         
         self.object_info: ObjectInfo | None = None
+        self.object_interface: ObjectInterface | None = None
         
         self.bridge.signals.paused.connect(self._run_camera_update)
         
@@ -120,6 +121,10 @@ class ViewportWidget(QtWidgets.QLabel):
 #### KEYPRESS UTILITIES #######################################################
 
     def keyPressEvent(self: Self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_Escape:
+            if self.object_info is not None:
+                self.close_object_info()
+                
         if event.isAutoRepeat(): return
         self._held_keys.add(event.key())
 
@@ -138,12 +143,30 @@ class ViewportWidget(QtWidgets.QLabel):
             self.object_info.deleteLater()
         
         size = self.size()
-        interface = self.bridge.ENGINE.screen_space_ray(
+        self.object_interface = self.bridge.ENGINE.screen_space_ray(
             click_pos.x() / size.width(), click_pos.y() / size.height()
         )
-        self.object_info = ObjectInfo(self.bridge, interface, self.image_label)
+        self.object_info = ObjectInfo(
+            self.bridge, self.object_interface, self.image_label
+        )
+        
+        self.object_info.close_signal.connect(self.close_object_info)
         self.object_info.show()
         self.object_info.raise_()
+        
+    def close_object_info(self: Self) -> None:
+        if self.bridge.ENGINE.is_rendering():
+            self.bridge.signals.paused.connect(self._close_object_info)
+            self.bridge.request_pause()
+        else: self._close_object_info()
+       
+    @Slot()
+    def _close_object_info(self: Self) -> None:
+        self.bridge.signals.paused.disconnect(self._close_object_info)
+        with BridgeReset():
+            self.object_info.deleteLater()
+            self.object_info = None
+            self.object_interface.disable()
         
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.RightButton:

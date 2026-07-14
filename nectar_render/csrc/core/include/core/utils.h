@@ -73,7 +73,7 @@ public:
     __host__ Guarded(const char* label = "resource") 
         : ptr_(nullptr), label_(label) {}
     
-        __host__ explicit Guarded(T* ptr, const char* label = "resource") 
+    __host__ explicit Guarded(T* ptr, const char* label = "resource") 
         : ptr_(ptr), label_(label) {}
 
     __host__ void enable(T* ptr)     { ptr_ = ptr; }

@@ -6,6 +6,8 @@ import _pathtracer.hittable
 import _pathtracer.material
 __all__: list[str] = ['ObjectInterface']
 class ObjectInterface:
+    def disable(self) -> None:
+        ...
     def get_material(self) -> _pathtracer.material.Material:
         ...
     def hit_record(self) -> _pathtracer.hittable.HitRecord:

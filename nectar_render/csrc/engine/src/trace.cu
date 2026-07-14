@@ -162,3 +162,8 @@ void hit_test_ray(
 ) {
     hit_test_ray_kernel<<<1, 1>>>(u, v, scene, cam, rec);
 }
+
+
+
+
+

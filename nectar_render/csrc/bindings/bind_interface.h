@@ -19,12 +19,12 @@ void register_interface(py::module_& m) {
         },
             py::arg("mat")
         )
+        .def("disable",      &ObjectInterface::disable)
         .def("get_material", &ObjectInterface::get_material)
         .def("is_enabled",   &ObjectInterface::is_enabled)
         .def("hit_record",   &ObjectInterface::hit_record, 
-             return_policy::reference)
+             return_policy::reference);
         
-        ;
 
 }
 

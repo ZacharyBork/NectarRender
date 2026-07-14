@@ -87,6 +87,12 @@ public:
         else aovs.combine(sample_aovs);
         sample_aovs.clear();
 
+        if (interface.is_enabled())
+            interface.build_selection_mask(
+                config.H, config.W, cam.device_camera(), 
+                scene.graph, aovs.beauty
+            );
+
         cuda_synchronize();
     }
 
@@ -150,7 +156,7 @@ public:
         reset();
     }
 
-    ObjectInterface screen_space_ray(float u, float v) {
+    ObjectInterface& screen_space_ray(float u, float v) {
         HitRecord* d_rec;
         cudaMalloc(&d_rec, sizeof(HitRecord));
         hit_test_ray(
@@ -164,7 +170,7 @@ public:
         request_reset();
         cudaDeviceSynchronize();
 
-        ObjectInterface interface(rec);
+        interface = ObjectInterface(rec);
 
         return interface;  
     }
@@ -189,6 +195,7 @@ private:
     uint32_t sample_idx = 1u;
 
     std::optional<Scene> current_scene;
+    ObjectInterface interface;
 
     __host__ void set_state(EngineState s) {
         state.store(s, std::memory_order_relaxed);

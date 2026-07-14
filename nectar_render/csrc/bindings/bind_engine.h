@@ -364,7 +364,8 @@ void register_engine(py::module_& m) {
         .def("max_depth",      &RenderEngine::max_depth)
         .def("set_max_depth",  &RenderEngine::set_max_depth)
         
-        .def("screen_space_ray", &RenderEngine::screen_space_ray)
+        .def("screen_space_ray", &RenderEngine::screen_space_ray, 
+             return_policy::reference)
 
         .def_readwrite("on_render_started",  &RenderEngine::on_render_started)
         .def_readwrite("on_frame_finished",  &RenderEngine::on_frame_finished)
