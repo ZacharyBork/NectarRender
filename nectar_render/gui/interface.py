@@ -1,15 +1,14 @@
 import sys
-import threading
 from typing  import Self
 from pathlib import Path
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore    import Qt, QFile, QObject, Signal, Slot, QSize, QTimer
-from PySide6.QtGui     import QKeyEvent, QIcon, QPixmap
+from PySide6.QtCore    import QFile, QObject, Slot, QSize, QTimer
+from PySide6.QtGui     import QIcon
 from PySide6.QtUiTools import QUiLoader
 
-from nectar_render import RenderEngine, Camera, Vector3
-from nectar_render.gui.bridge  import RenderBridge, BridgeReset
+from nectar_render import Camera
+from nectar_render.gui.bridge  import RenderBridge, BridgeReset, Bridge
 from nectar_render.gui.widgets import ViewportWidget, ProgressBar, Profiler
 from nectar_render.scenes.cornell_box import CornellBox
 
@@ -29,7 +28,7 @@ class Interface(QObject):
         self.max_depth: int = 6
         self.seed: int | None = None
 
-        self.bridge = RenderBridge(
+        bridge = RenderBridge(
             self.scene, 
             Camera(
                 resolution   = (512, 512),
@@ -41,10 +40,11 @@ class Interface(QObject):
             self.max_depth, 
             self.seed
         )
-        self.bridge.signals.paused.connect(self._on_paused)
-        self.bridge.signals.canceled.connect(self._on_canceled)
-        self.bridge.signals.frame_finished.connect(self._on_frame_finished)
-        self.bridge.signals.render_finished.connect(self._on_render_finished)
+        bridge.signals.paused.connect(self._on_paused)
+        bridge.signals.canceled.connect(self._on_canceled)
+        bridge.signals.frame_finished.connect(self._on_frame_finished)
+        bridge.signals.render_finished.connect(self._on_render_finished)
+        Bridge.set_instance(bridge)
 
         self.update_timer = QTimer(self)
         self.update_timer.setInterval(16)
@@ -60,17 +60,17 @@ class Interface(QObject):
     @Slot(int)
     def _on_frame_finished(self: Self, frame_idx: int) -> None:
         self.viewport.update_image()
-        self.progress_bar.update(frame_idx, self.bridge.n_samples)
+        self.progress_bar.update(frame_idx, Bridge.acquire().n_samples)
         
     def _on_render_finished(self: Self) -> None:
-        self.bridge.reset()
+        Bridge.acquire().reset()
         
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
       
     def _on_paused  (self: Self) -> None: pass
-    def _on_canceled(self: Self) -> None: self.bridge.reset()
+    def _on_canceled(self: Self) -> None: Bridge.acquire().reset()
         
 #### CALLBACKS ################################################################
 
@@ -85,56 +85,60 @@ class Interface(QObject):
             else: box.setStyleSheet('padding: -5px;')
 
     def play_button(self: Self) -> None:
-        self.bridge.start()
+        Bridge.acquire().start()
         self.find(W.QPushButton, 'play').setEnabled(False)
         self.find(W.QPushButton, 'pause').setEnabled(True)
         self.find(W.QPushButton, 'stop').setEnabled(True)
         
     def pause_button(self: Self) -> None:
-        self.bridge.pause()
+        Bridge.acquire().pause()
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(True)
         
     def stop_button(self: Self) -> None:
-        self.bridge.stop()
+        Bridge.acquire().stop()
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
         
     def refresh(self: Self) -> None:
-        self.bridge.request_reset()
+        Bridge.acquire().request_reset()
 
     def set_n_samples(self: Self) -> None:
-        if self.bridge.ENGINE.is_rendering():
-            self.bridge.request_pause()
+        if Bridge.acquire().ENGINE.is_rendering():
+            Bridge.acquire().request_pause()
         else: self._run_camera_update()
         
     def set_n_samples(self: Self) -> None:
-        if self.bridge.ENGINE.is_rendering():
-            self.bridge.signals.paused.connect(self._set_n_samples)
-            self.bridge.request_pause()
+        bridge = Bridge.acquire()
+        if bridge.ENGINE.is_rendering():
+            bridge.signals.paused.connect(self._set_n_samples)
+            bridge.request_pause()
         else: self._set_n_samples()
     
     @Slot()
     def _set_n_samples(self: Self) -> None:
-        self.bridge.signals.paused.disconnect(self._set_n_samples)
+        bridge = Bridge.acquire()
+        bridge.signals.paused.disconnect(self._set_n_samples)
         with BridgeReset(): 
-            self.bridge.ENGINE.set_n_samples(
+            bridge.ENGINE.set_n_samples(
                 self.find(W.QSpinBox, 'n_samples').value()
             )
             
     def set_max_depth(self: Self) -> None:
-        if self.bridge.ENGINE.is_rendering():
-            self.bridge.signals.paused.connect(self._set_max_depth)
-            self.bridge.request_pause()
+        bridge = Bridge.acquire()
+        if bridge.ENGINE.is_rendering():
+            bridge.signals.paused.connect(self._set_max_depth)
+            bridge.request_pause()
         else: self._set_max_depth()
     
     @Slot()
     def _set_max_depth(self: Self) -> None:
-        self.bridge.signals.paused.disconnect(self._set_max_depth)
+        bridge = Bridge.acquire()
+        bridge.signals.paused.disconnect(self._set_max_depth)
         with BridgeReset(): 
-            self.bridge.ENGINE.set_max_depth(
+            bridge.ENGINE.set_max_depth(
                 self.find(W.QSpinBox, 'max_depth').value()
             )
             
@@ -167,7 +171,7 @@ class Interface(QObject):
 
     def _build_viewport(self: Self) -> None:
         self.viewport = ViewportWidget(
-            self.bridge, self.find(W.QGroupBox, 'camera_settings')
+            self.find(W.QGroupBox, 'camera_settings')
         )
         frame = self.find(W.QFrame, 'viewport_frame')
         frame.layout().addWidget(self.viewport)

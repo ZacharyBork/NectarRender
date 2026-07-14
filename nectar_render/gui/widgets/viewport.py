@@ -1,18 +1,17 @@
 from typing import Self
 
-import threading
 import numpy as np
 from PIL import Image
 from pathlib import Path
 from dataclasses import dataclass, field
 
-from PySide6        import QtWidgets
-from PySide6.QtCore import Qt, QObject, Signal, Slot, QPointF
+from PySide6        import QtWidgets as W
+from PySide6.QtCore import Qt, Slot, QPointF
 from PySide6.QtGui  import QKeyEvent, QMouseEvent, QImage, QPixmap
 
-from nectar_render import Vector3, HitRecord, ObjectInterface
+from nectar_render import Vector3, ObjectInterface
 from nectar_render.gui.widgets.object_info import ObjectInfo
-from nectar_render.gui.bridge import RenderBridge, BridgeReset
+from nectar_render.gui.bridge import BridgeReset, Bridge
 
 ###############################################################################
 # UTILITIES
@@ -76,16 +75,14 @@ class CameraUpdateInfo:
 # VIEWPORT WIDGET
 ###############################################################################
 
-class ViewportWidget(QtWidgets.QLabel):
+class ViewportWidget(W.QLabel):
         
     def __init__(
         self:         Self, 
-        bridge:       RenderBridge, 
-        cam_settings: QtWidgets.QGroupBox
+        cam_settings: W.QGroupBox
     ) -> None:
         super().__init__()
         
-        self.bridge = bridge
         self.buffer: FrameBuffer = None
         
         self.cam_settings = cam_settings
@@ -102,7 +99,7 @@ class ViewportWidget(QtWidgets.QLabel):
         self.object_info: ObjectInfo | None = None
         self.object_interface: ObjectInterface | None = None
         
-        self.bridge.signals.paused.connect(self._run_camera_update)
+        Bridge.acquire().signals.paused.connect(self._run_camera_update)
         
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._held_keys: set[Qt.Key] = set()
@@ -112,10 +109,10 @@ class ViewportWidget(QtWidgets.QLabel):
 #### INITIALIZATION ###########################################################
         
     def _build_image_label(self: Self) -> None:
-        self.image_label = QtWidgets.QLabel()
+        self.image_label = W.QLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter) 
         
-        self.setLayout(QtWidgets.QVBoxLayout())
+        self.setLayout(W.QVBoxLayout())
         self.layout().addWidget(self.image_label)
 
 #### KEYPRESS UTILITIES #######################################################
@@ -143,11 +140,11 @@ class ViewportWidget(QtWidgets.QLabel):
             self.object_info.deleteLater()
         
         size = self.size()
-        self.object_interface = self.bridge.ENGINE.screen_space_ray(
+        self.object_interface = Bridge.acquire().ENGINE.screen_space_ray(
             click_pos.x() / size.width(), click_pos.y() / size.height()
         )
         self.object_info = ObjectInfo(
-            self.bridge, self.object_interface, self.image_label
+            self.object_interface, self.image_label
         )
         
         self.object_info.close_signal.connect(self.close_object_info)
@@ -155,9 +152,10 @@ class ViewportWidget(QtWidgets.QLabel):
         self.object_info.raise_()
         
     def close_object_info(self: Self) -> None:
-        if self.bridge.ENGINE.is_rendering():
-            self.bridge.signals.paused.connect(self._close_object_info)
-            self.bridge.request_pause()
+        bridge = Bridge.acquire()
+        if bridge.ENGINE.is_rendering():
+            bridge.signals.paused.connect(self._close_object_info)
+            bridge.request_pause()
         else: self._close_object_info()
        
     @Slot()
@@ -203,7 +201,7 @@ class ViewportWidget(QtWidgets.QLabel):
                 
     def _parse_camera_settings(self: Self) -> None:
         get_value = lambda name : self.cam_settings.findChild(
-            QtWidgets.QDoubleSpinBox, name
+            W.QDoubleSpinBox, name
         ).value()
         
         self._cam_data.focal_length   = get_value('focal_length')
@@ -213,13 +211,14 @@ class ViewportWidget(QtWidgets.QLabel):
         self._cam_data.shutter_speed  = get_value('shutter_speed')
             
     def update_camera(self: Self) -> None:
-        if not self.bridge.is_rendering(): return
+        bridge = Bridge.acquire()
+        if not bridge.is_rendering(): return
         
         self._update_cam_transforms()
         self._parse_camera_settings()
         if self._cam_data.should_update():
-            if self.bridge.ENGINE.is_rendering():
-                self.bridge.request_pause()
+            if bridge.ENGINE.is_rendering():
+                bridge.request_pause()
             else: self._run_camera_update()
       
     @Slot()
@@ -227,7 +226,7 @@ class ViewportWidget(QtWidgets.QLabel):
         if not self._cam_data.should_update(): return
                 
         with BridgeReset():
-            self.bridge.camera.update(
+            Bridge.acquire().camera.update(
                 Vector3(*self._cam_data.delta_p) * self.cam_movement_speed, 
                 Vector3(*self._cam_data.delta_r) * self.cam_look_sensitivity,
                 self._cam_data.focal_length,
@@ -242,7 +241,8 @@ class ViewportWidget(QtWidgets.QLabel):
 #### IMAGE UTILITIES ##########################################################
     
     def update_image(self: Self) -> None:
-        self.buffer = FrameBuffer(np.ascontiguousarray(self.bridge.get_data()))
+        data = np.ascontiguousarray(Bridge.acquire().get_data())
+        self.buffer = FrameBuffer(data)
         
         qimg = QImage(
             self.buffer.data, self.buffer.W, self.buffer.H, 
@@ -255,7 +255,7 @@ class ViewportWidget(QtWidgets.QLabel):
     def save_image(self: Self) -> None:
         if self.buffer is None: return
         
-        fp, _ = QtWidgets.QFileDialog.getSaveFileName()
+        fp, _ = W.QFileDialog.getSaveFileName()
         if not fp: 
             print('No file path selected.')
             return

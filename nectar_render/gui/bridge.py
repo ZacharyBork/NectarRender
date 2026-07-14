@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import _pathtracer
 root = _pathtracer.engine
 
 import threading
-from typing import Self, Any
+from typing          import Self, Any
 from collections.abc import Generator
-from contextlib import ContextDecorator
+from contextlib      import ContextDecorator
+from dataclasses     import dataclass
 
 from PySide6.QtCore import QObject, Signal
 
@@ -14,11 +17,9 @@ from nectar_render.python import RenderEngine, Scene, Camera
 # RESET CONTEXT MANAGER
 ###############################################################################
 
-class BridgeReset(ContextDecorator):
-    BRIDGE: "RenderBridge" = None
-    
+class BridgeReset(ContextDecorator):    
     def __enter__(self: Self) -> Self:
-        self.BRIDGE.join_thread()
+        Bridge.acquire().join_thread()
         return self
 
     def __exit__(
@@ -26,8 +27,9 @@ class BridgeReset(ContextDecorator):
         *args:    tuple[Any, ...], 
         **kwargs: dict[str, Any]
     ) -> Generator[None, None, None]:
-        self.BRIDGE.request_reset()
-        self.BRIDGE.start()
+        bridge = Bridge.acquire()
+        bridge.request_reset()
+        bridge.start()
 
 ###############################################################################
 # SIGNAL INTERFACE
@@ -76,8 +78,6 @@ class RenderBridge(RenderEngine):
         self.update_scene(scene)
         self.build_thread()
         
-        BridgeReset.BRIDGE = self
-        
 #### PROPERTIES ###############################################################
         
     @property
@@ -120,4 +120,26 @@ class RenderBridge(RenderEngine):
     def reset(self: Self) -> None:
         self.request_reset()
         self.join_thread()
+
+###############################################################################
+# GLOBAL RENDER BRIDGE ACCESS
+###############################################################################
+
+@dataclass
+class Bridge:
+    _instance: RenderBridge = None
+    
+    @staticmethod
+    def set_instance(bridge_instance: RenderBridge) -> None:
+        setattr(Bridge, '_instance', bridge_instance)
+    
+    @staticmethod
+    def acquire() -> RenderBridge: 
+        if Bridge._instance is not None: return Bridge._instance
+        raise RuntimeError(
+            f'Bridge.acquire() called on BridgeInstance object prior to '
+            f'bridge being set. Please call Bridge.set_bridge() first to set '
+            f'the global RenderBridge instance.'
+        )
         
+

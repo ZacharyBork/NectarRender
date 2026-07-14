@@ -4,16 +4,14 @@ from PySide6 import QtWidgets as W
 from PySide6.QtCore import Qt, Slot, Signal
 
 from nectar_render import ObjectInterface, Color, Material as M
-from nectar_render.gui.bridge import RenderBridge, BridgeReset
+from nectar_render.gui.bridge import BridgeReset, Bridge
 
 class MaterialSettings(W.QGroupBox):
     def __init__(
         self:      Self, 
-        bridge:    RenderBridge, 
         interface: ObjectInterface
     ) -> None:
         super().__init__()
-        self.bridge = bridge
         self.interface = interface
         
         self.setTitle('Material')
@@ -73,14 +71,15 @@ class MaterialSettings(W.QGroupBox):
         return frame
         
     def update_material(self: Self) -> None:
-        if self.bridge.ENGINE.is_rendering():
-            self.bridge.signals.paused.connect(self._update_material)
-            self.bridge.request_pause()
+        bridge = Bridge.acquire()
+        if bridge.ENGINE.is_rendering():
+            bridge.signals.paused.connect(self._update_material)
+            bridge.request_pause()
         else: self._update_material()
        
     @Slot()
     def _update_material(self: Self) -> None:
-        self.bridge.signals.paused.disconnect(self._update_material)
+        Bridge.acquire().signals.paused.disconnect(self._update_material)
         color = Color(
             self.r.value() / 255.0,
             self.g.value() / 255.0,
@@ -101,14 +100,12 @@ class ObjectInfo(W.QFrame):
 
     def __init__(
         self:      Self, 
-        bridge:    RenderBridge, 
         interface: ObjectInterface, 
         parent:    W.QWidget
     ) -> None:
         super().__init__(parent=parent)
         self.setObjectName('object_info')
         
-        self.bridge = bridge
         self.interface = interface
         
         layout = W.QVBoxLayout()
@@ -116,7 +113,7 @@ class ObjectInfo(W.QFrame):
         self.close_btn.clicked.connect(lambda : self.close_signal.emit())
         layout.addWidget(self.close_btn)
         
-        self.mat_settings = MaterialSettings(bridge, interface)
+        self.mat_settings = MaterialSettings(interface)
         layout.addWidget(self.mat_settings)
         
         self.setLayout(layout)
