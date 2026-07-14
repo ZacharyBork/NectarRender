@@ -8,6 +8,7 @@ from PySide6.QtGui     import QIcon
 from PySide6.QtUiTools import QUiLoader
 
 from nectar_render import Camera
+from nectar_render.gui         import utils
 from nectar_render.gui.bridge  import RenderBridge, Bridge
 from nectar_render.gui.widgets import ViewportWidget, ProgressBar, Profiler
 from nectar_render.scenes.cornell_box import CornellBox
@@ -199,22 +200,18 @@ class Interface(QObject):
         connect_groupbox('general_settings')
         connect_groupbox('camera_settings')
         
-    def _build_control_bar(self: Self) -> None:
-        root = Path(__file__).parent.resolve() / 'resource/icons'
-        
+    def _build_control_bar(self: Self) -> None:        
         icon_paths = {
-            'play':        ('play.png',    (16, 16)),
-            'pause':       ('pause.png',   (16, 16)),
-            'stop':        ('stop.png',    (16, 16)),
-            'refresh':     ('refresh.png', (16, 16)),
-            'save_render': ('save.png',    (16, 16))
+            'play':        ('play',    (16, 16)),
+            'pause':       ('pause',   (16, 16)),
+            'stop':        ('stop',    (16, 16)),
+            'refresh':     ('refresh', (16, 16)),
+            'save_render': ('save',    (16, 16))
         }
         
         for name, (file, size) in icon_paths.items():
-            path = root / file
             btn = self.find(W.QPushButton, name)
-            btn.setIcon(QIcon(path.as_posix()))
-            btn.setIconSize(QSize(*size))
+            utils.set_button_icon(btn, file, size)
             
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
