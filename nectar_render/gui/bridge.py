@@ -4,32 +4,14 @@ import _pathtracer
 root = _pathtracer.engine
 
 import threading
-from typing          import Self, Any
+from typing          import Self
 from collections.abc import Generator
-from contextlib      import ContextDecorator
+from contextlib      import contextmanager
 from dataclasses     import dataclass
 
 from PySide6.QtCore import QObject, Signal
 
 from nectar_render.python import RenderEngine, Scene, Camera
-
-###############################################################################
-# RESET CONTEXT MANAGER
-###############################################################################
-
-class BridgeReset(ContextDecorator):    
-    def __enter__(self: Self) -> Self:
-        Bridge.acquire().join_thread()
-        return self
-
-    def __exit__(
-        self:     Self, 
-        *args:    tuple[Any, ...], 
-        **kwargs: dict[str, Any]
-    ) -> Generator[None, None, None]:
-        bridge = Bridge.acquire()
-        bridge.request_reset()
-        bridge.start()
 
 ###############################################################################
 # SIGNAL INTERFACE
@@ -125,21 +107,31 @@ class RenderBridge(RenderEngine):
 # GLOBAL RENDER BRIDGE ACCESS
 ###############################################################################
 
-@dataclass
-class Bridge:
+class BridgeMeta(type):
     _instance: RenderBridge = None
+
+    @property
+    def instance(self: Self) -> RenderBridge: 
+        if self._instance is not None: return self._instance
+        raise RuntimeError(
+            f'Bridge.instance accessed on Bridge object prior to bridge being '
+            f'set. Please call Bridge.set_instance() first to set the global '
+            f'RenderBridge instance.'
+        )
+    
+@dataclass
+class Bridge(metaclass=BridgeMeta):
     
     @staticmethod
     def set_instance(bridge_instance: RenderBridge) -> None:
         setattr(Bridge, '_instance', bridge_instance)
-    
-    @staticmethod
-    def acquire() -> RenderBridge: 
-        if Bridge._instance is not None: return Bridge._instance
-        raise RuntimeError(
-            f'Bridge.acquire() called on BridgeInstance object prior to '
-            f'bridge being set. Please call Bridge.set_bridge() first to set '
-            f'the global RenderBridge instance.'
-        )
+
+    @contextmanager
+    def reset() -> Generator[None, None, None]:
+        Bridge.instance.join_thread()
+        try: yield
+        finally:
+            Bridge.instance.request_reset()
+            Bridge.instance.start()
         
 

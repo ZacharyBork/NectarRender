@@ -4,7 +4,7 @@ from PySide6 import QtWidgets as W
 from PySide6.QtCore import Qt, Slot, Signal
 
 from nectar_render import ObjectInterface, Color, Material as M
-from nectar_render.gui.bridge import BridgeReset, Bridge
+from nectar_render.gui.bridge import Bridge
 
 class MaterialSettings(W.QGroupBox):
     def __init__(
@@ -71,15 +71,14 @@ class MaterialSettings(W.QGroupBox):
         return frame
         
     def update_material(self: Self) -> None:
-        bridge = Bridge.acquire()
-        if bridge.ENGINE.is_rendering():
-            bridge.signals.paused.connect(self._update_material)
-            bridge.request_pause()
+        if Bridge.instance.ENGINE.is_rendering():
+            Bridge.instance.signals.paused.connect(self._update_material)
+            Bridge.instance.request_pause()
         else: self._update_material()
        
     @Slot()
     def _update_material(self: Self) -> None:
-        Bridge.acquire().signals.paused.disconnect(self._update_material)
+        Bridge.instance.signals.paused.disconnect(self._update_material)
         color = Color(
             self.r.value() / 255.0,
             self.g.value() / 255.0,
@@ -91,7 +90,7 @@ class MaterialSettings(W.QGroupBox):
             case 2: m = M.DIELECTRIC(self.ior.value() * 0.01)
             case 3: m = M.EMISSIVE(color, self.brightness.value() * 0.01)
     
-        with BridgeReset():
+        with Bridge.reset():
             self.interface.update_material(m)
 
 

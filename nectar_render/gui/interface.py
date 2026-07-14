@@ -8,7 +8,7 @@ from PySide6.QtGui     import QIcon
 from PySide6.QtUiTools import QUiLoader
 
 from nectar_render import Camera
-from nectar_render.gui.bridge  import RenderBridge, BridgeReset, Bridge
+from nectar_render.gui.bridge  import RenderBridge, Bridge
 from nectar_render.gui.widgets import ViewportWidget, ProgressBar, Profiler
 from nectar_render.scenes.cornell_box import CornellBox
 
@@ -60,17 +60,17 @@ class Interface(QObject):
     @Slot(int)
     def _on_frame_finished(self: Self, frame_idx: int) -> None:
         self.viewport.update_image()
-        self.progress_bar.update(frame_idx, Bridge.acquire().n_samples)
+        self.progress_bar.update(frame_idx, Bridge.instance.n_samples)
         
     def _on_render_finished(self: Self) -> None:
-        Bridge.acquire().reset()
+        Bridge.instance.reset()
         
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
       
     def _on_paused  (self: Self) -> None: pass
-    def _on_canceled(self: Self) -> None: Bridge.acquire().reset()
+    def _on_canceled(self: Self) -> None: Bridge.instance.reset()
         
 #### CALLBACKS ################################################################
 
@@ -85,60 +85,56 @@ class Interface(QObject):
             else: box.setStyleSheet('padding: -5px;')
 
     def play_button(self: Self) -> None:
-        Bridge.acquire().start()
+        Bridge.instance.start()
         self.find(W.QPushButton, 'play').setEnabled(False)
         self.find(W.QPushButton, 'pause').setEnabled(True)
         self.find(W.QPushButton, 'stop').setEnabled(True)
         
     def pause_button(self: Self) -> None:
-        Bridge.acquire().pause()
+        Bridge.instance.pause()
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(True)
         
     def stop_button(self: Self) -> None:
-        Bridge.acquire().stop()
+        Bridge.instance.stop()
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
         
     def refresh(self: Self) -> None:
-        Bridge.acquire().request_reset()
+        Bridge.instance.request_reset()
 
     def set_n_samples(self: Self) -> None:
-        if Bridge.acquire().ENGINE.is_rendering():
-            Bridge.acquire().request_pause()
+        if Bridge.instance.ENGINE.is_rendering():
+            Bridge.instance.request_pause()
         else: self._run_camera_update()
         
     def set_n_samples(self: Self) -> None:
-        bridge = Bridge.acquire()
-        if bridge.ENGINE.is_rendering():
-            bridge.signals.paused.connect(self._set_n_samples)
-            bridge.request_pause()
+        if Bridge.instance.ENGINE.is_rendering():
+            Bridge.instance.signals.paused.connect(self._set_n_samples)
+            Bridge.instance.request_pause()
         else: self._set_n_samples()
     
     @Slot()
     def _set_n_samples(self: Self) -> None:
-        bridge = Bridge.acquire()
-        bridge.signals.paused.disconnect(self._set_n_samples)
-        with BridgeReset(): 
-            bridge.ENGINE.set_n_samples(
+        Bridge.instance.signals.paused.disconnect(self._set_n_samples)
+        with Bridge.reset(): 
+            Bridge.instance.ENGINE.set_n_samples(
                 self.find(W.QSpinBox, 'n_samples').value()
             )
             
     def set_max_depth(self: Self) -> None:
-        bridge = Bridge.acquire()
-        if bridge.ENGINE.is_rendering():
-            bridge.signals.paused.connect(self._set_max_depth)
-            bridge.request_pause()
+        if Bridge.instance.ENGINE.is_rendering():
+            Bridge.instance.signals.paused.connect(self._set_max_depth)
+            Bridge.instance.request_pause()
         else: self._set_max_depth()
     
     @Slot()
     def _set_max_depth(self: Self) -> None:
-        bridge = Bridge.acquire()
-        bridge.signals.paused.disconnect(self._set_max_depth)
-        with BridgeReset(): 
-            bridge.ENGINE.set_max_depth(
+        Bridge.instance.signals.paused.disconnect(self._set_max_depth)
+        with Bridge.reset(): 
+            Bridge.instance.ENGINE.set_max_depth(
                 self.find(W.QSpinBox, 'max_depth').value()
             )
             

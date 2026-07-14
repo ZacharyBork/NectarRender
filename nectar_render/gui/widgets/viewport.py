@@ -11,7 +11,7 @@ from PySide6.QtGui  import QKeyEvent, QMouseEvent, QImage, QPixmap
 
 from nectar_render import Vector3, ObjectInterface
 from nectar_render.gui.widgets.object_info import ObjectInfo
-from nectar_render.gui.bridge import BridgeReset, Bridge
+from nectar_render.gui.bridge import Bridge
 
 ###############################################################################
 # UTILITIES
@@ -99,7 +99,7 @@ class ViewportWidget(W.QLabel):
         self.object_info: ObjectInfo | None = None
         self.object_interface: ObjectInterface | None = None
         
-        Bridge.acquire().signals.paused.connect(self._run_camera_update)
+        Bridge.instance.signals.paused.connect(self._run_camera_update)
         
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._held_keys: set[Qt.Key] = set()
@@ -140,7 +140,7 @@ class ViewportWidget(W.QLabel):
             self.object_info.deleteLater()
         
         size = self.size()
-        self.object_interface = Bridge.acquire().ENGINE.screen_space_ray(
+        self.object_interface = Bridge.instance.ENGINE.screen_space_ray(
             click_pos.x() / size.width(), click_pos.y() / size.height()
         )
         self.object_info = ObjectInfo(
@@ -152,16 +152,15 @@ class ViewportWidget(W.QLabel):
         self.object_info.raise_()
         
     def close_object_info(self: Self) -> None:
-        bridge = Bridge.acquire()
-        if bridge.ENGINE.is_rendering():
-            bridge.signals.paused.connect(self._close_object_info)
-            bridge.request_pause()
+        if Bridge.instance.ENGINE.is_rendering():
+            Bridge.instance.signals.paused.connect(self._close_object_info)
+            Bridge.instance.request_pause()
         else: self._close_object_info()
        
     @Slot()
     def _close_object_info(self: Self) -> None:
-        self.bridge.signals.paused.disconnect(self._close_object_info)
-        with BridgeReset():
+        Bridge.instance.signals.paused.disconnect(self._close_object_info)
+        with Bridge.reset():
             self.object_info.deleteLater()
             self.object_info = None
             self.object_interface.disable()
@@ -211,22 +210,21 @@ class ViewportWidget(W.QLabel):
         self._cam_data.shutter_speed  = get_value('shutter_speed')
             
     def update_camera(self: Self) -> None:
-        bridge = Bridge.acquire()
-        if not bridge.is_rendering(): return
+        if not Bridge.instance.is_rendering(): return
         
         self._update_cam_transforms()
         self._parse_camera_settings()
         if self._cam_data.should_update():
-            if bridge.ENGINE.is_rendering():
-                bridge.request_pause()
+            if Bridge.instance.ENGINE.is_rendering():
+                Bridge.instance.request_pause()
             else: self._run_camera_update()
       
     @Slot()
     def _run_camera_update(self: Self) -> None:
         if not self._cam_data.should_update(): return
                 
-        with BridgeReset():
-            Bridge.acquire().camera.update(
+        with Bridge.reset():
+            Bridge.instance.camera.update(
                 Vector3(*self._cam_data.delta_p) * self.cam_movement_speed, 
                 Vector3(*self._cam_data.delta_r) * self.cam_look_sensitivity,
                 self._cam_data.focal_length,
@@ -241,7 +239,7 @@ class ViewportWidget(W.QLabel):
 #### IMAGE UTILITIES ##########################################################
     
     def update_image(self: Self) -> None:
-        data = np.ascontiguousarray(Bridge.acquire().get_data())
+        data = np.ascontiguousarray(Bridge.instance.get_data())
         self.buffer = FrameBuffer(data)
         
         qimg = QImage(
