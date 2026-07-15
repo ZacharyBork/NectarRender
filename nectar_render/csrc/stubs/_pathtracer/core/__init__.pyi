@@ -2,8 +2,38 @@
 Core module.
 """
 from __future__ import annotations
+import collections.abc
+import typing
 from . import matrix
 from . import random
 from . import utils
 from . import vector
-__all__: list[str] = ['matrix', 'random', 'utils', 'vector']
+__all__: list[str] = ['Transform', 'matrix', 'random', 'utils', 'vector']
+class Transform:
+    def R(self) -> matrix.Matrix3:
+        ...
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, position: vector.Vector3 = ..., rotation: vector.Vector3 = ..., scale: vector.Vector3 = ...) -> None:
+        ...
+    @typing.overload
+    def __init__(self, position: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], rotation: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], scale: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [1.0, 1.0, 1.0]) -> None:
+        ...
+    def p(self) -> vector.Vector3:
+        ...
+    def pos(self) -> vector.Vector3:
+        ...
+    def position(self) -> vector.Vector3:
+        ...
+    def rotation(self) -> matrix.Matrix3:
+        ...
+    def scale(self) -> vector.Vector3:
+        ...
+    def set_position(self, arg0: vector.Vector3) -> None:
+        ...
+    def set_rotation(self, arg0: matrix.Matrix3) -> None:
+        ...
+    def set_scale(self, arg0: vector.Vector3) -> None:
+        ...

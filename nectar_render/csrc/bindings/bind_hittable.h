@@ -19,15 +19,16 @@ void register_hittable(py::module_& m) {
 
     py::class_<HitRecord>(m_hittable, "HitRecord")
         .def(py::init<>())
-        .def("d_object_ptr",        &HitRecord::d_object_ptr)
-        .def_readonly("hit_object", &HitRecord::hit_object)
-        .def_readonly("p",          &HitRecord::p)
-        .def_readonly("n",          &HitRecord::n)
-        .def_readonly("tangent",    &HitRecord::tangent)
-        .def_readonly("uv",         &HitRecord::uv)
-        .def_readonly("t",          &HitRecord::t)
-        .def_readonly("front_face", &HitRecord::front_face)
-        .def_readonly("mat",        &HitRecord::mat);
+        .def("d_object_ptr",          &HitRecord::d_object_ptr)
+        .def_readonly("hit_object",   &HitRecord::hit_object)
+        .def_readonly("object_index", &HitRecord::object_index)
+        .def_readonly("p",            &HitRecord::p)
+        .def_readonly("n",            &HitRecord::n)
+        .def_readonly("tangent",      &HitRecord::tangent)
+        .def_readonly("uv",           &HitRecord::uv)
+        .def_readonly("t",            &HitRecord::t)
+        .def_readonly("front_face",   &HitRecord::front_face)
+        .def_readonly("mat",          &HitRecord::mat);
 
     /* POLYGONAL */
 

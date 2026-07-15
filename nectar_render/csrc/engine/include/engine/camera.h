@@ -296,6 +296,17 @@ public:
         __construct(seed_);
     }
 
+    __host__ Ray screen_space_ray(float su, float sv) {
+        float x = su * resolution.x();
+        float y = sv * resolution.y();
+
+        float u = (x-(resolution.x()-1.0f) * 0.5f) * (uvw.x()/resolution.x());
+        float v = (y-(resolution.y()-1.0f) * 0.5f) * (uvw.y()/resolution.y());
+
+        Vector3 direction = normalize(rotation * Vector3(u, v, -focal_length));
+        return Ray(position, direction);
+    }
+
 private:
 
     DeviceCamera* d_cam_ptr = nullptr;

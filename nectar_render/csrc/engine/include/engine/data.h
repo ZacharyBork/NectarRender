@@ -142,7 +142,10 @@ public:
 
     size_t C, H, W; // Channels, Height, Width
 
-    __host__ ~DataObject() { if(is_pinned()) free_pinned_buffer(); }
+    __host__ ~DataObject() { 
+        if (is_pinned())     free_pinned_buffer(); 
+        else if (data_ptr()) cudaFree(data_ptr());
+    }
 
     /* CONSTRUCTORS */
 
@@ -153,12 +156,12 @@ public:
         size_t h, 
         size_t w
     ) : C(n_channels), H(h), W(w) {
-        d_ptr = allocate_cuda_memory(n_elements(), 0.0f);
+        cudaMalloc(&d_ptr, n_bytes());
+        cudaMemset(d_ptr, 0, n_bytes());
     }
 
-    __host__ DataObject(
-        DataObject* data
-    ) : DataObject(data->C, data->H, data->W) { }
+    __host__ DataObject(DataObject* data) 
+        : DataObject(data->C, data->H, data->W) { }
 
     DataObject(DataObject&& other) noexcept {
         C       = other.C;
@@ -170,7 +173,7 @@ public:
         image_buffer    = other.image_buffer;
         transfer_stream = other.transfer_stream;
 
-        other.d_ptr = 0;
+        other.d_ptr = nullptr;
         other.pinned_buffer = nullptr;
     }
 
@@ -183,7 +186,7 @@ public:
             pinned_buffer   = other.pinned_buffer;
             image_buffer    = other.image_buffer;
             transfer_stream = other.transfer_stream;
-            other.d_ptr         = 0;
+            other.d_ptr         = nullptr;
             other.pinned_buffer = nullptr;
         }
         return *this;
@@ -211,9 +214,9 @@ public:
     
     /* POINTER REFERENCES */
 
-    __host__ __device__ uintptr_t device_ptr() { return d_ptr; }
-    __host__ __device__ float* data_ptr() { 
-        return reinterpret_cast<float*>(d_ptr);
+    __host__ __device__ float* data_ptr() { return d_ptr; }
+    __host__ __device__ uintptr_t device_ptr() { 
+        return reinterpret_cast<uintptr_t>(d_ptr); 
     }
 
     /* PINNED BUFFERS */
@@ -300,7 +303,7 @@ public:
 private:
 
     bool enabled = true;
-    uintptr_t d_ptr = 0;
+    float* d_ptr = nullptr;
     uint8_t* pinned_buffer = nullptr;
     uint8_t* image_buffer  = nullptr;
     cudaStream_t transfer_stream;

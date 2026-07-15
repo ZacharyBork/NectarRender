@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/include/core/vector.h"
-#include "engine/include/engine/transform.h"
+#include "core/include/core/transform.h"
 #include "engine/include/engine/ray.h"
 
 class Material;
@@ -10,7 +10,8 @@ class Hittable;
 class HitRecord {
 public:
 
-    Hittable* hit_object = nullptr;
+    Hittable* hit_object  = nullptr;
+    uint32_t  object_index = 0u;
 
     Vector3 p;               // Position
     Vector3 n;               // Surface normal vector

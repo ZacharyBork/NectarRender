@@ -12,7 +12,9 @@ void register_core(py::module_& m) {
     
     auto m_core = m.def_submodule("core", "Core module.");
 
-    /* UTILS */
+// ############################################################################
+// UTILS
+// ############################################################################
 
     auto m_utils = m_core.def_submodule("utils", "Core utility submodule.");
 
@@ -23,12 +25,16 @@ void register_core(py::module_& m) {
     m_utils.def("free_cuda_memory",     &free_cuda_memory,     "");
     m_utils.def("cuda_synchronize",     &cuda_synchronize,     "");
 
-    /* RNG */
+// ############################################################################
+// RNG
+// ############################################################################
 
     auto m_random = m_core.def_submodule("random", "Core RNG submodule.");
     py::class_<Generator>(m_random, "Generator");
 
-    /* VECTORS */
+// ############################################################################
+// VECTORS
+// ############################################################################
 
     auto m_vec = m_core.def_submodule("vector", "Vector module.");
 
@@ -75,6 +81,7 @@ void register_core(py::module_& m) {
                               + std::to_string(v.y()) + ", " 
                               + std::to_string(v.z()) + ")";
         })
+        .def("as_array", &Vector3::as_array)
         .def("x", &Vector3::x)
         .def("y", &Vector3::y)
         .def("z", &Vector3::z)
@@ -125,7 +132,9 @@ void register_core(py::module_& m) {
     m_vec.def("random_unit_vector",   &random_unit_vector,   "");
     m_vec.def("random_on_hemisphere", &random_on_hemisphere, "");
 
-    /* MATRICES */
+// ############################################################################
+// MATRICES
+// ############################################################################
 
     auto m_mat = m_core.def_submodule("matrix", "Matrix module.");
 
@@ -138,6 +147,44 @@ void register_core(py::module_& m) {
         .def("forward",   &Matrix3::forward);
 
     m_mat.def("rotation_from_euler", &rotation_from_euler, "");
+
+// ############################################################################
+// TRANSFORM
+// ############################################################################
+
+    py::class_<Transform>(m_core, "Transform")
+        .def(py::init<>()) 
+        .def(py::init([](
+            const Vector3& position,
+            const Vector3& rotation,
+            const Vector3& scale
+        ) {
+            return Transform(position, rotation, scale);
+        }),
+            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f)
+        )
+        .def(py::init([](
+            std::array<float, 3> position,
+            std::array<float, 3> rotation,
+            std::array<float, 3> scale
+        ) {
+            return Transform(position, rotation, scale);
+        }),
+            py::arg("position") = std::array<float, 3>{0.0f, 0.0f, 0.0f},
+            py::arg("rotation") = std::array<float, 3>{0.0f, 0.0f, 0.0f},
+            py::arg("scale")    = std::array<float, 3>{1.0f, 1.0f, 1.0f}
+        )
+        .def("position",     &Transform::position)
+        .def("rotation",     &Transform::rotation)
+        .def("scale",        &Transform::scale)
+        .def("set_position", &Transform::set_position)
+        .def("set_rotation", &Transform::set_rotation)
+        .def("set_scale",    &Transform::set_scale)
+        .def("p",            &Transform::p)
+        .def("pos",          &Transform::pos)
+        .def("R",            &Transform::R);
 
 }
 

@@ -6,7 +6,7 @@
 #include "hittable/include/bvh/aabb.h"
 #include "hittable/include/hittable/hit_record.h"
 #include "material/include/material/material.h"
-#include "engine/include/engine/transform.h"
+#include "core/include/core/transform.h"
 
 // ============================================================================
 // UTILS
@@ -95,9 +95,7 @@ public:
         const Ray& ray,
         HitRecord& rec
     ) const {
-        HitRecord tmp_rec;
         Ray r = ray.to_object_space(xform);
-
         bool hit_obj = hit(r, Interval(EPS, FMAX), rec);
         if (hit_obj) rec.hit_object = self_ref;
         rec.to_world_space(xform, r, ray, true);

@@ -6,7 +6,7 @@
 #include "engine/include/engine/engine.h"
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/data.h"
-#include "engine/include/engine/transform.h"
+#include "core/include/core/transform.h"
 #include "engine/include/engine/light.h"
 #include "engine/include/engine/denoise.h"
 
@@ -17,45 +17,6 @@ using return_policy = py::return_value_policy;
 void register_engine(py::module_& m) {
     
     auto m_engine = m.def_submodule("engine", "Engine module.");
-
-// ############################################################################
-// TRANSFORM
-// ############################################################################
-
-    py::class_<Transform>(m_engine, "Transform")
-        .def(py::init<>()) 
-        .def(py::init([](
-            const Vector3& position,
-            const Vector3& rotation,
-            const Vector3& scale
-        ) {
-            return Transform(position, rotation, scale);
-        }),
-            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
-            py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
-            py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f)
-        )
-        .def(py::init([](
-            std::array<float, 3> position,
-            std::array<float, 3> rotation,
-            std::array<float, 3> scale
-        ) {
-            return Transform(position, rotation, scale);
-        }),
-            py::arg("position") = std::array<float, 3>{0.0f, 0.0f, 0.0f},
-            py::arg("rotation") = std::array<float, 3>{0.0f, 0.0f, 0.0f},
-            py::arg("scale")    = std::array<float, 3>{1.0f, 1.0f, 1.0f}
-        )
-        .def("position",     &Transform::position)
-        .def("rotation",     &Transform::rotation)
-        .def("scale",        &Transform::scale)
-        .def("set_position", &Transform::set_position)
-        .def("set_rotation", &Transform::set_rotation)
-        .def("set_scale",    &Transform::set_scale)
-        .def("p",            &Transform::p)
-        .def("pos",          &Transform::pos)
-        .def("R",            &Transform::R);
-        
 
 // ############################################################################
 // CAMERA
@@ -273,7 +234,9 @@ void register_engine(py::module_& m) {
         }),
             py::arg("hittables"), 
             py::arg("lights"), 
-            py::arg("skylight")
+            py::arg("skylight"),
+            py::keep_alive<1, 2>(),
+            py::keep_alive<1, 3>()
         );
 
 // ############################################################################
@@ -346,12 +309,19 @@ void register_engine(py::module_& m) {
             py::arg("scene"), 
             py::arg("mode") = SampleMode::ACCUMULATE
         )
+        .def("request_reset", ([](
+            RenderEngine& self, 
+            bool rebuild_bvh
+        ) {
+            self.request_reset(rebuild_bvh);
+        }),
+            py::arg("rebuild_bvh") = false
+        )
         .def("camera", &RenderEngine::camera, return_policy::reference)
         .def("layers", &RenderEngine::layers, return_policy::reference)
         .def("scene",  &RenderEngine::scene,  return_policy::reference)
         .def("request_pause",  &RenderEngine::request_pause)
         .def("request_cancel", &RenderEngine::request_cancel)
-        .def("request_reset",  &RenderEngine::request_reset)
         .def("get_state",      &RenderEngine::get_state)
         .def("is_idle",        &RenderEngine::is_idle)
         .def("is_rendering",   &RenderEngine::is_rendering)

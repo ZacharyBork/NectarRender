@@ -168,8 +168,9 @@ class Interface(QObject):
 
     def _build_viewport(self: Self) -> None:
         self.viewport = ViewportWidget(
-            self.find(W.QGroupBox, 'camera_settings')
+            self.find(W.QTabWidget, 'settings_tabs')
         )
+        
         frame = self.find(W.QFrame, 'viewport_frame')
         frame.layout().addWidget(self.viewport)
 

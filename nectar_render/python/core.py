@@ -24,6 +24,9 @@ class Vector3(root.vector.Vector3):
     def __repr__(self: Self) -> str:
         return f'Vector3(x={self.x()}, y={self.y()}, z={self.z()})'
 
+    def as_tuple(self: Self) -> tuple[float, float, float]:
+        return (self.x(), self.y(), self.z())
+
 Vec3 = Point3 = Vector3;
 
 class Color(root.vector.Color):
@@ -38,4 +41,10 @@ class Matrix3(root.matrix.Matrix3):
     @staticmethod
     def rotation_from_euler(r: Vector3) -> Self:
         return root.matrix.rotation_from_euler(r)
+
+###############################################################################
+# TRANSFORM
+###############################################################################
+
+class Transform(root.Transform): ...
 

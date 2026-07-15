@@ -324,10 +324,13 @@ public:
     __host__ Vec3Core(std::array<float, 3> e) : e{e[0], e[1], e[2]} {}
     __host__ __device__ Vec3Core(float e[4]) : e{e[0], e[1], e[2]} {}
     
-
     template <typename OtherType>
     __host__ __device__ explicit Vec3Core(const Vec3Core<OtherType>& other)
         : e{other.e[0], other.e[1], other.e[2]} {}
+
+    __host__ std::array<float, 3> as_array() {
+        return std::array<float, 3>{ e[0], e[1], e[2] };
+    }
 
     __host__ __device__ float x() const { return e[0]; }
     __host__ __device__ float y() const { return e[1]; }
@@ -356,6 +359,7 @@ public:
             gen.random_float(min, max)
         );
     }
+
 };
 
 class Vector3 : public Vec3Core<Vector3> { using Vec3Core::Vec3Core; };

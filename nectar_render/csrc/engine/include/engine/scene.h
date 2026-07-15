@@ -23,14 +23,14 @@ struct SceneGraph {
         Interval    ray_t,
         HitRecord&  rec
     ) {
-        uint8_t stack[STACK_SIZE];
-        uint8_t stack_ptr  = 0u;
+        uint32_t stack[STACK_SIZE];
+        uint32_t stack_ptr  = 0u;
         stack[stack_ptr++] = 0u;
 
         bool hit_anything = false;
 
         while (stack_ptr > 0) {
-            uint8_t idx = stack[--stack_ptr];
+            uint32_t idx = stack[--stack_ptr];
             const BVHNode& node = bvh_nodes[idx];
 
             if (!node.bbox.hit(ray, ray_t)) continue;
@@ -41,6 +41,7 @@ struct SceneGraph {
                 if (objects[node.object]->hit_test(ray, tmp_rec)) {
                     if (ray_t.surrounds(tmp_rec.t)) {
                         rec = tmp_rec;
+                        rec.object_index = node.object;
                         hit_anything = true;
                         ray_t.max = tmp_rec.t;
                     }
@@ -63,69 +64,97 @@ private:
 class Scene {
 public:
 
-    SceneGraph* graph;
+    SceneGraph* graph = nullptr;
+    SceneGraph h_graph{};
+
+    std::vector<Hittable*> hittables;
+    std::vector<Light*>    lights;
+    SkyLight& skylight;
 
     __host__ Scene(
-        std::vector<Hittable*>& hittables,
-        std::vector<Light*>&    lights,
-        SkyLight& skylight
-    ) {
-        for (Light* light : lights) hittables.push_back(light);
+        std::vector<Hittable*> hittables,
+        std::vector<Light*>    lights,
+        SkyLight&              skylight
+    ) : hittables(std::move(hittables)),
+        lights(std::move(lights)),
+        skylight(skylight)
+    { 
+        for (Light* light : this->lights) this->hittables.push_back(light);
+        build(); 
+    }
 
-        SceneGraph tmp;
-        tmp.skylight  = skylight;
-        tmp.n_objects = hittables.size();
-        tmp.n_lights  = lights.size();
+    __host__ void teardown() {
+        if (!graph) return;
+        
+        cudaFree(graph); 
+        cudaFree(h_graph.bvh_nodes);
+        cudaFree(h_graph.objects);
+        cudaFree(h_graph.lights);
 
-        build_bvh(tmp, hittables);
-        build_device_hittables(tmp, hittables);
-        build_device_lights(tmp, lights);
+        graph   = nullptr;
+        h_graph = SceneGraph();
+    }
 
-        size_t n_bytes = sizeof(tmp);
+    __host__ void build() {
+        teardown();
+
+        h_graph.skylight  = skylight;
+        h_graph.n_objects = hittables.size();
+        h_graph.n_lights  = lights.size();
+
+        build_bvh();
+        build_device_hittables();
+        build_device_lights();
+
+        size_t n_bytes = sizeof(h_graph);
         cudaMalloc(&graph, n_bytes);
-        cudaMemcpy(graph, &tmp, n_bytes, cudaMemcpyHostToDevice);
+        cudaMemcpy(graph, &h_graph, n_bytes, cudaMemcpyHostToDevice);
 
         host_to_device.clear();
+    }
+
+    __host__ Hittable* object_at_index(const uint32_t index) {
+        if (index >= hittables.size())
+            throw std::runtime_error(
+                "Scene::object_at_index(): index " + 
+                std::to_string(index) + " out of range"
+            );
+        return hittables[index];
     }
 
 private:
 
     std::unordered_map<Hittable*, Hittable*> host_to_device;
 
-    __host__ void build_bvh(
-        SceneGraph& tmp, 
-        std::vector<Hittable*>& hittables
-    ) {
+    __host__ void build_bvh() {
         BVH bvh;
         bvh.build(hittables);
-        tmp.n_nodes = bvh.nodes.size();
+        h_graph.n_nodes = bvh.nodes.size();
 
-        cudaMalloc(&tmp.bvh_nodes, tmp.n_nodes * sizeof(BVHNode));
-        cudaMemcpy(tmp.bvh_nodes, bvh.nodes.data(),
-                tmp.n_nodes * sizeof(BVHNode), cudaMemcpyHostToDevice);
+        cudaMalloc(&h_graph.bvh_nodes, h_graph.n_nodes * sizeof(BVHNode));
+        cudaMemcpy(
+            h_graph.bvh_nodes, bvh.nodes.data(),
+            h_graph.n_nodes * sizeof(BVHNode), cudaMemcpyHostToDevice
+        );
     }
 
-    __host__ void build_device_hittables(
-        SceneGraph& tmp, 
-        std::vector<Hittable*>& hittables
-    ) {
-        std::vector<Hittable*> d_obj_ptrs(tmp.n_objects);
+    __host__ void build_device_hittables() {
+        std::vector<Hittable*> d_obj_ptrs(h_graph.n_objects);
         for (size_t i = 0; i < hittables.size(); i++) {
             Hittable* d_ptr = hittables[i]->build();
             d_obj_ptrs[i] = d_ptr;
             host_to_device[hittables[i]] = d_ptr;
         }
 
-        cudaMalloc(&tmp.objects, tmp.n_objects * sizeof(Hittable*));
-        cudaMemcpy(tmp.objects, d_obj_ptrs.data(),
-                tmp.n_objects * sizeof(Hittable*), cudaMemcpyHostToDevice);
+        cudaMalloc(&h_graph.objects, h_graph.n_objects * sizeof(Hittable*));
+        cudaMemcpy(
+            h_graph.objects, d_obj_ptrs.data(),
+            h_graph.n_objects * sizeof(Hittable*), cudaMemcpyHostToDevice
+        );
     }
 
-    __host__ void build_device_lights(
-        SceneGraph& tmp, 
-        std::vector<Light*>& lights
-    ) {
-        std::vector<Hittable*> d_light_ptrs(tmp.n_lights);
+    __host__ void build_device_lights() {
+        std::vector<Hittable*> d_light_ptrs(h_graph.n_lights);
         for (size_t i = 0; i < lights.size(); i++) {
             auto it = host_to_device.find(static_cast<Hittable*>(lights[i]));
             if (it == host_to_device.end())
@@ -135,9 +164,11 @@ private:
             d_light_ptrs[i] = it->second;
         }
 
-        cudaMalloc(&tmp.lights, tmp.n_lights * sizeof(Hittable*));
-        cudaMemcpy(tmp.lights, d_light_ptrs.data(),
-                tmp.n_lights * sizeof(Hittable*), cudaMemcpyHostToDevice);
+        cudaMalloc(&h_graph.lights, h_graph.n_lights * sizeof(Hittable*));
+        cudaMemcpy(
+            h_graph.lights, d_light_ptrs.data(),
+            h_graph.n_lights * sizeof(Hittable*), cudaMemcpyHostToDevice
+        );
     }
 
 };

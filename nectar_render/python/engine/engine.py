@@ -16,7 +16,6 @@ from nectar_render.python.engine.camera  import Camera
 from nectar_render.python.engine.denoise import Denoiser, TVDenoiser
 
 Engine:     TypeAlias = root.RenderEngine
-Transform:  TypeAlias = root.Transform
 SampleMode: TypeAlias = root.SampleMode
 
 class RenderEngine:
@@ -57,10 +56,11 @@ class RenderEngine:
         
     ### UTILITIES ###
     
-    def reset         (self: Self) -> None: self.ENGINE.reset()
     def request_pause (self: Self) -> None: self.ENGINE.request_pause()
     def request_cancel(self: Self) -> None: self.ENGINE.request_cancel()
-    def request_reset (self: Self) -> None: self.ENGINE.request_reset()
+    def request_reset (self: Self, rebuild_bvh: bool = False) -> None: 
+        self.ENGINE.request_reset(rebuild_bvh)
+    
     def is_canceled   (self: Self) -> bool: return self.ENGINE.is_cancelled()
     def is_rendering  (self: Self) -> bool: return self.ENGINE.is_rendering()
         

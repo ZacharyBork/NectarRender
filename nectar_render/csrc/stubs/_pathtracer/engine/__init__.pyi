@@ -2,8 +2,6 @@
 Engine module.
 """
 from __future__ import annotations
-import _pathtracer.core.matrix
-import _pathtracer.core.vector
 import _pathtracer.interface
 import collections.abc
 import typing
@@ -11,7 +9,7 @@ from . import camera
 from . import data
 from . import denoise
 from . import lights
-__all__: list[str] = ['EngineState', 'LayerType', 'RenderEngine', 'SampleMode', 'Scene', 'Transform', 'camera', 'data', 'denoise', 'lights']
+__all__: list[str] = ['EngineState', 'LayerType', 'RenderEngine', 'SampleMode', 'Scene', 'camera', 'data', 'denoise', 'lights']
 class EngineState:
     """
     Members:
@@ -148,7 +146,7 @@ class RenderEngine:
         ...
     def request_pause(self) -> None:
         ...
-    def request_reset(self) -> None:
+    def request_reset(self, rebuild_bvh: bool = False) -> None:
         ...
     def reset(self) -> None:
         ...
@@ -201,32 +199,4 @@ class SampleMode:
         ...
 class Scene:
     def __init__(self, hittables: list, lights: list, skylight: lights.SkyLight) -> None:
-        ...
-class Transform:
-    def R(self) -> _pathtracer.core.matrix.Matrix3:
-        ...
-    @typing.overload
-    def __init__(self) -> None:
-        ...
-    @typing.overload
-    def __init__(self, position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ...) -> None:
-        ...
-    @typing.overload
-    def __init__(self, position: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], rotation: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], scale: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [1.0, 1.0, 1.0]) -> None:
-        ...
-    def p(self) -> _pathtracer.core.vector.Vector3:
-        ...
-    def pos(self) -> _pathtracer.core.vector.Vector3:
-        ...
-    def position(self) -> _pathtracer.core.vector.Vector3:
-        ...
-    def rotation(self) -> _pathtracer.core.matrix.Matrix3:
-        ...
-    def scale(self) -> _pathtracer.core.vector.Vector3:
-        ...
-    def set_position(self, arg0: _pathtracer.core.vector.Vector3) -> None:
-        ...
-    def set_rotation(self, arg0: _pathtracer.core.matrix.Matrix3) -> None:
-        ...
-    def set_scale(self, arg0: _pathtracer.core.vector.Vector3) -> None:
         ...

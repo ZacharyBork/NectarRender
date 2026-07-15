@@ -30,6 +30,10 @@ public:
 
     /* CONSTRUCTION */
 
+    ~RenderEngine() {
+        if (current_scene) current_scene->teardown();
+    }
+
     RenderEngine(
         const Camera& camera,
         uint32_t ray_depth = 8u,
@@ -50,11 +54,11 @@ public:
     RenderLayers* layers() { return &aovs; }
 
     Scene* scene() { 
-        if (!current_scene.has_value())
+        if (!current_scene)
             throw std::runtime_error(
                 "RenderEngine::scene() called on engine without emplaced "
                 "scene instance.");
-        return &current_scene.value(); 
+        return current_scene; 
     }
 
     /* ENGINE STATE */
@@ -72,12 +76,12 @@ public:
     /* SAMPLING / RENDERING */
 
     void sample(
-        Scene&     scene, 
+        Scene&     input_scene, 
         uint32_t   sample_index = 1u,
         SampleMode mode = SampleMode::ACCUMULATE
     ) {
         trace(
-            config, cam.device_camera(), scene.graph, 
+            config, cam.device_camera(), input_scene.graph, 
             sample_aovs.aovs(), sample_index
         );
 
@@ -90,18 +94,18 @@ public:
         if (interface.is_enabled())
             interface.build_selection_mask(
                 config.H, config.W, cam.device_camera(), 
-                scene.graph, aovs.beauty
+                input_scene.graph, aovs.beauty
             );
 
-        cuda_synchronize();
+        cudaDeviceSynchronize();
     }
 
     void render(
-        Scene&     scene, 
+        Scene&     input_scene, 
         SampleMode mode = SampleMode::ACCUMULATE
     ) {
         sample_mode = mode;
-        current_scene.emplace(scene);
+        current_scene = &input_scene;
         set_state(EngineState::RENDERING);
         with_gil_scoped_acquire(on_render_started);
         
@@ -111,7 +115,7 @@ public:
             if (is_cancelled()) { cancel_render(); return; }
             if (is_paused())    { pause_render();  return; }
             if (is_resetting()) { 
-                cuda_synchronize();
+                cudaDeviceSynchronize();
                 reset();
                 with_gil_scoped_acquire(on_reset);
 
@@ -119,12 +123,12 @@ public:
                 set_state(EngineState::RENDERING);
             }
 
-            sample(scene, idx, mode);
+            sample(*current_scene, idx, mode);
             with_gil_scoped_acquire(on_frame_finished, idx);
             sample_idx++;
         }
 
-        cuda_synchronize();
+        cudaDeviceSynchronize();
         with_gil_scoped_acquire(on_render_finished);
         set_state(EngineState::IDLE);
     }
@@ -140,6 +144,13 @@ public:
         config.seed = seed;
 
         sample_idx = 1u;
+
+        aovs.clear();
+
+        if (bvh_build_pending.load(std::memory_order_relaxed)) {
+            bvh_build_pending.store(false, std::memory_order_relaxed);
+            scene()->build();
+        }
     }
 
     const uint32_t n_samples() const { return cam.n_samples; }
@@ -158,9 +169,10 @@ public:
 
     ObjectInterface& screen_space_ray(float u, float v) {
         HitRecord* d_rec;
+
         cudaMalloc(&d_rec, sizeof(HitRecord));
         hit_test_ray(
-            u, v, current_scene.value().graph, cam.device_camera(), d_rec
+            u, v, current_scene->graph, cam.device_camera(), d_rec
         );
 
         HitRecord rec;
@@ -170,14 +182,15 @@ public:
         request_reset();
         cudaDeviceSynchronize();
 
-        interface = ObjectInterface(rec);
+        interface = ObjectInterface(current_scene, rec);
 
         return interface;  
     }
 
     void request_pause()  { set_state(EngineState::PAUSED);    }
     void request_cancel() { set_state(EngineState::CANCELLED); }
-    void request_reset()  { 
+    void request_reset(const bool rebuild_bvh = false)  { 
+        bvh_build_pending.store(rebuild_bvh, std::memory_order_relaxed);
         if (is_rendering()) set_state(EngineState::RESETTING);
         else reset(); 
     }
@@ -185,6 +198,7 @@ public:
 private:
 
     std::atomic<EngineState> state { EngineState::IDLE };
+    std::atomic<bool> bvh_build_pending { false };
 
     Camera       cam;
     SampleMode   sample_mode = SampleMode::ACCUMULATE;
@@ -194,7 +208,7 @@ private:
 
     uint32_t sample_idx = 1u;
 
-    std::optional<Scene> current_scene;
+    Scene* current_scene = nullptr;
     ObjectInterface interface;
 
     __host__ void set_state(EngineState s) {
@@ -202,13 +216,13 @@ private:
     }
 
     __host__ void cancel_render() {
-        cuda_synchronize();
+        cudaDeviceSynchronize();
         with_gil_scoped_acquire(on_canceled);
         set_state(EngineState::IDLE);
     }
 
     __host__ void pause_render() {
-        cuda_synchronize();
+        cudaDeviceSynchronize();
         with_gil_scoped_acquire(on_paused);
     }
 

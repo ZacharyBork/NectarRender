@@ -1,6 +1,9 @@
 from typing import Self
 from PySide6 import QtWidgets as W
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Slot
+
+from nectar_render import ObjectInterface, Transform, Vector3
+from nectar_render.gui.bridge import Bridge
 from nectar_render.gui import utils
 
 class VectorWidget(W.QWidget):
@@ -16,16 +19,25 @@ class VectorWidget(W.QWidget):
         
         layout = W.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        
+        self.setStyleSheet(
+            'padding: 2px, 2px; '
+            'min-height: 18px; '
+            'max-height: 18px; '
+            'min-width: 18px; '
+        )
+   
         self._axes: dict[str, W.QDoubleSpinBox] = {}
         for idx, axis in enumerate(['x', 'y', 'z']):
             widget = W.QDoubleSpinBox()
+            widget.setDecimals(2)
             widget.setMinimum(min_value)
             widget.setMaximum(max_value)
             widget.setValue(self.values[idx])
             widget.setButtonSymbols(
                 W.QAbstractSpinBox.ButtonSymbols.NoButtons
             )
+            
+            
             
             self._axes[axis] = widget
             layout.addWidget(widget)
@@ -58,11 +70,11 @@ class VectorWidget(W.QWidget):
     @x.setter
     def x(self: Self, value: float) -> None: self._axes['x'].setValue(value)
     @property
-    def y(self: Self) -> float: return self._axes['y']
+    def y(self: Self) -> float: return self._axes['y'].value()
     @y.setter
     def y(self: Self, value: float) -> None: self._axes['y'].setValue(value)
     @property
-    def z(self: Self) -> float: return self._axes['z']
+    def z(self: Self) -> float: return self._axes['z'].value()
     @z.setter
     def z(self: Self, value: float) -> None: self._axes['z'].setValue(value)
     
@@ -76,19 +88,31 @@ class VectorWidget(W.QWidget):
         icon = 'lock' if self.locked else 'lock_open'
         utils.set_button_icon(self.lock, icon, (16, 16))
         
-class XformController(W.QWidget):
-    def __init__(self: Self, parent: W.QWidget | None = None) -> None:
-        super().__init__(parent=parent)
-        self.setObjectName('xform_controller')
+    def as_vector3(self: Self) -> Vector3:
+        return Vector3(self.x, self.y, self.z)
+        
+class XformController(W.QGroupBox):
+    def __init__(
+        self:      Self, 
+        interface: ObjectInterface
+    ) -> None:
+        super().__init__()
+        self.setTitle('Transform')
+        self.interface = interface
         
         layout = W.QVBoxLayout()
+        layout.setContentsMargins(3, 3, 3, 3)
         self.setLayout(layout)
 
-        self.translation = VectorWidget()
-        self.rotation    = VectorWidget()
-        self.scale       = VectorWidget(values=(1.0, 1.0, 1.0))
+        xform = self.interface.get_transform()    
+        self.scale       = VectorWidget(values=xform.scale().as_array())
+        self.translation = VectorWidget(values=xform.position().as_array())
+        self.rotation    = VectorWidget(
+            values=xform.rotation().forward().as_array()
+        )
         
         layout = W.QFormLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addRow('Translate', self.translation)
         layout.addRow('Rotate',    self.rotation)
         layout.addRow('Scale',     self.scale)
@@ -97,4 +121,24 @@ class XformController(W.QWidget):
         frame.setLayout(layout)
         self.layout().addWidget(frame)
         
-
+        update_btn = W.QPushButton('Update')
+        update_btn.clicked.connect(self.update)
+        self.layout().addWidget(update_btn)
+     
+    def update(self: Self) -> None:
+        if Bridge.instance.ENGINE.is_rendering():
+            Bridge.instance.signals.paused.connect(self._update)
+            Bridge.instance.request_pause()
+        else: self._update()
+     
+    @Slot()
+    def _update(self: Self) -> None:
+        Bridge.instance.signals.paused.disconnect(self._update)
+        with Bridge.reset(rebuild_bvh=True): 
+            self.interface.set_transform(
+                Transform(
+                    self.translation.as_vector3(),
+                    self.rotation.as_vector3(),
+                    self.scale.as_vector3()
+                )
+            )

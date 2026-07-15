@@ -2,7 +2,10 @@
 
 #include <array>
 
-#include "core/include/core.h"
+#include "core/include/core/constants.h"
+#include "core/include/core/vector.h"
+#include "core/include/core/matrix.h"
+#include "core/include/core/utils.h"
 
 struct Transform {
 public:
@@ -44,8 +47,8 @@ public:
         inv_scale_(Vector3(1.0f) / (scale + FMIN))
     { }
 
-    __host__ __device__ const Matrix3& inv_R()   const { return inv_rotation_; }
-    __host__ __device__ const Vector3& inv_s()   const { return inv_scale_;    }
+    __host__ __device__ const Matrix3& inv_R() const { return inv_rotation_; }
+    __host__ __device__ const Vector3& inv_s() const { return inv_scale_;    }
 
     __host__ __device__ const Vector3& position() const { return position_; }
     __host__ __device__ const Matrix3& rotation() const { return rotation_; }

@@ -78,14 +78,17 @@ class CameraUpdateInfo:
 class ViewportWidget(W.QLabel):
         
     def __init__(
-        self:         Self, 
-        cam_settings: W.QGroupBox
+        self:     Self, 
+        settings: W.QTabWidget
     ) -> None:
         super().__init__()
         
         self.buffer: FrameBuffer = None
         
-        self.cam_settings = cam_settings
+        self.settings = settings
+        self.cam_settings = self.settings.findChild(
+            W.QGroupBox, 'camera_settings'
+        )
         self.cam_movement_speed = 0.05
         self.cam_look_sensitivity = 0.15
         
@@ -96,7 +99,8 @@ class ViewportWidget(W.QLabel):
         self._cam_data = CameraUpdateInfo()
         self._cam_data.prev = CameraUpdateInfo()
         
-        self.object_info: ObjectInfo | None = None
+        self.object_info = ObjectInfo(self.settings)
+        self.object_info.close_signal.connect(self.close_object_info)
         self.object_interface: ObjectInterface | None = None
         
         Bridge.instance.signals.paused.connect(self._run_camera_update)
@@ -133,23 +137,16 @@ class ViewportWidget(W.QLabel):
     def is_held(self: Self, key: Qt.Key) -> bool:
         return key in self._held_keys
     
-#### MOUSE UTILITIES ##########################################################
+#### SCENE INTERACTION ########################################################
     
     def _handle_scene_interaction(self: Self, click_pos: QPointF) -> None:
-        if self.object_info is not None:
-            self.object_info.deleteLater()
+        self.object_info.destroy()
         
         size = self.size()
         self.object_interface = Bridge.instance.ENGINE.screen_space_ray(
             click_pos.x() / size.width(), click_pos.y() / size.height()
         )
-        self.object_info = ObjectInfo(
-            self.object_interface, self.image_label
-        )
-        
-        self.object_info.close_signal.connect(self.close_object_info)
-        self.object_info.show()
-        self.object_info.raise_()
+        self.object_info.build(self.object_interface)
         
     def close_object_info(self: Self) -> None:
         if Bridge.instance.ENGINE.is_rendering():
@@ -161,10 +158,10 @@ class ViewportWidget(W.QLabel):
     def _close_object_info(self: Self) -> None:
         Bridge.instance.signals.paused.disconnect(self._close_object_info)
         with Bridge.reset():
-            self.object_info.deleteLater()
-            self.object_info = None
-            self.object_interface.disable()
-        
+            self.object_info.destroy()
+
+#### MOUSE UTILITIES ##########################################################
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.RightButton:
             self._looking = True

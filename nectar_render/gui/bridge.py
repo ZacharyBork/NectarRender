@@ -99,8 +99,8 @@ class RenderBridge(RenderEngine):
         self.build_thread()
         self.THREAD.start()
         
-    def reset(self: Self) -> None:
-        self.request_reset()
+    def reset(self: Self, rebuild_bvh: bool = False) -> None:
+        self.request_reset(rebuild_bvh)
         self.join_thread()
 
 ###############################################################################
@@ -127,11 +127,11 @@ class Bridge(metaclass=BridgeMeta):
         setattr(Bridge, '_instance', bridge_instance)
 
     @contextmanager
-    def reset() -> Generator[None, None, None]:
+    def reset(rebuild_bvh: bool = False) -> Generator[None, None, None]:
         Bridge.instance.join_thread()
         try: yield
         finally:
-            Bridge.instance.request_reset()
+            Bridge.instance.request_reset(rebuild_bvh)
             Bridge.instance.start()
         
 
