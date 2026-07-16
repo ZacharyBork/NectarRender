@@ -30,7 +30,6 @@ class Interface(QObject):
         self.seed: int | None = None
 
         bridge = RenderBridge(
-            self.scene, 
             Camera(
                 resolution   = (512, 512),
                 position     = (0.0, 0.0, 2.0),
@@ -41,8 +40,7 @@ class Interface(QObject):
             self.max_depth, 
             self.seed
         )
-        bridge.signals.paused.connect(self._on_paused)
-        bridge.signals.canceled.connect(self._on_canceled)
+        bridge.set_scene(self.scene)
         bridge.signals.frame_finished.connect(self._on_frame_finished)
         bridge.signals.render_finished.connect(self._on_render_finished)
         Bridge.set_instance(bridge)
@@ -69,9 +67,6 @@ class Interface(QObject):
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
-      
-    def _on_paused  (self: Self) -> None: pass
-    def _on_canceled(self: Self) -> None: Bridge.instance.reset()
         
 #### CALLBACKS ################################################################
 
@@ -86,19 +81,19 @@ class Interface(QObject):
             else: box.setStyleSheet('padding: -5px;')
 
     def play_button(self: Self) -> None:
-        Bridge.instance.start()
+        Bridge.instance.start_thread()
         self.find(W.QPushButton, 'play').setEnabled(False)
         self.find(W.QPushButton, 'pause').setEnabled(True)
         self.find(W.QPushButton, 'stop').setEnabled(True)
         
     def pause_button(self: Self) -> None:
-        Bridge.instance.pause()
+        # Bridge.instance.pause()
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(True)
         
     def stop_button(self: Self) -> None:
-        Bridge.instance.stop()
+        Bridge.instance.stop_thread()
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
@@ -107,37 +102,16 @@ class Interface(QObject):
         Bridge.instance.request_reset()
 
     def set_n_samples(self: Self) -> None:
-        if Bridge.instance.ENGINE.is_rendering():
-            Bridge.instance.request_pause()
-        else: self._run_camera_update()
-        
-    def set_n_samples(self: Self) -> None:
-        if Bridge.instance.ENGINE.is_rendering():
-            Bridge.instance.signals.paused.connect(self._set_n_samples)
-            Bridge.instance.request_pause()
-        else: self._set_n_samples()
-    
-    @Slot()
-    def _set_n_samples(self: Self) -> None:
-        Bridge.instance.signals.paused.disconnect(self._set_n_samples)
-        with Bridge.reset(): 
-            Bridge.instance.ENGINE.set_n_samples(
-                self.find(W.QSpinBox, 'n_samples').value()
-            )
-            
+        value = self.find(W.QSpinBox, 'n_samples').value()
+        Bridge.queue_function(
+            lambda : Bridge.instance.ENGINE.set_n_samples(value)
+        )
+
     def set_max_depth(self: Self) -> None:
-        if Bridge.instance.ENGINE.is_rendering():
-            Bridge.instance.signals.paused.connect(self._set_max_depth)
-            Bridge.instance.request_pause()
-        else: self._set_max_depth()
-    
-    @Slot()
-    def _set_max_depth(self: Self) -> None:
-        Bridge.instance.signals.paused.disconnect(self._set_max_depth)
-        with Bridge.reset(): 
-            Bridge.instance.ENGINE.set_max_depth(
-                self.find(W.QSpinBox, 'max_depth').value()
-            )
+        value = self.find(W.QSpinBox, 'max_depth').value()
+        Bridge.queue_function(
+            lambda : Bridge.instance.ENGINE.set_max_depth(value)
+        )
             
     def _select_render_pass(self: Self, index: int) -> None:
         # TODO: Implement render pass switching

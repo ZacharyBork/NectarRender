@@ -66,6 +66,7 @@ public:
             &h_mat_ptr, object->material, sizeof(Material*), 
             cudaMemcpyDeviceToHost
         );
+        return h_mat_ptr;
     }
 
     /* SELECTION MASKING */

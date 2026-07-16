@@ -9,6 +9,7 @@ from pathlib import Path
 from typing  import Self, TypeAlias
 from PIL     import Image
 from numpy   import ndarray
+from collections.abc import Callable
 
 from nectar_render.python import core, progress
 from nectar_render.python.engine.scene   import Scene
@@ -42,6 +43,9 @@ class RenderEngine:
     @property
     def n_samples(self: Self) -> int:
         return self.ENGINE.n_samples()
+    
+    @property
+    def camera(self: Self) -> Camera: return self.ENGINE.camera()
 
     ### UTILITIES ###
 
@@ -56,31 +60,38 @@ class RenderEngine:
         
     ### UTILITIES ###
     
-    def request_pause (self: Self) -> None: self.ENGINE.request_pause()
-    def request_cancel(self: Self) -> None: self.ENGINE.request_cancel()
-    def request_reset (self: Self, rebuild_bvh: bool = False) -> None: 
-        self.ENGINE.request_reset(rebuild_bvh)
+    def reset       (self: Self) -> None: self.ENGINE.reset()
+    def request_stop(self: Self) -> None: self.ENGINE.request_stop()
+
+    def is_idle     (self: Self) -> bool: return self.ENGINE.is_idle()
+    def is_rendering(self: Self) -> bool: return self.ENGINE.is_rendering()
     
-    def is_canceled   (self: Self) -> bool: return self.ENGINE.is_cancelled()
-    def is_rendering  (self: Self) -> bool: return self.ENGINE.is_rendering()
+    def set_scene(self: Self, scene: Scene) -> None:
+        self.ENGINE.set_scene(scene)
+    
+    def queue_function(
+        self:        Self, 
+        func:        Callable[[], None], 
+        rebuild_bvh: bool = False,
+        immediate:   bool = True
+    ) -> None:
+        self.ENGINE.queue_function(func, rebuild_bvh, immediate)
         
     ### SAMPLING / RENDERING ###
         
     def sample(
-        self:  Self, 
-        scene: Scene, 
-        mode:  SampleMode = SampleMode.ACCUMULATE
+        self: Self, 
+        mode: SampleMode = SampleMode.ACCUMULATE
     ) -> Self:
-        self.ENGINE.sample(scene, mode)
+        self.ENGINE.sample(mode)
         return self
             
     def render(
-        self:  Self, 
-        scene: Scene, 
-        mode:  SampleMode = SampleMode.ACCUMULATE
+        self: Self, 
+        mode: SampleMode = SampleMode.ACCUMULATE
     ) -> Self:
         start = time.time()
-        self.ENGINE.render(scene, mode)
+        self.ENGINE.render(mode)
         core.cuda_synchronize()
         self.log(f'Render complete. Time taken: {(time.time() - start):.4f}')
         return self

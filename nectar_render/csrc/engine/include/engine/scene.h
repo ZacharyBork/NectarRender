@@ -69,7 +69,13 @@ public:
 
     std::vector<Hittable*> hittables;
     std::vector<Light*>    lights;
-    SkyLight& skylight;
+    SkyLight skylight;
+
+    __host__ Scene() 
+      : hittables(std::vector<Hittable*>{}),
+        lights(std::vector<Light*>{}),
+        skylight(SkyLight())
+    { }
 
     __host__ Scene(
         std::vector<Hittable*> hittables,
@@ -84,8 +90,18 @@ public:
     }
 
     __host__ void teardown() {
-        if (!graph) return;
+        /* TODO: 
+
+        This function only frees the pointer arrays currently, not the 
+        individual device pointers. This means the every time Scene::teardown()
+        is invoked, all the old pointers leak in device memory.
+
+        The BVH, Hittables, Materials, etc. should maybe handle teardown with 
+        their own deconstructors?
         
+        */
+
+        if (!graph) return;
         cudaFree(graph); 
         cudaFree(h_graph.bvh_nodes);
         cudaFree(h_graph.objects);

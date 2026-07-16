@@ -2,18 +2,21 @@
 Camera submodule.
 """
 from __future__ import annotations
-import _pathtracer.core.matrix
 import _pathtracer.core.vector
-import collections.abc
 import typing
-__all__: list[str] = ['Camera']
+__all__: list[str] = ['Camera', 'CameraParams']
 class Camera:
+    def __init__(self, params: CameraParams = ...) -> None:
+        ...
+    def parameters(self) -> CameraParams:
+        ...
+    def update(self, arg0: CameraParams) -> None:
+        ...
+class CameraParams:
     position: _pathtracer.core.vector.Vector3
     resolution: _pathtracer.core.vector.Vector2
-    rotation: _pathtracer.core.matrix.Matrix3
-    def __init__(self, resolution: typing.Annotated[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex], "FixedSize(2)"] = [512, 512], position: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], rotation: typing.Annotated[collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex], "FixedSize(3)"] = [0.0, 0.0, 0.0], samples_per_pixel: typing.SupportsInt | typing.SupportsIndex = 500, focal_length: typing.SupportsFloat | typing.SupportsIndex = 5.0, focus_distance: typing.SupportsFloat | typing.SupportsIndex = 10.0, aperture: typing.SupportsFloat | typing.SupportsIndex = 0.009999999776482582, sensor_width: typing.SupportsFloat | typing.SupportsIndex = 2.0, shutter_speed: typing.SupportsFloat | typing.SupportsIndex = 1.0) -> None:
-        ...
-    def update(self, arg0: _pathtracer.core.vector.Vector3, arg1: _pathtracer.core.vector.Vector3, arg2: typing.SupportsFloat | typing.SupportsIndex, arg3: typing.SupportsFloat | typing.SupportsIndex, arg4: typing.SupportsFloat | typing.SupportsIndex, arg5: typing.SupportsFloat | typing.SupportsIndex, arg6: typing.SupportsFloat | typing.SupportsIndex) -> None:
+    rotation: _pathtracer.core.vector.Vector3
+    def __init__(self, resolution: _pathtracer.core.vector.Vector2, position: _pathtracer.core.vector.Vector3, rotation: _pathtracer.core.vector.Vector3, samples_per_pixel: typing.SupportsInt | typing.SupportsIndex, focal_length: typing.SupportsFloat | typing.SupportsIndex, focus_distance: typing.SupportsFloat | typing.SupportsIndex, aperture: typing.SupportsFloat | typing.SupportsIndex, sensor_width: typing.SupportsFloat | typing.SupportsIndex, shutter_speed: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def aperture(self) -> float:
@@ -34,10 +37,10 @@ class Camera:
     def focus_distance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
-    def n_samples(self) -> int:
+    def samples_per_pixel(self) -> int:
         ...
-    @n_samples.setter
-    def n_samples(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
+    @samples_per_pixel.setter
+    def samples_per_pixel(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     @property
     def sensor_width(self) -> float:

@@ -9,7 +9,7 @@ from PySide6        import QtWidgets as W
 from PySide6.QtCore import Qt, Slot, QPointF
 from PySide6.QtGui  import QKeyEvent, QMouseEvent, QImage, QPixmap
 
-from nectar_render import Vector3, ObjectInterface
+from nectar_render import Vector3, ObjectInterface, CameraParams
 from nectar_render.gui.widgets.object_info import ObjectInfo
 from nectar_render.gui.bridge import Bridge
 
@@ -100,11 +100,11 @@ class ViewportWidget(W.QLabel):
         self._cam_data.prev = CameraUpdateInfo()
         
         self.object_info = ObjectInfo(self.settings)
-        self.object_info.close_signal.connect(self.close_object_info)
+        self.object_info.close_signal.connect(
+            lambda : Bridge.queue_function(self.object_info.destroy)
+        )
         self.object_interface: ObjectInterface | None = None
-        
-        Bridge.instance.signals.paused.connect(self._run_camera_update)
-        
+                
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._held_keys: set[Qt.Key] = set()
         
@@ -124,7 +124,7 @@ class ViewportWidget(W.QLabel):
     def keyPressEvent(self: Self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_Escape:
             if self.object_info is not None:
-                self.close_object_info()
+                Bridge.queue_function(lambda : self.object_info.destroy())
                 
         if event.isAutoRepeat(): return
         self._held_keys.add(event.key())
@@ -147,19 +147,7 @@ class ViewportWidget(W.QLabel):
             click_pos.x() / size.width(), click_pos.y() / size.height()
         )
         self.object_info.build(self.object_interface)
-        
-    def close_object_info(self: Self) -> None:
-        if Bridge.instance.ENGINE.is_rendering():
-            Bridge.instance.signals.paused.connect(self._close_object_info)
-            Bridge.instance.request_pause()
-        else: self._close_object_info()
-       
-    @Slot()
-    def _close_object_info(self: Self) -> None:
-        Bridge.instance.signals.paused.disconnect(self._close_object_info)
-        with Bridge.reset():
-            self.object_info.destroy()
-
+      
 #### MOUSE UTILITIES ##########################################################
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
@@ -205,34 +193,33 @@ class ViewportWidget(W.QLabel):
         self._cam_data.aperture       = get_value('aperture')
         self._cam_data.sensor_width   = get_value('sensor_width')
         self._cam_data.shutter_speed  = get_value('shutter_speed')
-            
+        
     def update_camera(self: Self) -> None:
         if not Bridge.instance.is_rendering(): return
         
         self._update_cam_transforms()
         self._parse_camera_settings()
-        if self._cam_data.should_update():
-            if Bridge.instance.ENGINE.is_rendering():
-                Bridge.instance.request_pause()
-            else: self._run_camera_update()
-      
-    @Slot()
-    def _run_camera_update(self: Self) -> None:
         if not self._cam_data.should_update(): return
-                
-        with Bridge.reset():
-            Bridge.instance.camera.update(
-                Vector3(*self._cam_data.delta_p) * self.cam_movement_speed, 
-                Vector3(*self._cam_data.delta_r) * self.cam_look_sensitivity,
-                self._cam_data.focal_length,
-                self._cam_data.focus_distance,
-                self._cam_data.aperture,
-                self._cam_data.sensor_width,
-                self._cam_data.shutter_speed
-            )
         
+        params = Bridge.instance.camera.parameters()
+
+        update_params = CameraParams(
+            params.resolution,
+            Vector3(*self._cam_data.delta_p) * self.cam_movement_speed, 
+            Vector3(*self._cam_data.delta_r) * self.cam_look_sensitivity,
+            params.samples_per_pixel,
+            self._cam_data.focal_length,
+            self._cam_data.focus_distance,
+            self._cam_data.aperture,
+            self._cam_data.sensor_width,
+            self._cam_data.shutter_speed
+        )
+        
+        Bridge.queue_function(
+            lambda : Bridge.instance.camera.update(update_params)
+        )
         self._cam_data.reset()
-        
+            
 #### IMAGE UTILITIES ##########################################################
     
     def update_image(self: Self) -> None:

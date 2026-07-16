@@ -126,19 +126,12 @@ class XformController(W.QGroupBox):
         self.layout().addWidget(update_btn)
      
     def update(self: Self) -> None:
-        if Bridge.instance.ENGINE.is_rendering():
-            Bridge.instance.signals.paused.connect(self._update)
-            Bridge.instance.request_pause()
-        else: self._update()
-     
-    @Slot()
-    def _update(self: Self) -> None:
-        Bridge.instance.signals.paused.disconnect(self._update)
-        with Bridge.reset(rebuild_bvh=True): 
-            self.interface.set_transform(
-                Transform(
-                    self.translation.as_vector3(),
-                    self.rotation.as_vector3(),
-                    self.scale.as_vector3()
-                )
-            )
+        xform = Transform(
+            self.translation.as_vector3(),
+            self.rotation.as_vector3(),
+            self.scale.as_vector3()
+        )
+        Bridge.queue_function(
+            lambda : self.interface.set_transform(xform), rebuild_bvh=True
+        )
+

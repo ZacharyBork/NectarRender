@@ -89,6 +89,8 @@ public:
         return ptr_;
     }
 
+    __host__ T* pointer() { return ptr_;}
+
 private:
 
     T*          ptr_;

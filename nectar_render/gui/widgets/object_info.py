@@ -72,28 +72,15 @@ class MaterialSettings(W.QGroupBox):
         return frame
         
     def update_material(self: Self) -> None:
-        if Bridge.instance.ENGINE.is_rendering():
-            Bridge.instance.signals.paused.connect(self._update_material)
-            Bridge.instance.request_pause()
-        else: self._update_material()
-       
-    @Slot()
-    def _update_material(self: Self) -> None:
-        Bridge.instance.signals.paused.disconnect(self._update_material)
-        color = Color(
-            self.r.value() / 255.0,
-            self.g.value() / 255.0,
-            self.b.value() / 255.0
-        )
+        norm  = lambda x : x.value() / 255.0
+        color = Color(norm(self.r), norm(self.g), norm(self.b))
         match self.material_type.currentIndex():
             case 0: m = M.LAMBERTIAN(color)
             case 1: m = M.METAL(color, self.roughness.value() * 0.01)
             case 2: m = M.DIELECTRIC(self.ior.value() * 0.01)
             case 3: m = M.EMISSIVE(color, self.brightness.value() * 0.01)
-    
-        with Bridge.reset():
-            self.interface.update_material(m)
-
+            
+        Bridge.queue_function(lambda : self.interface.update_material(m))
 
 class ObjectInfo(QObject):
     close_signal = Signal()

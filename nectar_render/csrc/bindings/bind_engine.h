@@ -24,47 +24,52 @@ void register_engine(py::module_& m) {
 
     auto m_camera = m_engine.def_submodule("camera", "Camera submodule.");
 
-    py::class_<Camera>(m_camera, "Camera")
+    py::class_<CameraParams>(m_camera, "CameraParams")
         .def(py::init([](
-            std::array<int,   2> resolution,
-            std::array<float, 3> position   = { 0.0f, 0.0f, 0.0f },
-            std::array<float, 3> rotation   = { 0.0f, 0.0f, 0.0f },
-            uint32_t samples_per_pixel = 500u,
-            float focal_length   = 5.0f,
-            float focus_distance = 10.0f,
-            float aperture       = 0.01f,
-            float sensor_width   = 2.0f,
-            float shutter_speed  = 1.0f
+            Vector2  resolution,
+            Vector3  position,
+            Vector3  rotation,
+            uint32_t samples_per_pixel,
+            float    focal_length,
+            float    focus_distance,
+            float    aperture,
+            float    sensor_width,
+            float    shutter_speed
         ) {
-            return Camera(
+            return CameraParams{
                 resolution, position, rotation, samples_per_pixel, 
-                focal_length, focus_distance, aperture, sensor_width, 
+                focal_length, focus_distance, aperture, sensor_width,
                 shutter_speed
-            );
+            };
         }),
-            py::arg("resolution") = std::array<int,   2>{ 512, 512 },
-            py::arg("position")   = std::array<float, 3>{ 0.0f, 0.0f, 0.0f },
-            py::arg("rotation")   = std::array<float, 3>{ 0.0f, 0.0f, 0.0f },
-            py::arg("samples_per_pixel") = 500u,
-            py::arg("focal_length")   = 5.0f,
-            py::arg("focus_distance") = 10.0f,
-            py::arg("aperture")       = 0.01f,
-            py::arg("sensor_width")   = 2.0f,
-            py::arg("shutter_speed")  = 1.0f
+            py::arg("resolution"),
+            py::arg("position"),
+            py::arg("rotation"),
+            py::arg("samples_per_pixel"),
+            py::arg("focal_length"),
+            py::arg("focus_distance"),
+            py::arg("aperture"),
+            py::arg("sensor_width"),
+            py::arg("shutter_speed")
         )
-        .def("update", &Camera::update)
+        .def_readwrite("resolution",        &CameraParams::resolution)
+        .def_readwrite("position",          &CameraParams::position)
+        .def_readwrite("rotation",          &CameraParams::rotation)
+        .def_readwrite("samples_per_pixel", &CameraParams::samples_per_pixel)
+        .def_readwrite("focal_length",      &CameraParams::focal_length)
+        .def_readwrite("focus_distance",    &CameraParams::focus_distance)
+        .def_readwrite("aperture",          &CameraParams::aperture)
+        .def_readwrite("sensor_width",      &CameraParams::sensor_width)
+        .def_readwrite("shutter_speed",     &CameraParams::shutter_speed);
 
-        // TO-DO: Get rid of these direct readwrites
-
-        .def_readwrite("resolution",     &Camera::resolution)
-        .def_readwrite("position",       &Camera::position)
-        .def_readwrite("rotation",       &Camera::rotation)
-        .def_readwrite("n_samples",      &Camera::n_samples)
-        .def_readwrite("focal_length",   &Camera::focal_length)
-        .def_readwrite("focus_distance", &Camera::focus_distance)
-        .def_readwrite("aperture",       &Camera::aperture)
-        .def_readwrite("sensor_width",   &Camera::sensor_width)
-        .def_readwrite("shutter_speed",  &Camera::shutter_speed);
+    py::class_<Camera>(m_camera, "Camera")
+        .def(py::init([](CameraParams params) {
+            return Camera(params);
+        }),
+            py::arg("params")
+        )
+        .def("update",     &Camera::update)
+        .def("parameters", &Camera::parameters, return_policy::copy);
 
 // ############################################################################
 // RENDER LAYERS
@@ -269,10 +274,7 @@ void register_engine(py::module_& m) {
 
     py::enum_<EngineState>(m_engine, "EngineState")
         .value("IDLE",      EngineState::IDLE)
-        .value("RENDERING", EngineState::RENDERING)
-        .value("PAUSED",    EngineState::PAUSED)
-        .value("CANCELLED", EngineState::CANCELLED)
-        .value("RESETTING", EngineState::RESETTING);
+        .value("RENDERING", EngineState::RENDERING);
 
     py::class_<RenderEngine>(m_engine, "RenderEngine")
         .def(py::init([](
@@ -286,62 +288,61 @@ void register_engine(py::module_& m) {
             py::arg("ray_depth") = 8u,
             py::arg("seed")      = 54321u
         )
+        .def("set_scene", ([](RenderEngine& self, Scene scene) {
+            self.set_scene(scene);
+        }),
+            py::arg("scene")
+        )
         .def("sample", ([](
             RenderEngine& self, 
-            Scene&     scene, 
             uint32_t   sample_index,
             SampleMode mode
         ) {
-            self.sample(scene, sample_index, mode);
+            self.sample(sample_index, mode);
         }),
-            py::arg("scene"), 
             py::arg("sample_idx") = 0u,
             py::arg("mode") = SampleMode::ACCUMULATE
         )
-        .def("render", ([](
-            RenderEngine& self, 
-            Scene&        scene, 
-            SampleMode    mode
-        ) {
+        .def("render", ([](RenderEngine& self, SampleMode mode) {
             py::gil_scoped_release release;
-            self.render(scene, mode);
+            self.render(mode);
         }),
-            py::arg("scene"), 
             py::arg("mode") = SampleMode::ACCUMULATE
         )
-        .def("request_reset", ([](
+        .def("queue_function", ([](
             RenderEngine& self, 
-            bool rebuild_bvh
+            std::function<void()> func,
+            bool rebuild_bvh,
+            bool immediate
         ) {
-            self.request_reset(rebuild_bvh);
+            self.queue_function(func, rebuild_bvh, immediate);
         }),
-            py::arg("rebuild_bvh") = false
+            py::arg("func"),
+            py::arg("rebuild_bvh") = false,
+            py::arg("immediate")   = true
         )
+
+        .def_readwrite("on_render_started",  &RenderEngine::on_render_started)
+        .def_readwrite("on_frame_finished",  &RenderEngine::on_frame_finished)
+        .def_readwrite("on_render_finished", &RenderEngine::on_render_finished)
+        .def_readwrite("on_stopped",         &RenderEngine::on_stopped)
+        .def_readwrite("on_reset",           &RenderEngine::on_reset)
+
         .def("camera", &RenderEngine::camera, return_policy::reference)
         .def("layers", &RenderEngine::layers, return_policy::reference)
         .def("scene",  &RenderEngine::scene,  return_policy::reference)
-        .def("request_pause",  &RenderEngine::request_pause)
-        .def("request_cancel", &RenderEngine::request_cancel)
+        
+        .def("request_stop",   &RenderEngine::request_stop)
+        .def("reset",          &RenderEngine::reset)
         .def("get_state",      &RenderEngine::get_state)
         .def("is_idle",        &RenderEngine::is_idle)
         .def("is_rendering",   &RenderEngine::is_rendering)
-        .def("is_paused",      &RenderEngine::is_paused)
-        .def("is_cancelled",   &RenderEngine::is_cancelled)
-        .def("is_refreshing",  &RenderEngine::is_resetting)
-        .def("reset",          &RenderEngine::reset)
         .def("n_samples",      &RenderEngine::n_samples)
         .def("set_n_samples",  &RenderEngine::set_n_samples)
         .def("max_depth",      &RenderEngine::max_depth)
         .def("set_max_depth",  &RenderEngine::set_max_depth)
         
         .def("screen_space_ray", &RenderEngine::screen_space_ray, 
-             return_policy::reference)
+             return_policy::reference);
 
-        .def_readwrite("on_render_started",  &RenderEngine::on_render_started)
-        .def_readwrite("on_frame_finished",  &RenderEngine::on_frame_finished)
-        .def_readwrite("on_render_finished", &RenderEngine::on_render_finished)
-        .def_readwrite("on_paused",          &RenderEngine::on_paused)
-        .def_readwrite("on_canceled",        &RenderEngine::on_canceled)
-        .def_readwrite("on_reset",           &RenderEngine::on_reset);
 }
-

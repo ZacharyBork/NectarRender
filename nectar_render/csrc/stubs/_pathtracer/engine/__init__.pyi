@@ -17,19 +17,10 @@ class EngineState:
       IDLE
     
       RENDERING
-    
-      PAUSED
-    
-      CANCELLED
-    
-      RESETTING
     """
-    CANCELLED: typing.ClassVar[EngineState]  # value = <EngineState.CANCELLED: 3>
     IDLE: typing.ClassVar[EngineState]  # value = <EngineState.IDLE: 0>
-    PAUSED: typing.ClassVar[EngineState]  # value = <EngineState.PAUSED: 2>
     RENDERING: typing.ClassVar[EngineState]  # value = <EngineState.RENDERING: 1>
-    RESETTING: typing.ClassVar[EngineState]  # value = <EngineState.RESETTING: 4>
-    __members__: typing.ClassVar[dict[str, EngineState]]  # value = {'IDLE': <EngineState.IDLE: 0>, 'RENDERING': <EngineState.RENDERING: 1>, 'PAUSED': <EngineState.PAUSED: 2>, 'CANCELLED': <EngineState.CANCELLED: 3>, 'RESETTING': <EngineState.RESETTING: 4>}
+    __members__: typing.ClassVar[dict[str, EngineState]]  # value = {'IDLE': <EngineState.IDLE: 0>, 'RENDERING': <EngineState.RENDERING: 1>}
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:
@@ -112,25 +103,18 @@ class LayerType:
     def value(self) -> int:
         ...
 class RenderEngine:
-    on_canceled: collections.abc.Callable[[], None]
     on_frame_finished: collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex], None]
-    on_paused: collections.abc.Callable[[], None]
     on_render_finished: collections.abc.Callable[[], None]
     on_render_started: collections.abc.Callable[[], None]
     on_reset: collections.abc.Callable[[], None]
+    on_stopped: collections.abc.Callable[[], None]
     def __init__(self, camera: camera.Camera, ray_depth: typing.SupportsInt | typing.SupportsIndex = 8, seed: typing.SupportsInt | typing.SupportsIndex = 54321) -> None:
         ...
     def camera(self) -> camera.Camera:
         ...
     def get_state(self) -> EngineState:
         ...
-    def is_cancelled(self) -> bool:
-        ...
     def is_idle(self) -> bool:
-        ...
-    def is_paused(self) -> bool:
-        ...
-    def is_refreshing(self) -> bool:
         ...
     def is_rendering(self) -> bool:
         ...
@@ -140,17 +124,17 @@ class RenderEngine:
         ...
     def n_samples(self) -> int:
         ...
-    def render(self, scene: Scene, mode: SampleMode = ...) -> None:
+    def queue_function(self, func: collections.abc.Callable[[], None], rebuild_bvh: bool = False, immediate: bool = True) -> None:
         ...
-    def request_cancel(self) -> None:
+    def render(self, mode: SampleMode = ...) -> None:
         ...
-    def request_pause(self) -> None:
-        ...
-    def request_reset(self, rebuild_bvh: bool = False) -> None:
+    def request_stop(self) -> None:
         ...
     def reset(self) -> None:
         ...
-    def sample(self, scene: Scene, sample_idx: typing.SupportsInt | typing.SupportsIndex = 0, mode: SampleMode = ...) -> None:
+    def restart(self) -> None:
+        ...
+    def sample(self, sample_idx: typing.SupportsInt | typing.SupportsIndex = 0, mode: SampleMode = ...) -> None:
         ...
     def scene(self) -> Scene:
         ...
@@ -159,6 +143,8 @@ class RenderEngine:
     def set_max_depth(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     def set_n_samples(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def set_scene(self, scene: Scene) -> None:
         ...
 class SampleMode:
     """
