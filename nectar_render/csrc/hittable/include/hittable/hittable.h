@@ -29,14 +29,15 @@ public:
 
     /* CONSTRUCTORS */
 
-    __host__ Hittable() : material(Lambertian(Color::purple()).build()) { }
+    __host__ Hittable() 
+        : material(Material::lambertian(Color::purple()).build()) { }
 
     __host__ Hittable(
         const Vector3& position, 
         const Vector3& rotation,
         const Vector3& scale
     ) : xform(Transform(position, rotation, scale)),
-        material(Lambertian(Color::purple()).build())
+        material(Material::lambertian(Color::purple()).build())
     { }
 
     __host__ Hittable(

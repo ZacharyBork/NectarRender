@@ -298,7 +298,7 @@ public:
     }
 
     __host__ const Vector2 resolution() const { return p.resolution; }
-    __host__ const uint32_t n_samples() const { return p.samples_per_pixel; }
+    __host__ uint32_t n_samples() const { return p.samples_per_pixel; }
     
     __host__ CameraParams* parameters_() { return &p; }
     __host__ const CameraParams parameters() const { return p; }

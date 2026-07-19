@@ -63,6 +63,7 @@ public:
         
         Vector3 norm = rec.p / (radius * xform.scale() + FMIN);
         rec.n = norm;
+        rec.tangent = normalize(Vector3(-rec.p.z(), 0.0f, rec.p.x()));
         rec.uv = get_uvs(norm);
 
         return true;
@@ -120,23 +121,21 @@ private:
 class Cube : public Hittable {
 public:
     
-    template <typename M>
-    __host__ Cube(const M& material) 
+    __host__ Cube(const Material& material) 
         : Cube(Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), material) { }
 
-    template <typename M>
     __host__ Cube(
-        const Vector3& position,
-        const Vector3& rotation,
-        const Vector3& scale, 
-        const M&       material
+        const Vector3&  position,
+        const Vector3&  rotation,
+        const Vector3&  scale, 
+        const Material& material
     ) : Hittable(position, rotation, scale, material) { }
 
     __device__ Cube(
         Transform& xform, 
         Transform& delta, 
-        Material*  mat,
-        Hittable** faces
+        Hittable** faces,
+        Material*  mat
     ) : Hittable(xform, delta, mat) { 
         for (int i = 0; i < 6; i++) prims[i] = faces[i];
     }
@@ -189,7 +188,7 @@ public:
             cudaMemcpyHostToDevice
         );
 
-        return device_build<Cube>(xform, delta, material, d_face_ptrs);
+        return device_build<Cube>(xform, delta, d_face_ptrs, material);
     }
 
     __host__ const AABB build_bbox() const override {

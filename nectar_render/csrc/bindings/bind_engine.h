@@ -270,11 +270,25 @@ void register_engine(py::module_& m) {
 
     py::enum_<SampleMode>(m_engine, "SampleMode")
         .value("ACCUMULATE", SampleMode::ACCUMULATE)
-        .value("COMBINE",    SampleMode::COMBINE);
+        .value("COMBINE",    SampleMode::COMBINE)
+        .def("__repr__", [](const SampleMode& mode) {
+            switch (mode) {
+                case SampleMode::ACCUMULATE: return "SampleMode.ACCUMULATE";
+                case SampleMode::COMBINE:    return "SampleMode.COMBINE";
+            }
+            return "SampleMode.UNKNOWN";
+        });
 
     py::enum_<EngineState>(m_engine, "EngineState")
         .value("IDLE",      EngineState::IDLE)
-        .value("RENDERING", EngineState::RENDERING);
+        .value("RENDERING", EngineState::RENDERING)
+        .def("__repr__", [](const EngineState& state) {
+            switch (state) {
+                case EngineState::IDLE:      return "EngineState.IDLE";
+                case EngineState::RENDERING: return "EngineState.RENDERING";
+            }
+            return "EngineState.UNKNOWN";
+        });
 
     py::class_<RenderEngine>(m_engine, "RenderEngine")
         .def(py::init([](
@@ -288,27 +302,7 @@ void register_engine(py::module_& m) {
             py::arg("ray_depth") = 8u,
             py::arg("seed")      = 54321u
         )
-        .def("set_scene", ([](RenderEngine& self, Scene scene) {
-            self.set_scene(scene);
-        }),
-            py::arg("scene")
-        )
-        .def("sample", ([](
-            RenderEngine& self, 
-            uint32_t   sample_index,
-            SampleMode mode
-        ) {
-            self.sample(sample_index, mode);
-        }),
-            py::arg("sample_idx") = 0u,
-            py::arg("mode") = SampleMode::ACCUMULATE
-        )
-        .def("render", ([](RenderEngine& self, SampleMode mode) {
-            py::gil_scoped_release release;
-            self.render(mode);
-        }),
-            py::arg("mode") = SampleMode::ACCUMULATE
-        )
+
         .def("queue_function", ([](
             RenderEngine& self, 
             std::function<void()> func,
@@ -322,6 +316,11 @@ void register_engine(py::module_& m) {
             py::arg("immediate")   = true
         )
 
+        .def("render", ([](RenderEngine& self) {
+            py::gil_scoped_release release;
+            self.render();
+        }))
+
         .def_readwrite("on_render_started",  &RenderEngine::on_render_started)
         .def_readwrite("on_frame_finished",  &RenderEngine::on_frame_finished)
         .def_readwrite("on_render_finished", &RenderEngine::on_render_finished)
@@ -331,12 +330,16 @@ void register_engine(py::module_& m) {
         .def("camera", &RenderEngine::camera, return_policy::reference)
         .def("layers", &RenderEngine::layers, return_policy::reference)
         .def("scene",  &RenderEngine::scene,  return_policy::reference)
+
+        .def("set_scene",       &RenderEngine::set_scene)
+        .def("set_sample_mode", &RenderEngine::set_sample_mode)
+        .def("request_stop",    &RenderEngine::request_stop)
+        .def("reset",           &RenderEngine::reset)
         
-        .def("request_stop",   &RenderEngine::request_stop)
-        .def("reset",          &RenderEngine::reset)
         .def("get_state",      &RenderEngine::get_state)
         .def("is_idle",        &RenderEngine::is_idle)
         .def("is_rendering",   &RenderEngine::is_rendering)
+        
         .def("n_samples",      &RenderEngine::n_samples)
         .def("set_n_samples",  &RenderEngine::set_n_samples)
         .def("max_depth",      &RenderEngine::max_depth)

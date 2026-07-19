@@ -23,9 +23,8 @@ public:
 class ConstantTexture : public Texture {
 public:
 
-    __host__ ConstantTexture(
-        float r, float g, float b
-    ) : albedo(Color(r, g, b)) { }
+    __host__ ConstantTexture(float r, float g, float b) 
+        : albedo(Color(r, g, b)) { }
 
     __host__ __device__ ConstantTexture(const Color& albedo) 
         : albedo(albedo) { }
@@ -37,6 +36,8 @@ public:
     __device__ Color sample(Vector2 uv, const Vector3& p) const override {
         return albedo;
     }
+
+    __device__ Color color() { return albedo; }
 
 private:
 

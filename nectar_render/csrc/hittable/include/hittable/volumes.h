@@ -12,7 +12,11 @@ public:
         Hittable& bound_obj,
         float density,
         const Texture& texture
-    ) : Hittable(bound_obj.xform, bound_obj.delta, Isotropic(texture).build()),
+    ) : Hittable(
+            bound_obj.xform, 
+            bound_obj.delta, 
+            Material::isotropic(texture).build()
+        ),
         boundary(bound_obj.build()),
         neg_inv_density(-1.0f / density)
     { bbox = bound_obj.build_bbox(); }
@@ -21,7 +25,11 @@ public:
         Hittable& bound_obj,
         float density,
         const Color& albedo
-    ) : Hittable(bound_obj.xform, bound_obj.delta, Isotropic(albedo).build()),
+    ) : Hittable(
+            bound_obj.xform, 
+            bound_obj.delta, 
+            Material::isotropic(albedo).build()
+        ),
         boundary(bound_obj.build()),
         neg_inv_density(-1.0f / density)
     { bbox = bound_obj.build_bbox(); }
@@ -29,9 +37,9 @@ public:
     __device__ ConstantMedium(
         Transform& xform,
         Transform& delta,
-        Material*  mat, 
         Hittable*  boundary_ptr, 
-        float      neg_inv_density_
+        float      neg_inv_density_,
+        Material*  mat
     ) : Hittable(xform, delta, mat), 
         boundary(boundary_ptr), 
         neg_inv_density(neg_inv_density_) 
@@ -39,7 +47,7 @@ public:
 
     __host__ Hittable* build() const override {
         return device_build<ConstantMedium>(
-            xform, delta, material, boundary, neg_inv_density
+            xform, delta, boundary, neg_inv_density, material
         );
     }
 

@@ -3,7 +3,6 @@
 #include <atomic>
 #include <mutex>
 #include <optional>
-#include <stdint.h>
 #include <cuda_runtime.h>
 #include <pybind11/functional.h>
 
@@ -84,18 +83,16 @@ public:
     /* SAMPLING / RENDERING */
 
     void set_scene(Scene input_scene) { current_scene = input_scene; }
+    void set_sample_mode(SampleMode mode) { sample_mode = mode; }
 
-    void sample(
-        uint32_t   sample_index = 1u,
-        SampleMode mode = SampleMode::ACCUMULATE
-    ) {
+    void sample(uint32_t sample_index = 1u) {
         trace(
             config, cam.device_camera(), current_scene.graph, 
             sample_aovs.aovs(), sample_index
         );
 
         sample_aovs.replace_invalid_values();
-        if (mode == SampleMode::ACCUMULATE) 
+        if (sample_mode == SampleMode::ACCUMULATE) 
             aovs.accumulate(sample_aovs, sample_index);
         else aovs.combine(sample_aovs);
         sample_aovs.clear();
@@ -109,9 +106,7 @@ public:
         cudaDeviceSynchronize();
     }
 
-    void render(SampleMode mode = SampleMode::ACCUMULATE) {
-        sample_mode = mode;
-
+    void render() {
         set_state(EngineState::RENDERING);
         with_gil_scoped_acquire(on_render_started);
 
@@ -126,7 +121,7 @@ public:
                 return;
             }
 
-            sample(idx, mode);
+            sample(idx);
             with_gil_scoped_acquire(on_frame_finished, idx);
             sample_idx++;
         }

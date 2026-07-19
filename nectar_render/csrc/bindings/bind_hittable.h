@@ -42,7 +42,7 @@ void register_hittable(py::module_& m) {
         }),
             py::arg("center")   = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("radius")   = 1.0f,
-            py::arg("material") = Lambertian(Color(0.8f, 0.8f, 0.8f))
+            py::arg("material") = Material::lambertian(Color::purple())
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 
@@ -58,7 +58,7 @@ void register_hittable(py::module_& m) {
             py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
-            py::arg("material") = Lambertian(Color(0.8f, 0.8f, 0.8f))
+            py::arg("material") = Material::lambertian(Color::purple())
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 
@@ -74,7 +74,7 @@ void register_hittable(py::module_& m) {
             py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
-            py::arg("material") = Lambertian(Color(0.8f, 0.8f, 0.8f))
+            py::arg("material") = Material::lambertian(Color::purple())
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 

@@ -2,7 +2,7 @@ from typing import Self
 from PySide6 import QtWidgets as W
 from PySide6.QtCore import Slot
 
-from nectar_render import ObjectInterface, Transform, Vector3
+from nectar_render import ObjectInterface, Transform, Vector3, Color
 from nectar_render.gui.bridge import Bridge
 from nectar_render.gui import utils
 
@@ -90,6 +90,9 @@ class VectorWidget(W.QWidget):
         
     def as_vector3(self: Self) -> Vector3:
         return Vector3(self.x, self.y, self.z)
+    
+    def as_color(self: Self) -> Color:
+        return Color(self.x, self.y, self.z)
         
 class XformController(W.QGroupBox):
     def __init__(

@@ -5,7 +5,10 @@ from PySide6.QtCore import Qt, QObject, Slot, Signal
 
 from nectar_render import ObjectInterface, Color, Material as M
 from nectar_render.gui.bridge import Bridge
-from nectar_render.gui.widgets.xform_controller import XformController
+from nectar_render.gui.widgets.materials import MatSettingsPBR
+from nectar_render.gui.widgets.xform_controller import (
+    XformController, VectorWidget
+)
 
 class MaterialSettings(W.QGroupBox):
     def __init__(
@@ -27,60 +30,18 @@ class MaterialSettings(W.QGroupBox):
         self.material_type.addItem('Emissive')
         layout.addWidget(self.material_type)
         
-        self.r_slider: W.QSlider = None
-        self.g_slider: W.QSlider = None
-        self.b_slider: W.QSlider = None
-        
-        sliders = self._build_sliders()
-        layout.addWidget(sliders)
-        
-        self.roughness = W.QSlider(Qt.Orientation.Horizontal)
-        self.roughness.setMinimum(0); self.roughness.setMaximum(100)
-        
-        self.ior = W.QSlider(Qt.Orientation.Horizontal)
-        self.ior.setMinimum(0); self.ior.setMaximum(500)
-        
-        self.brightness = W.QSlider(Qt.Orientation.Horizontal)
-        self.brightness.setMinimum(0); self.brightness.setMaximum(500)
-        
-        f = W.QFrame()
-        l = W.QFormLayout()
-        f.setLayout(l)
-        l.addRow('Roughness', self.roughness)
-        l.addRow('IOR', self.ior)
-        l.addRow('Brightness', self.brightness)
-        layout.addWidget(f)
-        
+        self.pbr_settings = MatSettingsPBR()
+        layout.addWidget(self.pbr_settings)
+
         self.update_btn = W.QPushButton('Update')
         self.update_btn.clicked.connect(self.update_material)
         layout.addWidget(self.update_btn)
         
-    def _build_sliders(self: Self) -> W.QFrame:
-        sliders: list[W.QSlider] = []
-        layout = W.QFormLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        
-        for tag in ['R', 'G', 'B']:
-            slider = W.QSlider(Qt.Orientation.Horizontal)
-            slider.setMinimum(0); slider.setMaximum(255)
-            sliders.append(slider)
-            layout.addRow(tag, slider)
-            
-        self.r, self.g, self.b = sliders
-        frame = W.QFrame()
-        frame.setLayout(layout)
-        return frame
         
     def update_material(self: Self) -> None:
-        norm  = lambda x : x.value() / 255.0
-        color = Color(norm(self.r), norm(self.g), norm(self.b))
-        match self.material_type.currentIndex():
-            case 0: m = M.LAMBERTIAN(color)
-            case 1: m = M.METAL(color, self.roughness.value() * 0.01)
-            case 2: m = M.DIELECTRIC(self.ior.value() * 0.01)
-            case 3: m = M.EMISSIVE(color, self.brightness.value() * 0.01)
-            
-        Bridge.queue_function(lambda : self.interface.update_material(m))
+        mat = self.pbr_settings.get_material()
+        Bridge.queue_function(lambda : self.interface.update_material(mat))
+
 
 class ObjectInfo(QObject):
     close_signal = Signal()

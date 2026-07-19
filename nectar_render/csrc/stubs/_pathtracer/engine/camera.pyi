@@ -6,7 +6,7 @@ import _pathtracer.core.vector
 import typing
 __all__: list[str] = ['Camera', 'CameraParams']
 class Camera:
-    def __init__(self, params: CameraParams = ...) -> None:
+    def __init__(self, params: CameraParams) -> None:
         ...
     def parameters(self) -> CameraParams:
         ...

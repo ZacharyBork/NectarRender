@@ -17,7 +17,7 @@ void register_material(py::module_& m) {
     py::class_<Texture>(m_texture, "Texture");
 
     py::class_<ConstantTexture, Texture>(m_texture, "ConstantTexture")
-        .def(py::init([](const Color& albedo) {
+        .def(py::init([](const Color albedo) {
             return ConstantTexture(albedo);
         }),
             py::arg("albedo") = Color(0.8f, 0.8f, 0.8f)
@@ -28,7 +28,13 @@ void register_material(py::module_& m) {
             py::arg("r") = 0.8f,
             py::arg("g") = 0.8f,
             py::arg("b") = 0.8f
-        );
+        )
+        .def("__repr__", [](ConstantTexture& t) {
+            return "ConstantTexture(" 
+                 + std::to_string(t.color()[0]) + ", "
+                 + std::to_string(t.color()[1]) + ", "
+                 + std::to_string(t.color()[2]) + ")";
+        });
 
     py::class_<CheckerTexture, Texture>(m_texture, "CheckerTexture")
         .def(py::init([](
@@ -71,89 +77,125 @@ void register_material(py::module_& m) {
             py::arg("seed") = 42u
         );
 
-    /* MATERIAL CLASSES */
+    /* MATERIAL CLASS */
 
-    py::class_<Material>(m_material, "Material");
+    py::enum_<MaterialType>(m_material, "MaterialType")
+        .value("Lambertian", MaterialType::Lambertian)
+        .value("PBR",        MaterialType::PBR)
+        .value("Dielectric", MaterialType::Dielectric)
+        .value("Emissive",   MaterialType::Emissive)
+        .value("Isotropic",  MaterialType::Isotropic)
+        .def("__repr__", [](const MaterialType& type) {
+            switch (type) {
+                case MaterialType::Lambertian: 
+                    return "MaterialType.Lambertian";
+                    break;
+                case MaterialType::PBR:        
+                    return "MaterialType.PBR";
+                    break;
+                case MaterialType::Dielectric: 
+                    return "MaterialType.Dielectric";
+                    break;
+                case MaterialType::Emissive:   
+                    return "MaterialType.Emissive";
+                    break;
+                case MaterialType::Isotropic:  
+                    return "MaterialType.Isotropic";
+                    break;
+                default: return "MaterialType.UNKNOWN";
+            }
+        });
 
-    py::class_<Lambertian, Material>(m_material, "Lambertian")
-        .def(py::init([](const Color& albedo) {
-            return Lambertian(albedo);
+    py::class_<MaterialCore>(m_material, "MaterialCore");
+    py::class_<Lambertian>  (m_material, "Lambertian");
+    py::class_<PBR>         (m_material, "PBR");
+    py::class_<Dielectric>  (m_material, "Dielectric");
+    py::class_<Emissive>    (m_material, "Emissive");
+    py::class_<Isotropic>   (m_material, "Isotropic");
+
+    py::class_<Material>(m_material, "Material")
+        .def(py::init<>())
+        .def("__repr__", [](const Material& mat) {
+            std::string output = "Material(type = ";
+            switch (mat.material_type()) {
+                case MaterialType::Lambertian: output += "Lambertian"; break;
+                case MaterialType::PBR:        output += "PBR";        break;
+                case MaterialType::Dielectric: output += "Dielectric"; break;
+                case MaterialType::Emissive:   output += "Emissive";   break;
+                case MaterialType::Isotropic:  output += "Isotropic";  break;
+                default: output += "UNKNOWN";
+            }
+            return output + ")";
+        })
+
+        .def_static("lambertian", ([](const Color& albedo) {
+            return Material::lambertian(albedo);
         }),
             py::arg("albedo") = Color(0.8f, 0.8f, 0.8f)
         )
-        .def(py::init([](const Texture& texture) {
-            return Lambertian(texture);
-        }));
-
-    py::class_<Metal, Material>(m_material, "Metal")
-        .def(py::init([](const Color& albedo, float fuzz) {
-            return Metal(albedo, fuzz);
+        .def_static("lambertian", ([](const Texture& texture) {
+            return Material::lambertian(texture);
         }),
-            py::arg("albedo") = Color(0.8f, 0.8f, 0.8f),
-            py::arg("fuzz")   = 0.0f
-        );
-
-    py::class_<Dielectric, Material>(m_material, "Dielectric")
-        .def(py::init([](float ior) {
-            return Dielectric(ior);
-        }),
-            py::arg("ior") = 1.5f
-        );
-
-    py::class_<Emissive, Material>(m_material, "Emissive")
-        .def(py::init([](
-            const Color& albedo,
-            const float brightness
-        ) {
-            return Emissive(albedo, brightness);
-        }),
-            py::arg("albedo")     = Color(0.8f, 0.8f, 0.8f),
-            py::arg("brightness") = 35.0f
+            py::arg("texture") = ConstantTexture(Color(0.8f, 0.8f, 0.8f))
         )
-        .def(py::init([](
-            const Texture& texture,
-            const float brightness
-        ) {
-            return Emissive(texture, brightness);
-        }),
-            py::arg("texture"),
-            py::arg("brightness") = 35.0f
-        );
 
-    py::class_<Isotropic, Material>(m_material, "Isotropic")
-        .def(py::init([](const Color& albedo) {
-            return Isotropic(albedo);
-        }),
-            py::arg("albedo") = Color(0.8f, 0.8f, 0.8f)
-        )
-        .def(py::init([](const Texture& texture) {
-            return Isotropic(texture);
-        }));
 
-    py::class_<PBRMaterial, Material>(m_material, "PBRMaterial")
-        .def(py::init([](
+        .def_static("pbr", ([](
             const Texture& albedo,
             const Texture& roughness,
             const Texture& metallic,
-            const Texture& normal,
-            float normal_strength,
-            const Texture& ambient_occlusion,
-            float ao_power
+            const Texture& emission,
+            const Texture& normal
         ) {
-            return PBRMaterial(
-                albedo, roughness, metallic, normal, normal_strength,
-                ambient_occlusion, ao_power 
+            return Material::pbr(
+                albedo, roughness, metallic, emission, normal
             );
         }),
             py::arg("albedo")    = ConstantTexture(Color::white()),
             py::arg("roughness") = ConstantTexture(Color(0.8f)),
             py::arg("metallic")  = ConstantTexture(Color(0.0f)),
-            py::arg("normal")    = ConstantTexture(Color(0.0f, 0.0f, 1.0f)),
-            py::arg("normal_strength")   = 1.0f,
-            py::arg("ambient_occlusion") = ConstantTexture(Color(1.0f)),
-            py::arg("ao_power") = 1.0f
-        );
+            py::arg("emission")  = ConstantTexture(Color::black()),
+            py::arg("normal")    = ConstantTexture(Color(0.5f, 0.5f, 1.0f))
+        )
 
+
+        .def_static("dielectric", ([](float ior) {
+            return Material::dielectric(ior);
+        }),
+            py::arg("ior") = 1.5f
+        )
+
+
+        .def_static("emissive", ([](
+            const Color& albedo, 
+            const float brightness
+        ) {
+            return Material::emissive(albedo, brightness);
+        }),
+            py::arg("albedo")     = Color::white(),
+            py::arg("brightness") = 35.0f
+        )
+        .def_static("emissive", ([](
+            const Texture& texture, 
+            const float brightness
+        ) {
+            return Material::emissive(texture, brightness);
+        }),
+            py::arg("texture")    = ConstantTexture(Color::white()),
+            py::arg("brightness") = 35.0f
+        )
+
+
+        .def_static("isotropic", ([](const Color& albedo) {
+            return Material::isotropic(albedo);
+        }),
+            py::arg("albedo") = Color::white()
+        )
+        .def_static("isotropic", ([](const Texture& texture) {
+            return Material::isotropic(texture);
+        }),
+            py::arg("texture") = ConstantTexture(Color::white())
+        );
 
 }
 

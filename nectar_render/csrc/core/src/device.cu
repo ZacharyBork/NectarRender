@@ -27,17 +27,17 @@ T* device_build(Args... args) {
 template Quad*   device_build<Quad>(Transform, Transform, Material*);
 template Sphere* device_build<Sphere>(Transform, Transform, float, Material*);
 template Cube*   device_build<Cube>(
-    Transform, Transform, Material*, Hittable**
+    Transform, Transform, Hittable**, Material*
 );
 
 template ConstantMedium* device_build<ConstantMedium>(
-    Transform, Transform, Material*, Hittable*, float
+    Transform, Transform, Hittable*, float, Material*
 );
 
 // LIGHTS =====================================================================
 
 template ObjectLight* device_build<ObjectLight>(
-    Transform, Transform, Material*, Hittable*
+    Transform, Transform, Hittable*, Material*
 );
 
 // NOISE ======================================================================
@@ -58,10 +58,15 @@ template ImageTexture*    device_build<ImageTexture>(
 // MATERIALS ================================================================== 
 
 template Lambertian* device_build<Lambertian>(Texture*);
-template Metal*      device_build<Metal>(Color, float);
 template Dielectric* device_build<Dielectric>(float);
 template Emissive*   device_build<Emissive>(Texture*, float);
 template Isotropic*  device_build<Isotropic>(Texture*);
 
-template PBRMaterial* device_build<PBRMaterial>(PBRDescription);
+template PBR* device_build<PBR>(
+    Texture*, Texture*, Texture*, Texture*, Texture*
+);
+
+template Material* device_build<Material>(
+    MaterialType, MaterialCore*
+);
 

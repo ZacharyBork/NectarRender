@@ -70,6 +70,7 @@ public:
         rec.p   = ray.at(t);
         rec.mat = material;
         rec.n   = normal;
+        rec.tangent = u;
 
         return is_interior(rec);
     }

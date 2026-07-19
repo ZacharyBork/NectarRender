@@ -68,6 +68,9 @@ class RenderEngine:
     
     def set_scene(self: Self, scene: Scene) -> None:
         self.ENGINE.set_scene(scene)
+        
+    def set_mode(self: Self, mode: SampleMode) -> None:
+        self.ENGINE.set_sample_mode(mode)
     
     def queue_function(
         self:        Self, 
@@ -79,19 +82,9 @@ class RenderEngine:
         
     ### SAMPLING / RENDERING ###
         
-    def sample(
-        self: Self, 
-        mode: SampleMode = SampleMode.ACCUMULATE
-    ) -> Self:
-        self.ENGINE.sample(mode)
-        return self
-            
-    def render(
-        self: Self, 
-        mode: SampleMode = SampleMode.ACCUMULATE
-    ) -> Self:
+    def render(self: Self) -> Self:
         start = time.time()
-        self.ENGINE.render(mode)
+        self.ENGINE.render()
         core.cuda_synchronize()
         self.log(f'Render complete. Time taken: {(time.time() - start):.4f}')
         return self

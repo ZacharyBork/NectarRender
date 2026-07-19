@@ -48,7 +48,11 @@ public:
         Hittable& obj,
         float brightness,
         const Texture& texture
-    ) : Light(obj.xform, obj.delta, Emissive(texture, brightness).build()),
+    ) : Light(
+            obj.xform,
+            obj.delta, 
+            Material::emissive(texture, brightness).build()
+        ),
         boundary(obj.build())
     { bbox = obj.build_bbox(); }
 
@@ -56,19 +60,24 @@ public:
         Hittable& obj,
         float brightness,
         const Color& albedo
-    ) : Light(obj.xform, obj.delta, Emissive(albedo, brightness).build()),
+    ) : Light(
+            obj.xform, 
+            obj.delta, Material::emissive(albedo, brightness).build()
+        ),
         boundary(obj.build())
     { bbox = obj.build_bbox(); }
 
     __device__ ObjectLight(
         Transform& xform,
         Transform& delta,
-        Material*  mat, 
-        Hittable*  boundary_ptr
+        Hittable*  boundary_ptr,
+        Material*  mat
     ) : Light(xform, delta, mat), boundary(boundary_ptr) { }
 
     __host__ Hittable* build() const override {
-        return device_build<ObjectLight>(xform, delta, material, boundary);
+        return device_build<ObjectLight>(
+            xform, delta, boundary, material
+        );
     }
 
     __host__ const AABB build_bbox() const override { return bbox; }

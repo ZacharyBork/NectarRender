@@ -1,11 +1,10 @@
 #pragma once
 
-#include "core/include/core/vector.h"
-#include "core/include/core/transform.h"
+#include "core/include/core.h"
 #include "engine/include/engine/ray.h"
 
-class Material;
 class Hittable;
+class Material;
 
 class HitRecord {
 public:
@@ -28,7 +27,7 @@ public:
         bool apply_bias = false
     ) {
         p = xform.R() * (p * xform.scale()) + xform.pos();
-        // tangent = normalize(xform.R() * (tangent * xform.scale()));
+        tangent = normalize(xform.R() * (tangent * xform.scale()));
         
         front_face = dot(object_ray.direction(), n) < 0.0f;
         n = front_face ? n : -n;
@@ -37,7 +36,12 @@ public:
         front_face = dot(world_ray.direction(), n) < 0.0f;
         n = front_face ? n : -n;
         
-        // tangent = normalize(tangent - n * dot(tangent, n));
+        tangent = normalize(tangent - n * dot(tangent, n));
+        if (tangent.near_zero()) 
+        tangent = normalize(
+            cross(n, fabsf(n.x()) > 0.9f ? 
+            Vector3(0.0f, 1.0f, 0.0f) : Vector3(1.0f, 0.0f, 0.0f))
+        );
         if (apply_bias) p += n * EPS;
 
         t = dot(

@@ -36,7 +36,7 @@ __device__ Color trace_shadow_rays(
 // TRACE SINGLE RAY
 // ============================================================================
 
-__device__ const bool sample_pdf(
+__device__ bool sample_cosine_brdf(
     SceneGraph*    scene,
     Ray&           ray,
     Ray&           r_in,
@@ -59,10 +59,12 @@ __device__ const bool sample_pdf(
     }
 
     if (pdf_value <= 0.0f) return false;
-
+    
     ray = Ray(rec.p, direction, r_in.time());
-    float scattering_pdf = rec.mat->scattering_pdf(rec, r_in, ray);
-    atten *= (scattering_pdf * srec.atten) / pdf_value;
+    Color brdf = rec.mat->evaluate(
+        rec, normalize(-r_in.direction()), direction
+    );
+    atten *= brdf / pdf_value;
 
     return true;
 }
@@ -96,7 +98,7 @@ __device__ bool trace_ray(
         return true;
     }
 
-    return sample_pdf(scene, ray, r_in, atten, rec, srec, gen);
+    return sample_cosine_brdf(scene, ray, r_in, atten, rec, srec, gen);
 }
 
 // ============================================================================
