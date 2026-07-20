@@ -14,8 +14,7 @@ public:
         const Vector3& scale
     ) : Hittable(position, rotation, scale) { }
 
-    template <typename M>
-    __host__ Quad(const M& material) 
+    __host__ Quad(const Material& material) 
         : Quad(Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), material) { }
 
     template <typename M>
@@ -26,18 +25,11 @@ public:
         const M&       material
     ) : Hittable(position, rotation, scale, material) { }
 
-    __host__ Quad(
-        const Vector3& position,
-        const Vector3& rotation,
-        const Vector3& scale, 
-        Material*      material
-    ) : Hittable(position, rotation, scale, material) { }
-
     __device__ Quad(
         Transform& xform, 
         Transform& delta, 
-        Material*  mat
-    ) : Hittable(xform, delta, mat) { 
+        size_t     material_index
+    ) : Hittable(xform, delta, material_index) { 
         u = Vector3(1.0f, 0.0f, 0.0f);
         v = Vector3(0.0f, 0.0f, -1.0f);
 
@@ -48,7 +40,7 @@ public:
     }
 
     __host__ Hittable* build() const override {
-        return device_build<Quad>(xform, delta, material);
+        return device_build<Quad>(xform, delta, material_index);
     }
 
     __host__ const AABB build_bbox() const override {
@@ -66,10 +58,9 @@ public:
         float t = -dot(normal, ray.origin()) / denom;
         if (!ray_t.contains(t)) return false;
 
-        rec.t   = t;
-        rec.p   = ray.at(t);
-        rec.mat = material;
-        rec.n   = normal;
+        rec.t = t;
+        rec.p = ray.at(t);
+        rec.n = normal;
         rec.tangent = u;
 
         return is_interior(rec);

@@ -15,7 +15,7 @@ public:
     ) : Hittable(
             bound_obj.xform, 
             bound_obj.delta, 
-            Material::isotropic(texture).build()
+            Material::isotropic(texture)
         ),
         boundary(bound_obj.build()),
         neg_inv_density(-1.0f / density)
@@ -28,7 +28,7 @@ public:
     ) : Hittable(
             bound_obj.xform, 
             bound_obj.delta, 
-            Material::isotropic(albedo).build()
+            Material::isotropic(albedo)
         ),
         boundary(bound_obj.build()),
         neg_inv_density(-1.0f / density)
@@ -39,15 +39,15 @@ public:
         Transform& delta,
         Hittable*  boundary_ptr, 
         float      neg_inv_density_,
-        Material*  mat
-    ) : Hittable(xform, delta, mat), 
+        size_t     material_index
+    ) : Hittable(xform, delta, material_index), 
         boundary(boundary_ptr), 
         neg_inv_density(neg_inv_density_) 
     { }
 
     __host__ Hittable* build() const override {
         return device_build<ConstantMedium>(
-            xform, delta, boundary, neg_inv_density, material
+            xform, delta, boundary, neg_inv_density, material_index
         );
     }
 
@@ -81,7 +81,6 @@ public:
         rec.p = ray.at(rec1.t + hit_distance / ray_length);
         rec.n = Vector3(1.0f, 0.0f, 0.0f);
         rec.front_face = true;
-        rec.mat = material;
 
         return true;
     }

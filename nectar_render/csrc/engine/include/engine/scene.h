@@ -6,6 +6,7 @@
 #include <cuda_runtime.h>
 
 #include "hittable/include/hittable/hittable.h"
+#include "material/include/material/registry.h"
 #include "engine/include/engine/light.h"
 #include "hittable/include/bvh/node.h"
 
@@ -15,6 +16,8 @@ struct SceneGraph {
     Light**    lights;
     
     SkyLight skylight;
+
+    Material** materials;
 
     size_t n_objects, n_nodes, n_lights;
 
@@ -37,10 +40,12 @@ struct SceneGraph {
 
             if (node.object != -1) {
                 HitRecord tmp_rec;
+                Hittable* current = objects[node.object];
 
-                if (objects[node.object]->hit_test(ray, tmp_rec)) {
+                if (current->hit_test(ray, tmp_rec)) {
                     if (ray_t.surrounds(tmp_rec.t)) {
                         rec = tmp_rec;
+                        rec.mat = materials[current->material_index];
                         rec.object_index = node.object;
                         hit_anything = true;
                         ray_t.max = tmp_rec.t;
@@ -70,6 +75,8 @@ public:
     std::vector<Hittable*> hittables;
     std::vector<Light*>    lights;
     SkyLight skylight;
+
+    MaterialRegisty material_registry;
 
     __host__ Scene() 
       : hittables(std::vector<Hittable*>{}),
@@ -113,6 +120,9 @@ public:
 
     __host__ void build() {
         teardown();
+
+        material_registry.register_materials(hittables);
+        h_graph.materials = material_registry.device_materials();
 
         h_graph.skylight  = skylight;
         h_graph.n_objects = hittables.size();

@@ -55,18 +55,15 @@ public:
 
     /* MATERIAL UTILS */
 
-    template<typename M>
-    __host__ void update_material(const M& material) {
-        object->material = material.build();
+    __host__ void update_material(const Material& material) {
+        // object->material = material.build();
+        return;
     }
 
     __host__ Material* get_material() {
-        Material* h_mat_ptr;
-        cudaMemcpy(
-            &h_mat_ptr, object->material, sizeof(Material*), 
-            cudaMemcpyDeviceToHost
-        );
-        return h_mat_ptr;
+        // MaterialInfo info{ object->material->material_type() };
+        // std::cout << info.type_name() << std::endl;
+        return nullptr;
     }
 
     /* SELECTION MASKING */

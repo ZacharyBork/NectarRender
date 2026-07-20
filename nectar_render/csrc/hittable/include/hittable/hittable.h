@@ -18,71 +18,65 @@ struct HitTestResult { bool hit; HitRecord& rec; };
 // BASE HITTABLE CLASS
 // ============================================================================
 
+struct MatRegistryView;
+
 class Hittable {
 public:
 
+    Hittable* self_ref = this;
     Transform xform, delta;
-    Material* material = nullptr;
     AABB      bbox;
 
-    Hittable* self_ref = this;
+    Material  material;
+    // Material* d_material_ptr = nullptr;
+    size_t    material_index = (size_t)0;
+    MatRegistryView* material_registry;
 
     /* CONSTRUCTORS */
 
-    __host__ Hittable() 
-        : material(Material::lambertian(Color::purple()).build()) { }
+    __host__ Hittable() : material(Material::lambertian(Color::purple())) { }
+    __host__ Hittable(const Material& material) : material(material) { }
+
+    __host__ Hittable(const Vector3& position, const Material& material) 
+        : xform(Transform(position)), material(material) { }
 
     __host__ Hittable(
         const Vector3& position, 
         const Vector3& rotation,
         const Vector3& scale
     ) : xform(Transform(position, rotation, scale)),
-        material(Material::lambertian(Color::purple()).build())
+        material(Material::lambertian(Color::purple()))
     { }
 
     __host__ Hittable(
-        const Vector3& position,
-        const Vector3& rotation,
-        const Vector3& scale, 
-        Material*      mat
-    ) : xform(Transform(position, rotation, scale)), 
-        material(mat) 
-    { }
-
-    template <typename M>
-    __host__ Hittable(
-        const Vector3& position, 
-        const M&       material
-    ) : xform(Transform(position)), material(material.build()) { }
-
-    template <typename M>
-    __host__ Hittable(const M& material) : material(material.build()) { }
-
-    template <typename M>
-    __host__ Hittable(
-        const Vector3& position, 
-        const Vector3& rotation,
-        const Vector3& scale,
-        const M&       material
+        const Vector3&  position, 
+        const Vector3&  rotation,
+        const Vector3&  scale,
+        const Material& material
     ) : xform(Transform(position, rotation, scale)),
-        material(material.build())
+        material(material)
     { }
 
-    template <typename M>
     __host__ Hittable(
-        const Vector3& position, 
-        const Vector3& delta_position,
-        const M&       material
+        const Vector3&  position, 
+        const Vector3&  delta_position,
+        const Material& material
     ) : xform(Transform(position)),
         delta(Transform(delta_position)),
-        material(material.build())
+        material(material)
     { }
+
+    __host__ Hittable(
+        Transform& xform, 
+        Transform& delta, 
+        const Material& material
+    ) : xform(xform), delta(delta), material(material) { }
 
     __device__ Hittable(
         Transform& xform, 
         Transform& delta, 
-        Material*  mat
-    ) : xform(xform), delta(delta), material(mat) { }
+        size_t material_index
+    ) : xform(xform), delta(delta), material_index(material_index) { }
 
     __host__ virtual Hittable* build() const = 0;
     __host__ virtual const AABB build_bbox() const = 0;
@@ -100,7 +94,7 @@ public:
         bool hit_obj = hit(r, Interval(EPS, FMAX), rec);
         if (hit_obj) rec.hit_object = self_ref;
         rec.to_world_space(xform, r, ray, true);
-        
+
         return hit_obj;
     }
 

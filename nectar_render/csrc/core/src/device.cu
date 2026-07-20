@@ -24,20 +24,20 @@ T* device_build(Args... args) {
 
 // HITTABLES ==================================================================
 
-template Quad*   device_build<Quad>(Transform, Transform, Material*);
-template Sphere* device_build<Sphere>(Transform, Transform, float, Material*);
+template Quad*   device_build<Quad>(Transform, Transform, size_t);
+template Sphere* device_build<Sphere>(Transform, Transform, float, size_t);
 template Cube*   device_build<Cube>(
-    Transform, Transform, Hittable**, Material*
+    Transform, Transform, Hittable**, size_t
 );
 
 template ConstantMedium* device_build<ConstantMedium>(
-    Transform, Transform, Hittable*, float, Material*
+    Transform, Transform, Hittable*, float, size_t
 );
 
 // LIGHTS =====================================================================
 
 template ObjectLight* device_build<ObjectLight>(
-    Transform, Transform, Hittable*, Material*
+    Transform, Transform, Hittable*, size_t
 );
 
 // NOISE ======================================================================

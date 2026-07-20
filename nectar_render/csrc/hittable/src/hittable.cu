@@ -40,7 +40,7 @@ __global__ void update_material_kernel(
     Hittable* hittable,
     Material* mat
 ) {
-    hittable->material = mat;
+    // hittable->material = mat;
 }
 
 void run_update_material(

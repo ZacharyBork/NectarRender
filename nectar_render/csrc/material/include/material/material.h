@@ -43,6 +43,10 @@ public:
 
     __host__ void teardown() { if (texture) cudaFree(texture); }
 
+    __host__ bool operator==(const Lambertian& other) {
+        return texture == other.texture;
+    }
+    
     __device__ bool scatter(
         HitRecord& rec,
         Ray& ray,
@@ -120,6 +124,14 @@ public:
         if (metallic_tex)  cudaFree(metallic_tex);
         if (emission_tex)  cudaFree(emission_tex);
         if (normal_tex)    cudaFree(normal_tex);
+    }
+
+    __host__ bool operator==(const PBR& other) {
+        return albedo_tex    == other.albedo_tex
+            && roughness_tex == other.roughness_tex
+            && metallic_tex  == other.metallic_tex
+            && emission_tex  == other.emission_tex
+            && normal_tex    == other.normal_tex;
     }
 
     __device__ NOINLINE Vector3 get_shading_normal(const HitRecord& rec) const {
@@ -223,6 +235,10 @@ public:
 
     __host__ void teardown() { }
 
+    __host__ bool operator==(const Dielectric& other) {
+        return ior == other.ior;
+    }
+
     __device__ NOINLINE bool scatter(
         HitRecord& rec,
         Ray& ray,
@@ -289,6 +305,11 @@ public:
 
     __host__ void teardown() { if (texture) cudaFree(texture); }
 
+    __host__ bool operator==(const Emissive& other) {
+        return texture    == other.texture
+            && brightness == other.brightness;
+    }
+
     __device__ Color emitted(
         const Ray&       ray,
         const HitRecord& rec
@@ -325,6 +346,10 @@ public:
     };
 
     __host__ void teardown() { if (texture) cudaFree(texture); }
+
+    __host__ bool operator==(const Isotropic& other) {
+        return texture == other.texture;
+    }
 
     __device__ bool scatter(
         HitRecord& rec,
@@ -376,8 +401,8 @@ public:
 
     // CONSTRUCTORS ===========================================================
 
-    __host__ Material() : type(MaterialType::Null) { }
-    __host__ Material(MaterialType type) : type(type) { }
+    __host__ __device__ Material() : type(MaterialType::Null) { }
+    __host__ __device__ Material(MaterialType type) : type(type) { }
 
     __device__ Material(
         MaterialType type,
@@ -401,6 +426,24 @@ public:
     // UTILITIES ==============================================================
 
     __host__ MaterialType material_type() const { return type; }
+
+    __host__ bool operator==(const Material& other) {
+        if (type != other.type) return false;
+        switch (type) {
+            case MaterialType::Null: return true;
+            case MaterialType::Lambertian: 
+                return mat_lambertian == other.mat_lambertian;
+            case MaterialType::Dielectric: 
+                return mat_dielectric == other.mat_dielectric;
+            case MaterialType::Emissive:   
+                return mat_emissive == other.mat_emissive;
+            case MaterialType::Isotropic:  
+                return mat_isotropic == other.mat_isotropic;
+            case MaterialType::PBR:        
+                return mat_pbr == other.mat_pbr;
+        }
+        return false;
+    }
 
     // LAMBERTIAN =============================================================
 
@@ -485,7 +528,6 @@ public:
             case MaterialType::PBR:        d_mat_ptr = mat_pbr;        break;
         }
         return device_build<Material>(type, d_mat_ptr);
-
     }
 
     __device__ void update(MaterialCore* mat) {
@@ -568,4 +610,12 @@ public:
     }
     
 };
+
+// void teardown_material(Material* d_mat_ptr);
+
+
+
+
+
+
 

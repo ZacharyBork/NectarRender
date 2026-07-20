@@ -7,21 +7,23 @@
 class Sphere : public Hittable {
 public:
     
-    template <typename M>
-    __host__ Sphere(const Vector3& position, float radius, const M& material) 
-        : Hittable(position, material), 
-          radius(radius + FMIN) 
+    __host__ Sphere(
+        const Vector3& position, 
+        float radius,
+        const Material& material
+    ) : Hittable(position, material), 
+        radius(radius + FMIN) 
     { }
 
     __device__ Sphere(
         Transform& xform, 
         Transform& delta,  
         float      rad, 
-        Material*  mat
-    ) : Hittable(xform, delta, mat), radius(rad) {}
+        size_t     material_index
+    ) : Hittable(xform, delta, material_index), radius(rad) {}
 
     __host__ Hittable* build() const override {
-        return device_build<Sphere>(xform, delta, radius, material);
+        return device_build<Sphere>(xform, delta, radius, material_index);
     }
 
     __host__ const AABB build_bbox() const override {
@@ -57,9 +59,8 @@ public:
                 return false;
         }
 
-        rec.t   = root;
-        rec.p   = ray.at(rec.t);
-        rec.mat = material;
+        rec.t = root;
+        rec.p = ray.at(rec.t);
         
         Vector3 norm = rec.p / (radius * xform.scale() + FMIN);
         rec.n = norm;
@@ -135,8 +136,8 @@ public:
         Transform& xform, 
         Transform& delta, 
         Hittable** faces,
-        Material*  mat
-    ) : Hittable(xform, delta, mat) { 
+        size_t     material_index
+    ) : Hittable(xform, delta, material_index) { 
         for (int i = 0; i < 6; i++) prims[i] = faces[i];
     }
 
@@ -188,7 +189,7 @@ public:
             cudaMemcpyHostToDevice
         );
 
-        return device_build<Cube>(xform, delta, d_face_ptrs, material);
+        return device_build<Cube>(xform, delta, d_face_ptrs, material_index);
     }
 
     __host__ const AABB build_bbox() const override {

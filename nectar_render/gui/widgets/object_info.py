@@ -18,6 +18,13 @@ class MaterialSettings(W.QGroupBox):
         super().__init__()
         self.interface = interface
         
+        
+        
+        x = self.interface.get_material()
+        
+        
+        
+        
         self.setTitle('Material')
         layout = W.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
