@@ -20,84 +20,6 @@ void selection_mask(
     uint8_t  b
 );
 
-
-
-// class ObjectInterface {
-// public:
-
-//     /* CONSTRUCTORS */
-
-//     __host__ ObjectInterface() : rec(HitRecord()) { }
-
-//     __host__ explicit ObjectInterface(Scene* scene, HitRecord rec) 
-//       : scene(scene), rec(rec), 
-//         object(scene->object_at_index(rec.object_index)),
-//         material(&scene->material_registry.get_material(rec.material_index))
-//     { }
-
-//     /* PROPERTY ACCESS */
-
-//     __host__ bool is_enabled() const { return object != nullptr; }
-//     __host__ HitRecord& hit_record() { return rec; }
-
-//     /* TRANSFORM UTILS */
-
-//     __host__ Transform get_transform() { 
-//         return object->xform; 
-//     }
-
-//     __host__ void set_transform(const Transform& xform) {
-//         object->xform = xform;
-//     }
-
-//     /* MATERIAL UTILS */
-
-//     __host__ void update_material(const Material& material) {
-//         // object->material = material.build();
-//         return;
-//     }
-
-//     __host__ Material* get_material() {
-//         // MaterialInfo info{ object->material->material_type() };
-//         // std::cout << info.type_name() << std::endl;
-//         return nullptr;
-//     }
-
-//     /* SELECTION MASKING */
-
-//     __host__ void build_selection_mask(
-//         size_t H, size_t W,
-//         DeviceCamera* cam,
-//         SceneGraph*   scene,
-//         DataObject&   data,
-//         const Color&  color = Color::white(),
-//         int outline_radius = 3
-//     ) {
-//         selection_mask(
-//             data.view(), cam, scene, rec.hit_object, 
-//             outline_radius, 255u, 120u, 45u
-//         );
-//     }
-
-//     /* STATE MANAGEMENT */
-
-//     __host__ void disable() {
-//         rec = HitRecord();
-//         object.disable();
-//     }
-
-// private:
-
-//     Scene*    scene    = nullptr;
-//     Hittable* object   = nullptr;
-//     Material* material = nullptr;
-
-//     HitRecord rec;
-
-// };
-
-
-
 class ObjectInterface {
 public:
 
@@ -111,7 +33,7 @@ public:
     __host__ explicit ObjectInterface(Scene* scene, HitRecord rec) 
       : scene(scene), rec(rec), 
         object(
-            scene->object_at_index(rec.object_index), 
+            scene->hittables_registry.get_object(rec.object_index), 
             "ObjectInterface::object"
         ),
         material(&scene->material_registry.get_material(rec.material_index))

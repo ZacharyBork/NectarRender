@@ -20,9 +20,7 @@ struct SceneGraph {
     
     SkyLight skylight;
 
-    
-
-    size_t n_objects, n_nodes, n_lights;
+    size_t n_lights;
 
     __device__ bool hit(
         const Ray&  ray,
@@ -30,7 +28,7 @@ struct SceneGraph {
         HitRecord&  rec
     ) {
         uint32_t stack[STACK_SIZE];
-        uint32_t stack_ptr  = 0u;
+        uint32_t stack_ptr = 0u;
         stack[stack_ptr++] = 0u;
 
         bool hit_anything = false;
@@ -77,16 +75,14 @@ public:
     SceneGraph* graph = nullptr;
     SceneGraph h_graph{};
 
-    std::vector<Hittable*> hittables;
-    std::vector<Light*>    lights;
+    std::vector<Light*> lights;
     SkyLight skylight;
 
     HittablesRegistry hittables_registry;
     MaterialRegisty   material_registry;
 
     __host__ Scene() 
-      : hittables(std::vector<Hittable*>{}),
-        lights(std::vector<Light*>{}),
+      : lights(std::vector<Light*>{}),
         skylight(SkyLight())
     { }
 
@@ -94,11 +90,11 @@ public:
         std::vector<Hittable*> hittables,
         std::vector<Light*>    lights,
         SkyLight&              skylight
-    ) : hittables(std::move(hittables)),
-        lights(std::move(lights)),
+    ) : lights(std::move(lights)),
         skylight(skylight)
     { 
-        for (Light* light : this->lights) this->hittables.push_back(light);
+        for (Light* light : this->lights) hittables.push_back(light);
+        hittables_registry = HittablesRegistry(hittables);
         build(); 
     }
 
@@ -119,17 +115,15 @@ public:
     __host__ void build() {
         teardown();
 
-        build_bvh();
-
-        material_registry.register_materials(hittables);
+        material_registry.register_materials(hittables_registry.objects());
         h_graph.materials = material_registry.device_materials();
 
-        hittables_registry.register_hittables(hittables);
+        hittables_registry.build();
         h_graph.objects = hittables_registry.device_hittables();
+        h_graph.bvh_nodes = hittables_registry.bvh_nodes;
 
-        h_graph.skylight  = skylight;
-        h_graph.n_objects = hittables.size();
-        h_graph.n_lights  = lights.size();
+        h_graph.skylight = skylight;
+        h_graph.n_lights = lights.size();
 
         build_device_lights();
 
@@ -141,42 +135,26 @@ public:
     }
 
     __host__ Hittable* object_at_index(const uint32_t index) {
-        if (index >= hittables.size())
-            throw std::runtime_error(
-                "Scene::object_at_index(): index " + 
-                std::to_string(index) + " out of range"
-            );
-        return hittables[index];
+        return hittables_registry.get_object(index);
     }
 
 private:
 
     std::unordered_map<Hittable*, Hittable*> host_to_device;
 
-    __host__ void build_bvh() {
-        BVH bvh;
-        bvh.build(hittables);
-        h_graph.n_nodes = bvh.nodes.size();
-
-        cudaMalloc(&h_graph.bvh_nodes, h_graph.n_nodes * sizeof(BVHNode));
-        cudaMemcpy(
-            h_graph.bvh_nodes, bvh.nodes.data(),
-            h_graph.n_nodes * sizeof(BVHNode), cudaMemcpyHostToDevice
-        );
-    }
-
     __host__ void build_device_lights() {
-        std::vector<Hittable*> d_light_ptrs(h_graph.n_lights);
+        std::vector<Hittable*> d_light_ptrs(lights.size());
         for (size_t i = 0; i < lights.size(); i++) {
             d_light_ptrs[i] = hittables_registry.host_to_device(
                 static_cast<Hittable*>(lights[i])
             );
         }
 
-        cudaMalloc(&h_graph.lights, h_graph.n_lights * sizeof(Hittable*));
+        size_t n_bytes = lights.size() * sizeof(Hittable*);
+        cudaMalloc(&h_graph.lights, n_bytes);
         cudaMemcpy(
             h_graph.lights, d_light_ptrs.data(),
-            h_graph.n_lights * sizeof(Hittable*), cudaMemcpyHostToDevice
+            n_bytes, cudaMemcpyHostToDevice
         );
     }
 
