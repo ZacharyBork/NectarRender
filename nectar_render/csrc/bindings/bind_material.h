@@ -67,10 +67,7 @@ void register_material(py::module_& m) {
 
     py::class_<NoiseTexture, Texture>(m_texture, "NoiseTexture")
         .def(py::init<>()) 
-        .def(py::init([](
-            float scale,
-            uint32_t seed
-        ) {
+        .def(py::init([](float scale, uint32_t seed) {
             return NoiseTexture(scale, seed);
         }),
             py::arg("scale"),
@@ -86,35 +83,29 @@ void register_material(py::module_& m) {
         .value("Emissive",   MaterialType::Emissive)
         .value("Isotropic",  MaterialType::Isotropic)
         .def("__repr__", [](const MaterialType& type) {
+            std::string output = "MaterialType.";
             switch (type) {
-                case MaterialType::Lambertian: 
-                    return "MaterialType.Lambertian";
-                    break;
-                case MaterialType::PBR:        
-                    return "MaterialType.PBR";
-                    break;
-                case MaterialType::Dielectric: 
-                    return "MaterialType.Dielectric";
-                    break;
-                case MaterialType::Emissive:   
-                    return "MaterialType.Emissive";
-                    break;
-                case MaterialType::Isotropic:  
-                    return "MaterialType.Isotropic";
-                    break;
-                default: return "MaterialType.UNKNOWN";
+                case MaterialType::Lambertian: output += "Lambertian"; break;
+                case MaterialType::PBR:        output += "PBR";        break;
+                case MaterialType::Dielectric: output += "Dielectric"; break;
+                case MaterialType::Emissive:   output += "Emissive";   break;
+                case MaterialType::Isotropic:  output += "Isotropic";  break;
+                default: output += "UNKNOWN"; break;
             }
+            return output;
         });
 
     py::class_<MaterialCore>(m_material, "MaterialCore");
-    py::class_<Lambertian>  (m_material, "Lambertian");
-    py::class_<PBR>         (m_material, "PBR");
-    py::class_<Dielectric>  (m_material, "Dielectric");
-    py::class_<Emissive>    (m_material, "Emissive");
-    py::class_<Isotropic>   (m_material, "Isotropic");
+    py::class_<Lambertian, MaterialCore>  (m_material, "Lambertian");
+    py::class_<PBR,        MaterialCore>  (m_material, "PBR");
+    py::class_<Dielectric, MaterialCore>  (m_material, "Dielectric");
+    py::class_<Emissive,   MaterialCore>  (m_material, "Emissive");
+    py::class_<Isotropic,  MaterialCore>  (m_material, "Isotropic");
 
     py::class_<Material>(m_material, "Material")
         .def(py::init<>())
+        .def("material_type",  &Material::material_type)
+        .def("resource_count", &Material::resource_count)
         .def("__repr__", [](const Material& mat) {
             std::string output = "Material(type = ";
             switch (mat.material_type()) {
@@ -128,6 +119,8 @@ void register_material(py::module_& m) {
             return output + ")";
         })
 
+        /* LAMBERTIAN */
+
         .def_static("lambertian", ([](const Color& albedo) {
             return Material::lambertian(albedo);
         }),
@@ -139,6 +132,7 @@ void register_material(py::module_& m) {
             py::arg("texture") = ConstantTexture(Color(0.8f, 0.8f, 0.8f))
         )
 
+        /* PBR */
 
         .def_static("pbr", ([](
             const Texture& albedo,
@@ -158,6 +152,7 @@ void register_material(py::module_& m) {
             py::arg("normal")    = ConstantTexture(Color(0.5f, 0.5f, 1.0f))
         )
 
+        /* DIELECTRIC */
 
         .def_static("dielectric", ([](float ior) {
             return Material::dielectric(ior);
@@ -165,6 +160,7 @@ void register_material(py::module_& m) {
             py::arg("ior") = 1.5f
         )
 
+        /* EMISSIVE */
 
         .def_static("emissive", ([](
             const Color& albedo, 
@@ -185,6 +181,7 @@ void register_material(py::module_& m) {
             py::arg("brightness") = 35.0f
         )
 
+        /* ISOTROPIC */
 
         .def_static("isotropic", ([](const Color& albedo) {
             return Material::isotropic(albedo);

@@ -1,4 +1,4 @@
-#include "interface/include/object_interface.h"
+#include "interface/include/scene_interface.h"
 
 __global__ void generate_mask_kernel(
     DataView      data,

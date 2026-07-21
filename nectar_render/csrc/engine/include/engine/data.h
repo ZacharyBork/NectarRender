@@ -141,10 +141,7 @@ public:
 
     size_t C, H, W; // Channels, Height, Width
 
-    __host__ ~DataObject() { 
-        if (is_pinned())     free_pinned_buffer(); 
-        else if (data_ptr()) cudaFree(data_ptr());
-    }
+    __host__ ~DataObject() { if (data_ptr()) cudaFree(data_ptr()); }
 
     /* CONSTRUCTORS */
 
@@ -168,25 +165,16 @@ public:
         W       = other.W;
         enabled = other.enabled;
         d_ptr   = other.d_ptr;
-        pinned_buffer   = other.pinned_buffer;
-        image_buffer    = other.image_buffer;
-        transfer_stream = other.transfer_stream;
 
         other.d_ptr = nullptr;
-        other.pinned_buffer = nullptr;
     }
 
     DataObject& operator=(DataObject&& other) noexcept {
         if (this != &other) {
-            free_pinned_buffer();
             C = other.C; H = other.H; W = other.W;
-            enabled         = other.enabled;
-            d_ptr           = other.d_ptr;
-            pinned_buffer   = other.pinned_buffer;
-            image_buffer    = other.image_buffer;
-            transfer_stream = other.transfer_stream;
-            other.d_ptr         = nullptr;
-            other.pinned_buffer = nullptr;
+            enabled     = other.enabled;
+            d_ptr       = other.d_ptr;
+            other.d_ptr = nullptr;
         }
         return *this;
     }
@@ -209,43 +197,12 @@ public:
     /* STATE CHECKERS */
 
     __host__ __device__ bool is_enabled() { return enabled; }
-    __host__ __device__ bool is_pinned()  { return pinned_buffer != nullptr; }
     
     /* POINTER REFERENCES */
 
     __host__ __device__ float* data_ptr() { return d_ptr; }
     __host__ __device__ uintptr_t device_ptr() { 
         return reinterpret_cast<uintptr_t>(d_ptr); 
-    }
-
-    /* PINNED BUFFERS */
-
-    __host__ void pin_buffer() {
-        if (pinned_buffer) return;
-        cudaMallocHost(&pinned_buffer, n_elements() * sizeof(uint8_t));
-        cudaMalloc(&image_buffer, n_elements() * sizeof(uint8_t));
-        cudaStreamCreate(&transfer_stream);
-    }
-
-    __host__ uintptr_t readback_pinned() {
-        if (!pinned_buffer)
-            throw std::runtime_error(
-                "DataObject::readback_pinned() is only valid for DataObjects "
-                "with pinned buffers. For unpinned DataObjects, please use "
-                "DataObject::device_ptr() instead."
-            );
-
-        to_image(view(), image_buffer);
-
-        cudaMemcpyAsync(
-            pinned_buffer, image_buffer,
-            n_elements() * sizeof(uint8_t),
-            cudaMemcpyDeviceToHost,
-            transfer_stream
-        );
-
-        cudaStreamSynchronize(transfer_stream);
-        return reinterpret_cast<uintptr_t>(pinned_buffer);
     }
 
     /* KERNEL UTILITIES */
@@ -275,13 +232,6 @@ public:
     }
 
     __host__ pybind11::array numpy() {
-        if (pinned_buffer != nullptr)
-            throw std::runtime_error(
-                "DataObject::numpy() is only valid for DataObjects with "
-                "unpinned buffers. For pinned DataObjects, please use "
-                "DataObject::readback_pinned() instead."
-            );
-
         cudaDeviceSynchronize();
 
         uint8_t* image_ptr;
@@ -303,16 +253,90 @@ private:
 
     bool enabled = true;
     float* d_ptr = nullptr;
-    uint8_t* pinned_buffer = nullptr;
+
+};
+
+// ============================================================================
+// TRANSFER STREAM
+// ============================================================================
+
+class TransferStream {
+public:
+
+    /* CONSTRUCTORS */
+
+    __host__ ~TransferStream() { destroy(); }
+
+    __host__ TransferStream() : data(nullptr), C(0), H(0), W(0) { }
+
+    /* LINKING */
+
+    __host__ void link(DataObject* obj) {
+        if (enabled) { destroy(); enabled = false; }
+        C = obj->C; H = obj->H; W = obj->W;
+        data = obj;
+    }
+
+    __host__ void unlink(DataObject* obj) { link(nullptr); }
+    __host__ bool is_linked() const { return data != nullptr; }
+
+    /* STREAM CONTROL */
+
+    __host__ void start() {
+        if (enabled) destroy();
+        cudaMallocHost(&stream_buffer, n_bytes());
+        cudaMalloc(&image_buffer, n_bytes());
+        cudaStreamCreate(&transfer_stream);
+        enabled = true;
+    }
+
+    __host__ void destroy() {
+        if (!enabled) return;
+        destroy_buffer(stream_buffer);
+        destroy_buffer(image_buffer);
+        if (transfer_stream) cudaStreamDestroy(transfer_stream);
+        enabled = false;
+    }
+
+    /* DATA ACCESS */
+
+    __host__ uintptr_t buffer_ptr() {
+        return reinterpret_cast<uintptr_t>(stream_buffer);
+    }
+
+    __host__ uintptr_t readback() {
+        to_image(data->view(), image_buffer);
+
+        cudaMemcpyAsync(
+            stream_buffer, image_buffer, n_bytes(),
+            cudaMemcpyDeviceToHost, transfer_stream
+        );
+
+        cudaStreamSynchronize(transfer_stream);
+        return buffer_ptr();
+    }
+
+    __host__ std::array<size_t, 3> shape() { return { C, H, W }; }
+    __host__ size_t n_pixels()   const { return data->n_pixels(); }
+    __host__ size_t n_elements() const { return data->n_elements(); }
+    __host__ size_t n_bytes()    const { 
+        return n_elements() * sizeof(uint8_t); 
+    }
+
+private:
+
+    size_t C, H, W;
+    bool enabled = false;
+    DataObject* data = nullptr;
+
+    uint8_t* stream_buffer = nullptr;
     uint8_t* image_buffer  = nullptr;
     cudaStream_t transfer_stream;
 
-    __host__ void free_pinned_buffer() {
-        if (pinned_buffer) {
-            cudaFreeHost(pinned_buffer); pinned_buffer = nullptr;
-            cudaFree(image_buffer);      image_buffer  = nullptr;
-            cudaStreamDestroy(transfer_stream);
-        }
+    __host__ bool destroy_buffer(uint8_t* buffer) {
+        if (!buffer) return false;
+        cudaFreeHost(buffer); buffer = nullptr;
+        return true;
     }
 
 };
@@ -473,13 +497,6 @@ public:
             throw std::runtime_error(
                 "DataObject::get_layer() encountered invalid LayerType.");
         }
-    }
-
-    __host__ void pin_buffer(LayerType layer_type) {
-        DataObject* layer = get_layer(layer_type);
-        if (layer->is_enabled()) layer->pin_buffer();
-        else throw std::runtime_error(
-            "DataObject pin_layer called on disabled layer.");
     }
 
 private:

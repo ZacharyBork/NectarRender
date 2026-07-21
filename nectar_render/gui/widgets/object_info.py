@@ -3,7 +3,7 @@ from typing import Self
 from PySide6 import QtWidgets as W
 from PySide6.QtCore import Qt, QObject, Slot, Signal
 
-from nectar_render import ObjectInterface, Color, Material as M
+from nectar_render import SceneInterface, Color, Material as M
 from nectar_render.gui.bridge import Bridge
 from nectar_render.gui.widgets.materials import MatSettingsPBR
 from nectar_render.gui.widgets.xform_controller import (
@@ -11,16 +11,12 @@ from nectar_render.gui.widgets.xform_controller import (
 )
 
 class MaterialSettings(W.QGroupBox):
-    def __init__(
-        self:      Self, 
-        interface: ObjectInterface
-    ) -> None:
-        super().__init__()
-        self.interface = interface
+    def __init__(self: Self) -> None:
+        super().__init__()        
         
         
-        
-        x = self.interface.get_material()
+        mat = Bridge.scene_interface.get_material()
+        print(mat.material_type())
         
         
         
@@ -47,12 +43,13 @@ class MaterialSettings(W.QGroupBox):
         
     def update_material(self: Self) -> None:
         mat = self.pbr_settings.get_material()
-        Bridge.queue_function(lambda : self.interface.update_material(mat))
+        Bridge.queue_function(
+            lambda : Bridge.scene_interface.update_material(mat)
+        )
 
 
 class ObjectInfo(QObject):
     close_signal = Signal()
-    _interface: ObjectInterface | None = None
 
     def __init__(self: Self, settings: W.QTabWidget) -> None:
         super().__init__()
@@ -61,12 +58,7 @@ class ObjectInfo(QObject):
         self.settings.setTabVisible(0, False)
         self.root = settings.findChild(W.QFrame, 'selected_settings').layout()
 
-    @property
-    def is_active(self: Self) -> bool: return self._interface is not None
-        
-    def build(self: Self, interface: ObjectInterface) -> None:
-        self._interface = interface
-        
+    def build(self: Self) -> None:
         self.settings.setTabVisible(0, True)
         self.settings.setCurrentIndex(0)
         
@@ -74,15 +66,11 @@ class ObjectInfo(QObject):
         close_btn.clicked.connect(lambda : self.close_signal.emit())
         self.root.addWidget(close_btn)
                 
-        self.root.addWidget(XformController(self._interface))
-        self.root.addWidget(MaterialSettings(self._interface))
+        self.root.addWidget(XformController())
+        self.root.addWidget(MaterialSettings())
         
     def destroy(self: Self) -> None:
-        if not self.is_active: return
         self.settings.setTabVisible(0, False)
-        
-        self._interface.disable()
-        self._interface = None
         self._clear()
 
     def _clear(self: Self) -> None:

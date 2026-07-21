@@ -1,7 +1,7 @@
 #pragma once
 
 #include <pybind11/pybind11.h>
-#include "interface/include/object_interface.h"
+#include "interface/include/scene_interface.h"
 
 namespace py = pybind11;
 using return_policy = py::return_value_policy;
@@ -10,21 +10,21 @@ void register_interface(py::module_& m) {
     
     auto m_interface = m.def_submodule("interface", "Interface module.");
 
-    py::class_<ObjectInterface>(m_interface, "ObjectInterface")
+    py::class_<SceneInterface>(m_interface, "SceneInterface")
         .def("update_material", [](
-            ObjectInterface& self, 
+            SceneInterface& self, 
             const Material& mat
         ) {
             self.update_material(mat);
         },
             py::arg("mat")
         )
-        .def("disable",       &ObjectInterface::disable)
-        .def("get_transform", &ObjectInterface::get_transform)
-        .def("set_transform", &ObjectInterface::set_transform)
-        .def("get_material",  &ObjectInterface::get_material)
-        .def("is_enabled",    &ObjectInterface::is_enabled)
-        .def("hit_record",    &ObjectInterface::hit_record, 
+        .def("disable",       &SceneInterface::disable)
+        .def("get_transform", &SceneInterface::get_transform)
+        .def("set_transform", &SceneInterface::set_transform)
+        .def("get_material",  &SceneInterface::get_material)
+        .def("is_enabled",    &SceneInterface::is_enabled)
+        .def("hit_record",    &SceneInterface::hit_record, 
              return_policy::reference);
         
 

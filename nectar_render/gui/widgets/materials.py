@@ -3,7 +3,7 @@ from typing import Self
 from PySide6 import QtWidgets as W
 from PySide6.QtCore import Qt, QObject, Slot, Signal
 
-from nectar_render import ObjectInterface, Color, Material
+from nectar_render import SceneInterface, Color, Material
 from nectar_render.gui.bridge import Bridge
 from nectar_render.gui.widgets.xform_controller import VectorWidget
 

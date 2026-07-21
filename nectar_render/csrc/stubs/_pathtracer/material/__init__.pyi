@@ -6,13 +6,13 @@ import _pathtracer.core.vector
 import typing
 from . import texture
 __all__: list[str] = ['Dielectric', 'Emissive', 'Isotropic', 'Lambertian', 'Material', 'MaterialCore', 'MaterialType', 'PBR', 'texture']
-class Dielectric:
+class Dielectric(MaterialCore):
     pass
-class Emissive:
+class Emissive(MaterialCore):
     pass
-class Isotropic:
+class Isotropic(MaterialCore):
     pass
-class Lambertian:
+class Lambertian(MaterialCore):
     pass
 class Material:
     @staticmethod
@@ -49,6 +49,10 @@ class Material:
         ...
     def __repr__(self) -> str:
         ...
+    def material_type(self) -> MaterialType:
+        ...
+    def resource_count(self) -> int:
+        ...
 class MaterialCore:
     pass
 class MaterialType:
@@ -65,12 +69,12 @@ class MaterialType:
     
       Isotropic
     """
-    Dielectric: typing.ClassVar[MaterialType]  # value = <MaterialType.Dielectric: 2>
-    Emissive: typing.ClassVar[MaterialType]  # value = <MaterialType.Emissive: 3>
-    Isotropic: typing.ClassVar[MaterialType]  # value = <MaterialType.Isotropic: 4>
-    Lambertian: typing.ClassVar[MaterialType]  # value = <MaterialType.Lambertian: 0>
-    PBR: typing.ClassVar[MaterialType]  # value = <MaterialType.PBR: 1>
-    __members__: typing.ClassVar[dict[str, MaterialType]]  # value = {'Lambertian': <MaterialType.Lambertian: 0>, 'PBR': <MaterialType.PBR: 1>, 'Dielectric': <MaterialType.Dielectric: 2>, 'Emissive': <MaterialType.Emissive: 3>, 'Isotropic': <MaterialType.Isotropic: 4>}
+    Dielectric: typing.ClassVar[MaterialType]  # value = <MaterialType.Dielectric: 3>
+    Emissive: typing.ClassVar[MaterialType]  # value = <MaterialType.Emissive: 4>
+    Isotropic: typing.ClassVar[MaterialType]  # value = <MaterialType.Isotropic: 5>
+    Lambertian: typing.ClassVar[MaterialType]  # value = <MaterialType.Lambertian: 1>
+    PBR: typing.ClassVar[MaterialType]  # value = <MaterialType.PBR: 2>
+    __members__: typing.ClassVar[dict[str, MaterialType]]  # value = {'Lambertian': <MaterialType.Lambertian: 1>, 'PBR': <MaterialType.PBR: 2>, 'Dielectric': <MaterialType.Dielectric: 3>, 'Emissive': <MaterialType.Emissive: 4>, 'Isotropic': <MaterialType.Isotropic: 5>}
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:
@@ -101,5 +105,5 @@ class MaterialType:
     @property
     def value(self) -> int:
         ...
-class PBR:
+class PBR(MaterialCore):
     pass

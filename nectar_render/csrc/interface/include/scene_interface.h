@@ -20,38 +20,29 @@ void selection_mask(
     uint8_t  b
 );
 
-class ObjectInterface {
+class SceneInterface {
 public:
 
     /* CONSTRUCTORS */
 
-    __host__ ObjectInterface() 
-      : rec(HitRecord()), 
-        object("ObjectInterface::object")
-    { }
+    __host__ SceneInterface() : rec(HitRecord()) { }
 
-    __host__ explicit ObjectInterface(Scene* scene, HitRecord rec) 
-      : scene(scene), rec(rec), 
-        object(
-            scene->hittables_registry.get_object(rec.object_index), 
-            "ObjectInterface::object"
-        ),
-        material(&scene->material_registry.get_material(rec.material_index))
-    { }
+    __host__ explicit SceneInterface(Scene* scene, HitRecord rec) 
+      : scene(scene), rec(rec) { }
 
     /* PROPERTY ACCESS */
 
-    __host__ bool is_enabled() const { return object.is_enabled(); }
+    __host__ bool is_enabled() const { return scene != nullptr; }
     __host__ HitRecord& hit_record() { return rec; }
 
     /* TRANSFORM UTILS */
 
     __host__ Transform get_transform() { 
-        return object->xform; 
+        return hit_object()->xform; 
     }
 
     __host__ void set_transform(const Transform& xform) {
-        object->xform = xform;
+        hit_object()->xform = xform;
     }
 
     /* MATERIAL UTILS */
@@ -61,10 +52,8 @@ public:
         return;
     }
 
-    __host__ Material* get_material() {
-        // MaterialInfo info{ object->material->material_type() };
-        // std::cout << info.type_name() << std::endl;
-        return nullptr;
+    __host__ Material& get_material() {
+        return scene->material_registry.get_material(rec.material_index);
     }
 
     /* SELECTION MASKING */
@@ -77,6 +66,7 @@ public:
         const Color&  color = Color::white(),
         int outline_radius = 3
     ) {
+        if (!is_enabled()) return;
         selection_mask(
             data.view(), cam, scene, rec.hit_object, 
             outline_radius, 255u, 120u, 45u
@@ -85,18 +75,23 @@ public:
 
     /* STATE MANAGEMENT */
 
-    __host__ void disable() {
-        rec = HitRecord();
-        object.disable();
-    }
+    __host__ void disable() { rec = HitRecord(); scene = nullptr; }
 
 private:
 
-    Scene* scene = nullptr;
     HitRecord rec;
-    Guarded<Hittable> object;
-    
-    Material* material = nullptr;
+    Scene* scene = nullptr;
 
+    __host__ size_t material_index() { return rec.material_index; }
+    __host__ uint32_t object_index() { return rec.object_index; }
+
+    __host__ Hittable* hit_object() {
+        return scene->hittables_registry.get_object(object_index());
+    }
+
+    __host__ Material& host_material() {
+        return scene->material_registry.get_material(material_index());
+    }
+    
 };
 

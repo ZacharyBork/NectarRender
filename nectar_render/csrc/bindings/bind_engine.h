@@ -77,6 +77,14 @@ void register_engine(py::module_& m) {
 
     auto m_data = m_engine.def_submodule("data", "Engine data submodule.");
 
+    py::class_<TransferStream>(m_data, "TransferStream")
+        .def("buffer_ptr", &TransferStream::buffer_ptr)
+        .def("readback",   &TransferStream::readback)
+        .def("shape",      &TransferStream::shape)
+        .def("n_pixels",   &TransferStream::n_pixels)
+        .def("n_elements", &TransferStream::n_elements)
+        .def("n_bytes",    &TransferStream::n_bytes);
+
     py::class_<DataObject>(m_data, "DataObject")
         .def("n_pixels",        &DataObject::n_pixels)
         .def("n_elements",      &DataObject::n_elements)
@@ -84,11 +92,9 @@ void register_engine(py::module_& m) {
         .def("shape",           &DataObject::shape)
         .def("numpy",           &DataObject::numpy)
         .def("is_enabled",      &DataObject::is_enabled)
-        .def("is_pinned",       &DataObject::is_pinned)
         .def("linear_to_gamma", &DataObject::linear_to_gamma)
         .def("tonemap",         &DataObject::tonemap)
         .def("device_ptr",      &DataObject::device_ptr)
-        .def("readback_pinned", &DataObject::readback_pinned)
         .def_readonly("C",      &DataObject::C)
         .def_readonly("H",      &DataObject::H)
         .def_readonly("W",      &DataObject::W);
@@ -157,7 +163,6 @@ void register_engine(py::module_& m) {
             py::arg("cfg") = false
         )
         .def("get_layer",            &RenderLayers::get_layer)
-        .def("pin_buffer",           &RenderLayers::pin_buffer)
         .def("normalize_by_samples", &RenderLayers::normalize_by_samples)
         .def_readonly("H",           &RenderLayers::H)
         .def_readonly("W",           &RenderLayers::W)
@@ -330,6 +335,7 @@ void register_engine(py::module_& m) {
         .def("camera", &RenderEngine::camera, return_policy::reference)
         .def("layers", &RenderEngine::layers, return_policy::reference)
         .def("scene",  &RenderEngine::scene,  return_policy::reference)
+        .def("stream", &RenderEngine::stream, return_policy::reference)
 
         .def("set_scene",       &RenderEngine::set_scene)
         .def("set_sample_mode", &RenderEngine::set_sample_mode)
@@ -345,7 +351,9 @@ void register_engine(py::module_& m) {
         .def("max_depth",      &RenderEngine::max_depth)
         .def("set_max_depth",  &RenderEngine::set_max_depth)
         
-        .def("screen_space_ray", &RenderEngine::screen_space_ray, 
+        
+        .def("screen_space_ray",    &RenderEngine::screen_space_ray)
+        .def("get_scene_interface", &RenderEngine::get_scene_interface, 
              return_policy::reference);
 
 }

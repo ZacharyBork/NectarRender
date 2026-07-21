@@ -6,7 +6,7 @@ from .core      import Vector2, Vector3, Color, Matrix3, Transform
 from .host      import CUDAMemInfo, CUDAProfiler
 from .material  import Material, Texture
 from .hittable  import Hittable, Volumetric, HitRecord
-from .interface import ObjectInterface
+from .interface import SceneInterface
 from .engine    import *
 
 

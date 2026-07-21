@@ -80,7 +80,7 @@ class RenderEngine:
     ) -> None:
         self.ENGINE.queue_function(func, rebuild_bvh, immediate)
         
-    ### SAMPLING / RENDERING ###
+    ### RENDERING ###
         
     def render(self: Self) -> Self:
         start = time.time()
@@ -99,22 +99,12 @@ class RenderEngine:
     ### DATA UTILITIES ###
 
     def get_data(self: Self) -> ndarray:
-        layers  = self.ENGINE.layers()
-        beauty  = layers.beauty
-        pinned  = beauty.is_pinned()
-        C, H, W = beauty.shape()
-        
-        # beauty.tonemap(1.0)
-        # beauty.linear_to_gamma()
-        
-        if not pinned: arr = beauty.numpy()
-        else:
-            ptr = beauty.readback_pinned()
-            arr = np.ctypeslib.as_array(
-                (ctypes.c_uint8 * beauty.n_elements()).from_address(ptr)
-            )
-            
-        arr = arr.reshape(C, H, W).transpose(1, 2, 0)
+        stream = self.ENGINE.stream()
+        ptr = stream.readback()
+        arr = np.ctypeslib.as_array(
+            (ctypes.c_uint8 * stream.n_elements()).from_address(ptr)
+        )
+        arr = arr.reshape(*stream.shape()).transpose(1, 2, 0)
         return np.ascontiguousarray(arr)
 
     def save_image(self: Self, path: PathLike) -> Self:

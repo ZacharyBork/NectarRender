@@ -3,5 +3,5 @@ root = _pathtracer.interface
 
 from typing import TypeAlias
 
-ObjectInterface: TypeAlias = root.ObjectInterface
+SceneInterface: TypeAlias = root.SceneInterface
 

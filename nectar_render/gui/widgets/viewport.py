@@ -9,7 +9,7 @@ from PySide6        import QtWidgets as W
 from PySide6.QtCore import Qt, Slot, QPointF
 from PySide6.QtGui  import QKeyEvent, QMouseEvent, QImage, QPixmap
 
-from nectar_render import Vector3, ObjectInterface, CameraParams
+from nectar_render import Vector3, SceneInterface, CameraParams
 from nectar_render.gui.widgets.object_info import ObjectInfo
 from nectar_render.gui.bridge import Bridge
 
@@ -103,7 +103,7 @@ class ViewportWidget(W.QLabel):
         self.object_info.close_signal.connect(
             lambda : Bridge.queue_function(self.object_info.destroy)
         )
-        self.object_interface: ObjectInterface | None = None
+        self.scene_interface: SceneInterface | None = None
                 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._held_keys: set[Qt.Key] = set()
@@ -143,10 +143,10 @@ class ViewportWidget(W.QLabel):
         self.object_info.destroy()
         
         size = self.size()
-        self.object_interface = Bridge.instance.ENGINE.screen_space_ray(
+        Bridge.instance.ENGINE.screen_space_ray(
             click_pos.x() / size.width(), click_pos.y() / size.height()
         )
-        self.object_info.build(self.object_interface)
+        self.object_info.build()
       
 #### MOUSE UTILITIES ##########################################################
 

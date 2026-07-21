@@ -2,7 +2,7 @@ from typing import Self
 from PySide6 import QtWidgets as W
 from PySide6.QtCore import Slot
 
-from nectar_render import ObjectInterface, Transform, Vector3, Color
+from nectar_render import SceneInterface, Transform, Vector3, Color
 from nectar_render.gui.bridge import Bridge
 from nectar_render.gui import utils
 
@@ -95,19 +95,15 @@ class VectorWidget(W.QWidget):
         return Color(self.x, self.y, self.z)
         
 class XformController(W.QGroupBox):
-    def __init__(
-        self:      Self, 
-        interface: ObjectInterface
-    ) -> None:
+    def __init__(self: Self) -> None:
         super().__init__()
         self.setTitle('Transform')
-        self.interface = interface
         
         layout = W.QVBoxLayout()
         layout.setContentsMargins(3, 3, 3, 3)
         self.setLayout(layout)
 
-        xform = self.interface.get_transform()    
+        xform = Bridge.scene_interface.get_transform()    
         self.scale       = VectorWidget(values=xform.scale().as_array())
         self.translation = VectorWidget(values=xform.position().as_array())
         self.rotation    = VectorWidget(
@@ -135,6 +131,7 @@ class XformController(W.QGroupBox):
             self.scale.as_vector3()
         )
         Bridge.queue_function(
-            lambda : self.interface.set_transform(xform), rebuild_bvh=True
+            lambda : Bridge.scene_interface.set_transform(xform), 
+            rebuild_bvh=True
         )
 

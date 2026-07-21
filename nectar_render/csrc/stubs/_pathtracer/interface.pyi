@@ -5,8 +5,8 @@ from __future__ import annotations
 import _pathtracer.core
 import _pathtracer.hittable
 import _pathtracer.material
-__all__: list[str] = ['ObjectInterface']
-class ObjectInterface:
+__all__: list[str] = ['SceneInterface']
+class SceneInterface:
     def disable(self) -> None:
         ...
     def get_material(self) -> _pathtracer.material.Material:

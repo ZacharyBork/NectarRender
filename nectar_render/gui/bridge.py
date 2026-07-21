@@ -9,7 +9,7 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from nectar_render.python import RenderEngine, Scene, Camera
+from nectar_render.python import RenderEngine, Camera, Scene, SceneInterface
 
 ###############################################################################
 # SIGNAL INTERFACE
@@ -65,7 +65,7 @@ class RenderBridge(RenderEngine):
 ###############################################################################
 
 class BridgeMeta(type):
-    _instance:       RenderBridge = None
+    _instance: RenderBridge = None
 
     @staticmethod
     def set_instance(bridge_instance: RenderBridge) -> None:
@@ -79,6 +79,10 @@ class BridgeMeta(type):
             f'set. Please call Bridge.set_instance() first to set the global '
             f'RenderBridge instance.'
         )
+        
+    @property
+    def scene_interface(self: Self) -> SceneInterface:
+        return self._instance.ENGINE.get_scene_interface()
 
 class Bridge(metaclass=BridgeMeta):
     
@@ -101,5 +105,5 @@ class Bridge(metaclass=BridgeMeta):
         Bridge.instance.stop_thread()
         Bridge.instance.reset()
         Bridge.instance.start_thread()
-
+        
 

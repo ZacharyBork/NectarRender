@@ -3,17 +3,17 @@
 #include <atomic>
 #include <mutex>
 #include <optional>
-#include <cuda_runtime.h>
 #include <pybind11/functional.h>
 
 #include "core/include/core.h"
 #include "host/include/host/utils.h"
-#include "engine/include/engine/data.h"
-#include "engine/include/engine/scene.h"
-#include "engine/include/engine/camera.h"
-#include "engine/include/engine/trace.h"
 #include "hittable/include/hittable/hittable.h"
-#include "interface/include/object_interface.h"
+#include "interface/include/scene_interface.h"
+
+#include "data.h"
+#include "scene.h"
+#include "camera.h"
+#include "trace.h"
 
 enum class SampleMode{ ACCUMULATE, COMBINE };
 enum class EngineState{ IDLE, RENDERING };
@@ -42,14 +42,16 @@ public:
         sample_aovs(RenderLayers(&aovs))
     { 
         reset();
-        aovs.pin_buffer(LayerType::BEAUTY);
+        transfer_stream.link(aovs.get_layer(LayerType::BEAUTY));
+        transfer_stream.start();
     }
 
     /* PROPERTY ACCESS */
 
-    Scene*        scene()  { return &current_scene; }
-    Camera*       camera() { return &cam; }
-    RenderLayers* layers() { return &aovs; }
+    Scene*          scene()  { return &current_scene; }
+    Camera*         camera() { return &cam; }
+    RenderLayers*   layers() { return &aovs; }
+    TransferStream* stream() { return &transfer_stream; }
 
     /* ENGINE STATE */
 
@@ -84,27 +86,6 @@ public:
 
     void set_scene(Scene input_scene) { current_scene = input_scene; }
     void set_sample_mode(SampleMode mode) { sample_mode = mode; }
-
-    void sample(uint32_t sample_index = 1u) {
-        trace(
-            config, cam.device_camera(), current_scene.graph, 
-            sample_aovs.aovs(), sample_index
-        );
-
-        sample_aovs.replace_invalid_values();
-        if (sample_mode == SampleMode::ACCUMULATE) 
-            aovs.accumulate(sample_aovs, sample_index);
-        else aovs.combine(sample_aovs);
-        sample_aovs.clear();
-
-        if (interface.is_enabled())
-            interface.build_selection_mask(
-                config.H, config.W, cam.device_camera(), 
-                current_scene.graph, aovs.beauty
-            );
-
-        cudaDeviceSynchronize();
-    }
 
     void render() {
         set_state(EngineState::RENDERING);
@@ -174,23 +155,26 @@ public:
         reset();
     }
 
-    ObjectInterface& screen_space_ray(float u, float v) {
-        HitRecord* d_rec;
+    /* SCENE INTERFACE UTILS */
 
+    SceneInterface& get_scene_interface() { return scene_interface; }
+
+    void screen_space_ray(float u, float v) {
+        std::cout << "Before: " << scene_interface.is_enabled() << std::endl;
+
+        if (scene_interface.is_enabled()) scene_interface.disable();
+
+        std::cout << "After: " << scene_interface.is_enabled() << "\n" << std::endl;
+
+        HitRecord* d_rec;
         cudaMalloc(&d_rec, sizeof(HitRecord));
-        hit_test_ray(
-            u, v, current_scene.graph, cam.device_camera(), d_rec
-        );
+        hit_test_ray(u, v, current_scene.graph, cam.device_camera(), d_rec);
 
         HitRecord rec;
         cudaMemcpy(&rec, d_rec, sizeof(HitRecord), cudaMemcpyDeviceToHost);
         cudaFree(d_rec);
 
-        std::cout << rec.material_index << std::endl;
-
-        interface = ObjectInterface(&current_scene, rec);
-
-        return interface;  
+        scene_interface = SceneInterface(&current_scene, rec);
     }
 
 private:
@@ -211,7 +195,8 @@ private:
     uint32_t sample_idx = 1u;
 
     Scene current_scene;
-    ObjectInterface interface;
+    SceneInterface scene_interface;
+    TransferStream transfer_stream;
 
     __host__ void set_state(EngineState s) {
         state.store(s, std::memory_order_relaxed);
@@ -230,6 +215,27 @@ private:
             for (auto& func : to_run) func();
             to_run.clear();
         }
+        cudaDeviceSynchronize();
+    }
+
+    void sample(uint32_t sample_index = 1u) {
+        trace(
+            config, cam.device_camera(), current_scene.graph, 
+            sample_aovs.aovs(), sample_index
+        );
+
+        sample_aovs.replace_invalid_values();
+        if (sample_mode == SampleMode::ACCUMULATE) 
+            aovs.accumulate(sample_aovs, sample_index);
+        else aovs.combine(sample_aovs);
+        sample_aovs.clear();
+
+        if (scene_interface.is_enabled())
+            scene_interface.build_selection_mask(
+                config.H, config.W, cam.device_camera(), 
+                current_scene.graph, aovs.beauty
+            );
+
         cudaDeviceSynchronize();
     }
 

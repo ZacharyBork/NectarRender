@@ -466,6 +466,9 @@ public:
 
     // CONSTRUCTORS ===========================================================
 
+    __host__ ~Material() = default;
+    __host__ Material(const Material&) = default;
+
     __host__ __device__ Material() : type(MaterialType::Null) { }
     __host__ __device__ Material(MaterialType type) : type(type) { }
 
@@ -485,21 +488,7 @@ public:
         other.n_tracked_resources = 0;
     }
 
-    __host__ Material& operator=(Material&& other) noexcept {
-        if (this != &other) {
-            std::memcpy(this, &other, sizeof(Material));
-            other.type = MaterialType::Null;
-            other.n_tracked_resources = 0;
-        }
-        return *this;
-    }
-
-    Material(const Material&)            = default;
-    Material& operator=(const Material&) = default;
-
-    // UTILITIES ==============================================================
-
-    __host__ MaterialType material_type() const { return type; }
+    // OPERATORS ==============================================================
 
     __host__ bool operator==(const Material& other) {
         if (type != other.type) return false;
@@ -512,6 +501,22 @@ public:
         }
         return false;
     }
+
+    __host__ Material& operator=(Material&& other) noexcept {
+        if (this != &other) {
+            std::memcpy(this, &other, sizeof(Material));
+            other.type = MaterialType::Null;
+            other.n_tracked_resources = 0;
+        }
+        return *this;
+    }
+
+    __host__ Material& operator=(const Material&) = default;
+
+    // UTILITIES ==============================================================
+
+    __host__ MaterialType material_type() const { return type; }
+    __host__ uint8_t resource_count() const { return n_tracked_resources; } 
 
     // LAMBERTIAN =============================================================
 
@@ -594,8 +599,7 @@ public:
     // UPDATE =================================================================
 
     __host__ Material* build() const {
-        void* d_mat_ptr = core_ptr();
-        return device_build<Material>(type, d_mat_ptr);
+        return device_build<Material>(type, core_ptr());
     }
 
     __host__ void teardown() {
