@@ -10,7 +10,7 @@
 #include "hittable/include/hittable/hittable.h"
 #include "interface/include/scene_interface.h"
 
-#include "data.h"
+#include "data/include/data.h"
 #include "scene.h"
 #include "camera.h"
 #include "trace.h"

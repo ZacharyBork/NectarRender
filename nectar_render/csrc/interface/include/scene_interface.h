@@ -4,7 +4,7 @@
 #include "hittable/include/hittable/hittable.h"
 #include "material/include/material/material.h"
 
-#include "engine/include/engine/data.h"
+#include "data/include/data.h"
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/scene.h"
 #include "engine/include/engine/light.h"

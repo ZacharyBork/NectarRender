@@ -5,14 +5,12 @@
 
 #include "engine/include/engine/engine.h"
 #include "engine/include/engine/camera.h"
-#include "engine/include/engine/data.h"
 #include "core/include/core/transform.h"
 #include "engine/include/engine/light.h"
 #include "engine/include/engine/denoise.h"
 
 namespace py = pybind11;
 using return_policy = py::return_value_policy;
-
 
 void register_engine(py::module_& m) {
     
@@ -70,110 +68,6 @@ void register_engine(py::module_& m) {
         )
         .def("update",     &Camera::update)
         .def("parameters", &Camera::parameters, return_policy::copy);
-
-// ############################################################################
-// RENDER LAYERS
-// ############################################################################
-
-    auto m_data = m_engine.def_submodule("data", "Engine data submodule.");
-
-    py::class_<TransferStream>(m_data, "TransferStream")
-        .def("buffer_ptr", &TransferStream::buffer_ptr)
-        .def("readback",   &TransferStream::readback)
-        .def("shape",      &TransferStream::shape)
-        .def("n_pixels",   &TransferStream::n_pixels)
-        .def("n_elements", &TransferStream::n_elements)
-        .def("n_bytes",    &TransferStream::n_bytes);
-
-    py::class_<DataObject>(m_data, "DataObject")
-        .def("n_pixels",        &DataObject::n_pixels)
-        .def("n_elements",      &DataObject::n_elements)
-        .def("n_bytes",         &DataObject::n_bytes)
-        .def("shape",           &DataObject::shape)
-        .def("numpy",           &DataObject::numpy)
-        .def("is_enabled",      &DataObject::is_enabled)
-        .def("linear_to_gamma", &DataObject::linear_to_gamma)
-        .def("tonemap",         &DataObject::tonemap)
-        .def("device_ptr",      &DataObject::device_ptr)
-        .def_readonly("C",      &DataObject::C)
-        .def_readonly("H",      &DataObject::H)
-        .def_readonly("W",      &DataObject::W);
-
-    py::enum_<LayerType>(m_engine, "LayerType")
-        .value("BEAUTY",    LayerType::BEAUTY)
-        .value("DIFFUSE",   LayerType::DIFFUSE)
-        .value("SPECULAR",  LayerType::SPECULAR)
-        .value("NORMAL",    LayerType::NORMAL)
-        .value("SHADOW",    LayerType::SHADOW)
-        .value("DEPTH",     LayerType::DEPTH)
-        .value("EMISSION",  LayerType::EMISSION)
-        .value("OBJECT_ID", LayerType::OBJECT_ID);
-
-    py::class_<RenderLayersConfig>(m_data, "RenderLayersConfig")
-        .def(py::init<>()) 
-        .def(py::init([](
-            bool beauty,
-            bool diffuse,
-            bool specular,
-            bool normal,
-            bool shadow,
-            bool depth,
-            bool emission,
-            bool object_id
-        ) {
-            RenderLayersConfig cfg;
-            cfg.beauty    = beauty;
-            cfg.diffuse   = diffuse;
-            cfg.specular  = specular;
-            cfg.normal    = normal;
-            cfg.shadow    = shadow;
-            cfg.depth     = depth;
-            cfg.emission  = emission;
-            cfg.object_id = object_id;
-            return cfg;
-        }),
-            py::arg("beauty")    = true,
-            py::arg("diffuse")   = false,
-            py::arg("specular")  = false,
-            py::arg("normal")    = false,
-            py::arg("shadow")    = false,
-            py::arg("depth")     = false,
-            py::arg("emission")  = false,
-            py::arg("object_id") = false
-        )
-        .def_readwrite("beauty",     &RenderLayersConfig::beauty)
-        .def_readwrite("diffuse",    &RenderLayersConfig::diffuse)
-        .def_readwrite("specular",   &RenderLayersConfig::specular)
-        .def_readwrite("normal",     &RenderLayersConfig::normal)
-        .def_readwrite("shadow",     &RenderLayersConfig::shadow)
-        .def_readwrite("depth",      &RenderLayersConfig::depth)
-        .def_readwrite("emission",   &RenderLayersConfig::emission)
-        .def_readwrite("object_id",  &RenderLayersConfig::object_id);
-
-    py::class_<RenderLayers>(m_data, "RenderLayers")
-        .def(py::init([](
-            size_t h, 
-            size_t w,
-            const RenderLayersConfig& cfg
-        ) {
-            return RenderLayers(h, w, cfg);
-        }),
-            py::arg("h")   = true,
-            py::arg("w")   = false,
-            py::arg("cfg") = false
-        )
-        .def("get_layer",            &RenderLayers::get_layer)
-        .def("normalize_by_samples", &RenderLayers::normalize_by_samples)
-        .def_readonly("H",           &RenderLayers::H)
-        .def_readonly("W",           &RenderLayers::W)
-        .def_readonly("beauty",      &RenderLayers::beauty)
-        .def_readonly("diffuse",     &RenderLayers::diffuse)
-        .def_readonly("specular",    &RenderLayers::specular)
-        .def_readonly("normal",      &RenderLayers::normal)
-        .def_readonly("shadow",      &RenderLayers::shadow)
-        .def_readonly("depth",       &RenderLayers::depth)
-        .def_readonly("emission",    &RenderLayers::emission)
-        .def_readonly("object_id",   &RenderLayers::object_id);
 
 // ############################################################################
 // LIGHTS

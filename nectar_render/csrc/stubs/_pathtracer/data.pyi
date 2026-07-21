@@ -1,0 +1,154 @@
+"""
+Data module.
+"""
+from __future__ import annotations
+import typing
+__all__: list[str] = ['DataObject', 'LayerType', 'RenderLayers', 'RenderLayersConfig', 'TransferStream']
+class DataObject:
+    def device_ptr(self) -> int:
+        ...
+    def is_enabled(self) -> bool:
+        ...
+    def linear_to_gamma(self) -> None:
+        ...
+    def n_bytes(self) -> int:
+        ...
+    def n_elements(self) -> int:
+        ...
+    def n_pixels(self) -> int:
+        ...
+    def numpy(self) -> numpy.ndarray:
+        ...
+    def shape(self) -> list[int]:
+        ...
+    def tonemap(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def C(self) -> int:
+        ...
+    @property
+    def H(self) -> int:
+        ...
+    @property
+    def W(self) -> int:
+        ...
+class LayerType:
+    """
+    Members:
+    
+      BEAUTY
+    
+      DIFFUSE
+    
+      SPECULAR
+    
+      NORMAL
+    
+      SHADOW
+    
+      DEPTH
+    
+      EMISSION
+    
+      OBJECT_ID
+    """
+    BEAUTY: typing.ClassVar[LayerType]  # value = <LayerType.BEAUTY: 0>
+    DEPTH: typing.ClassVar[LayerType]  # value = <LayerType.DEPTH: 5>
+    DIFFUSE: typing.ClassVar[LayerType]  # value = <LayerType.DIFFUSE: 1>
+    EMISSION: typing.ClassVar[LayerType]  # value = <LayerType.EMISSION: 6>
+    NORMAL: typing.ClassVar[LayerType]  # value = <LayerType.NORMAL: 3>
+    OBJECT_ID: typing.ClassVar[LayerType]  # value = <LayerType.OBJECT_ID: 7>
+    SHADOW: typing.ClassVar[LayerType]  # value = <LayerType.SHADOW: 4>
+    SPECULAR: typing.ClassVar[LayerType]  # value = <LayerType.SPECULAR: 2>
+    __members__: typing.ClassVar[dict[str, LayerType]]  # value = {'BEAUTY': <LayerType.BEAUTY: 0>, 'DIFFUSE': <LayerType.DIFFUSE: 1>, 'SPECULAR': <LayerType.SPECULAR: 2>, 'NORMAL': <LayerType.NORMAL: 3>, 'SHADOW': <LayerType.SHADOW: 4>, 'DEPTH': <LayerType.DEPTH: 5>, 'EMISSION': <LayerType.EMISSION: 6>, 'OBJECT_ID': <LayerType.OBJECT_ID: 7>}
+    def __eq__(self, other: typing.Any) -> bool:
+        ...
+    def __getstate__(self) -> int:
+        ...
+    def __hash__(self) -> int:
+        ...
+    def __index__(self) -> int:
+        ...
+    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __int__(self) -> int:
+        ...
+    def __ne__(self, other: typing.Any) -> bool:
+        ...
+    def __repr__(self) -> str:
+        ...
+    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __str__(self) -> str:
+        ...
+    @property
+    def name(self) -> str:
+        ...
+    @property
+    def value(self) -> int:
+        ...
+class RenderLayers:
+    def __init__(self, h: typing.SupportsInt | typing.SupportsIndex = True, w: typing.SupportsInt | typing.SupportsIndex = False, cfg: RenderLayersConfig = False) -> None:
+        ...
+    def get_layer(self, arg0: LayerType) -> DataObject:
+        ...
+    def normalize_by_samples(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def H(self) -> int:
+        ...
+    @property
+    def W(self) -> int:
+        ...
+    @property
+    def beauty(self) -> DataObject:
+        ...
+    @property
+    def depth(self) -> DataObject:
+        ...
+    @property
+    def diffuse(self) -> DataObject:
+        ...
+    @property
+    def emission(self) -> DataObject:
+        ...
+    @property
+    def normal(self) -> DataObject:
+        ...
+    @property
+    def object_id(self) -> DataObject:
+        ...
+    @property
+    def shadow(self) -> DataObject:
+        ...
+    @property
+    def specular(self) -> DataObject:
+        ...
+class RenderLayersConfig:
+    beauty: bool
+    depth: bool
+    diffuse: bool
+    emission: bool
+    normal: bool
+    object_id: bool
+    shadow: bool
+    specular: bool
+    @typing.overload
+    def __init__(self) -> None:
+        ...
+    @typing.overload
+    def __init__(self, beauty: bool = True, diffuse: bool = False, specular: bool = False, normal: bool = False, shadow: bool = False, depth: bool = False, emission: bool = False, object_id: bool = False) -> None:
+        ...
+class TransferStream:
+    def buffer_ptr(self) -> int:
+        ...
+    def n_bytes(self) -> int:
+        ...
+    def n_elements(self) -> int:
+        ...
+    def n_pixels(self) -> int:
+        ...
+    def readback(self) -> int:
+        ...
+    def shape(self) -> typing.Annotated[list[int], "FixedSize(3)"]:
+        ...

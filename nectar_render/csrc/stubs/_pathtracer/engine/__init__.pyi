@@ -2,14 +2,14 @@
 Engine module.
 """
 from __future__ import annotations
+import _pathtracer.data
 import _pathtracer.interface
 import collections.abc
 import typing
 from . import camera
-from . import data
 from . import denoise
 from . import lights
-__all__: list[str] = ['EngineState', 'LayerType', 'RenderEngine', 'SampleMode', 'Scene', 'camera', 'data', 'denoise', 'lights']
+__all__: list[str] = ['EngineState', 'RenderEngine', 'SampleMode', 'Scene', 'camera', 'denoise', 'lights']
 class EngineState:
     """
     Members:
@@ -51,61 +51,6 @@ class EngineState:
     @property
     def value(self) -> int:
         ...
-class LayerType:
-    """
-    Members:
-    
-      BEAUTY
-    
-      DIFFUSE
-    
-      SPECULAR
-    
-      NORMAL
-    
-      SHADOW
-    
-      DEPTH
-    
-      EMISSION
-    
-      OBJECT_ID
-    """
-    BEAUTY: typing.ClassVar[LayerType]  # value = <LayerType.BEAUTY: 0>
-    DEPTH: typing.ClassVar[LayerType]  # value = <LayerType.DEPTH: 5>
-    DIFFUSE: typing.ClassVar[LayerType]  # value = <LayerType.DIFFUSE: 1>
-    EMISSION: typing.ClassVar[LayerType]  # value = <LayerType.EMISSION: 6>
-    NORMAL: typing.ClassVar[LayerType]  # value = <LayerType.NORMAL: 3>
-    OBJECT_ID: typing.ClassVar[LayerType]  # value = <LayerType.OBJECT_ID: 7>
-    SHADOW: typing.ClassVar[LayerType]  # value = <LayerType.SHADOW: 4>
-    SPECULAR: typing.ClassVar[LayerType]  # value = <LayerType.SPECULAR: 2>
-    __members__: typing.ClassVar[dict[str, LayerType]]  # value = {'BEAUTY': <LayerType.BEAUTY: 0>, 'DIFFUSE': <LayerType.DIFFUSE: 1>, 'SPECULAR': <LayerType.SPECULAR: 2>, 'NORMAL': <LayerType.NORMAL: 3>, 'SHADOW': <LayerType.SHADOW: 4>, 'DEPTH': <LayerType.DEPTH: 5>, 'EMISSION': <LayerType.EMISSION: 6>, 'OBJECT_ID': <LayerType.OBJECT_ID: 7>}
-    def __eq__(self, other: typing.Any) -> bool:
-        ...
-    def __getstate__(self) -> int:
-        ...
-    def __hash__(self) -> int:
-        ...
-    def __index__(self) -> int:
-        ...
-    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    def __int__(self) -> int:
-        ...
-    def __ne__(self, other: typing.Any) -> bool:
-        ...
-    def __repr__(self) -> str:
-        ...
-    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    def __str__(self) -> str:
-        ...
-    @property
-    def name(self) -> str:
-        ...
-    @property
-    def value(self) -> int:
-        ...
 class RenderEngine:
     on_frame_finished: collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex], None]
     on_render_finished: collections.abc.Callable[[], None]
@@ -124,7 +69,7 @@ class RenderEngine:
         ...
     def is_rendering(self) -> bool:
         ...
-    def layers(self) -> data.RenderLayers:
+    def layers(self) -> _pathtracer.data.RenderLayers:
         ...
     def max_depth(self) -> int:
         ...
@@ -150,7 +95,7 @@ class RenderEngine:
         ...
     def set_scene(self, arg0: Scene) -> None:
         ...
-    def stream(self) -> data.TransferStream:
+    def stream(self) -> _pathtracer.data.TransferStream:
         ...
 class SampleMode:
     """

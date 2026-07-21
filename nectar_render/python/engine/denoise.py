@@ -2,8 +2,7 @@ import _pathtracer
 root = _pathtracer.engine.denoise
 
 from typing import Self, TypeAlias
-
-from nectar_render.python.engine.data import DataObject
+from nectar_render.python.data import DataObject
 
 Denoiser: TypeAlias = root.Denoiser
 
