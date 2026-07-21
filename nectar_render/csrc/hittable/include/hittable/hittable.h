@@ -27,10 +27,9 @@ public:
     Transform xform, delta;
     AABB      bbox;
 
-    Material  material;
-    // Material* d_material_ptr = nullptr;
-    size_t    material_index = (size_t)0;
-    MatRegistryView* material_registry;
+    Material material;
+    size_t   material_index = (size_t)0;
+    size_t   object_index   = (size_t)0;
 
     /* CONSTRUCTORS */
 

@@ -66,7 +66,5 @@ template PBR* device_build<PBR>(
     Texture*, Texture*, Texture*, Texture*, Texture*
 );
 
-template Material* device_build<Material>(
-    MaterialType, MaterialCore*
-);
+template Material* device_build<Material>(MaterialType, void*);
 

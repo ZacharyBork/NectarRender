@@ -186,6 +186,8 @@ public:
         cudaMemcpy(&rec, d_rec, sizeof(HitRecord), cudaMemcpyDeviceToHost);
         cudaFree(d_rec);
 
+        std::cout << rec.material_index << std::endl;
+
         interface = ObjectInterface(&current_scene, rec);
 
         return interface;  

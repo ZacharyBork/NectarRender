@@ -9,16 +9,18 @@ class Material;
 class HitRecord {
 public:
 
-    Hittable* hit_object  = nullptr;
-    uint32_t  object_index = 0u;
+    Hittable* hit_object   = nullptr; // Reference to hit object
+    uint32_t  object_index = 0u;      // Object index in BVH
+    
+    Material* mat = nullptr;       // Reference to hit objects material
+    size_t    material_index = 0u; // Hit index in MaterialRegistry
 
-    Vector3 p;               // Position
-    Vector3 n;               // Surface normal vector
-    Vector3 tangent;         // Surface tangent vector
-    Vector2 uv;              // UVs
-    float   t;               // Distance
-    bool    front_face;      // Front / Back face
-    Material* mat = nullptr; // Material reference
+    Vector3 p;          // Position
+    Vector3 n;          // Surface normal vector
+    Vector3 tangent;    // Surface tangent vector
+    Vector2 uv;         // UVs
+    float   t;          // Distance
+    bool    front_face; // Front / Back face
 
     __device__ void to_world_space(
         const Transform& xform,

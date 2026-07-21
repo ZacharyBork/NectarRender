@@ -5,19 +5,22 @@
 #include <unordered_map>
 #include <cuda_runtime.h>
 
+#include "hittable/include/bvh/node.h"
 #include "hittable/include/hittable/hittable.h"
+#include "hittable/include/hittable/registry.h"
+
 #include "material/include/material/registry.h"
 #include "engine/include/engine/light.h"
-#include "hittable/include/bvh/node.h"
 
 struct SceneGraph {
     BVHNode*   bvh_nodes;
     Hittable** objects;
     Light**    lights;
+    Material** materials;
     
     SkyLight skylight;
 
-    Material** materials;
+    
 
     size_t n_objects, n_nodes, n_lights;
 
@@ -44,10 +47,12 @@ struct SceneGraph {
 
                 if (current->hit_test(ray, tmp_rec)) {
                     if (ray_t.surrounds(tmp_rec.t)) {
-                        rec = tmp_rec;
-                        rec.mat = materials[current->material_index];
-                        rec.object_index = node.object;
                         hit_anything = true;
+
+                        rec = tmp_rec;
+                        rec.object_index = node.object;
+                        rec.material_index = current->material_index;
+                        rec.mat = materials[current->material_index];
                         ray_t.max = tmp_rec.t;
                     }
                 }
@@ -76,7 +81,8 @@ public:
     std::vector<Light*>    lights;
     SkyLight skylight;
 
-    MaterialRegisty material_registry;
+    HittablesRegistry hittables_registry;
+    MaterialRegisty   material_registry;
 
     __host__ Scene() 
       : hittables(std::vector<Hittable*>{}),
@@ -97,21 +103,13 @@ public:
     }
 
     __host__ void teardown() {
-        /* TODO: 
-
-        This function only frees the pointer arrays currently, not the 
-        individual device pointers. This means the every time Scene::teardown()
-        is invoked, all the old pointers leak in device memory.
-
-        The BVH, Hittables, Materials, etc. should maybe handle teardown with 
-        their own deconstructors?
-        
-        */
-
         if (!graph) return;
         cudaFree(graph); 
+
+        hittables_registry.destroy_device_hittables();
+        material_registry.destroy_device_materials();
+
         cudaFree(h_graph.bvh_nodes);
-        cudaFree(h_graph.objects);
         cudaFree(h_graph.lights);
 
         graph   = nullptr;
@@ -121,15 +119,18 @@ public:
     __host__ void build() {
         teardown();
 
+        build_bvh();
+
         material_registry.register_materials(hittables);
         h_graph.materials = material_registry.device_materials();
+
+        hittables_registry.register_hittables(hittables);
+        h_graph.objects = hittables_registry.device_hittables();
 
         h_graph.skylight  = skylight;
         h_graph.n_objects = hittables.size();
         h_graph.n_lights  = lights.size();
 
-        build_bvh();
-        build_device_hittables();
         build_device_lights();
 
         size_t n_bytes = sizeof(h_graph);
@@ -164,30 +165,12 @@ private:
         );
     }
 
-    __host__ void build_device_hittables() {
-        std::vector<Hittable*> d_obj_ptrs(h_graph.n_objects);
-        for (size_t i = 0; i < hittables.size(); i++) {
-            Hittable* d_ptr = hittables[i]->build();
-            d_obj_ptrs[i] = d_ptr;
-            host_to_device[hittables[i]] = d_ptr;
-        }
-
-        cudaMalloc(&h_graph.objects, h_graph.n_objects * sizeof(Hittable*));
-        cudaMemcpy(
-            h_graph.objects, d_obj_ptrs.data(),
-            h_graph.n_objects * sizeof(Hittable*), cudaMemcpyHostToDevice
-        );
-    }
-
     __host__ void build_device_lights() {
         std::vector<Hittable*> d_light_ptrs(h_graph.n_lights);
         for (size_t i = 0; i < lights.size(); i++) {
-            auto it = host_to_device.find(static_cast<Hittable*>(lights[i]));
-            if (it == host_to_device.end())
-                throw std::runtime_error(
-                    "Light not found among traversable hittables"
-                );
-            d_light_ptrs[i] = it->second;
+            d_light_ptrs[i] = hittables_registry.host_to_device(
+                static_cast<Hittable*>(lights[i])
+            );
         }
 
         cudaMalloc(&h_graph.lights, h_graph.n_lights * sizeof(Hittable*));

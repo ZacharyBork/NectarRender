@@ -1,11 +1,16 @@
 #pragma once
 
+#include <cstring>
 #include <assert.h>
 #include <cuda_runtime.h>
 
 #include "core/include/core.h"
-#include "material/include/material/texture.h"
+
+#include "engine/include/engine/ray.h"
 #include "engine/include/engine/pdf.h"
+#include "hittable/include/hittable/hit_record.h"
+
+#include "material/include/material/texture.h"
 
 // ############################################################################
 // UTILITIES
@@ -68,6 +73,11 @@ public:
         if (cos_theta <= 0.0f) return Color::black();
         return texture->sample(rec.uv, rec.p) * (cos_theta / PI);
     }
+
+    __device__ Color emitted(
+        const Ray&       ray,
+        const HitRecord& rec
+    ) const { return Color::black(); }
 
 private:
 
@@ -265,6 +275,17 @@ public:
         return true;
     }
 
+    __device__ Color evaluate(
+        const HitRecord& rec, 
+        const Vector3& view_dir, 
+        const Vector3& light_dir
+    ) const { return Color::black(); }
+
+    __device__ Color emitted(
+        const Ray&       ray,
+        const HitRecord& rec
+    ) const { return Color::black(); }
+
 private:
 
     float ior;
@@ -309,6 +330,19 @@ public:
         return texture    == other.texture
             && brightness == other.brightness;
     }
+
+    __device__ bool scatter(
+        HitRecord& rec, 
+        Ray& ray, 
+        ScatterRecord& srec, 
+        Generator& gen
+    ) const { return false; }
+
+    __device__ Color evaluate(
+        const HitRecord& rec, 
+        const Vector3& view_dir, 
+        const Vector3& light_dir
+    ) const { return Color::black(); }
 
     __device__ Color emitted(
         const Ray&       ray,
@@ -371,6 +405,11 @@ public:
         return texture->sample(rec.uv, rec.p) * (1.0f / PI4);
     }
 
+    __device__ Color emitted(
+        const Ray&       ray,
+        const HitRecord& rec
+    ) const { return Color::black(); }
+
 private:
 
     Texture* texture;
@@ -384,8 +423,14 @@ enum class MaterialType : uint8_t {
     Null, Lambertian, PBR, Dielectric, Emissive, Isotropic
 };
 
-class Material {
+#define FOR_EACH_MATERIAL_TYPE(X) \
+    X(Lambertian, mat_lambertian) \
+    X(PBR,        mat_pbr)        \
+    X(Dielectric, mat_dielectric) \
+    X(Emissive,   mat_emissive)   \
+    X(Isotropic,  mat_isotropic)
 
+class Material {
 private:
 
     MaterialType type;
@@ -397,6 +442,26 @@ private:
         Isotropic*  mat_isotropic;
     };
 
+    static constexpr uint8_t MAX_TRACKED_RESOURCES = 6u;
+    void* tracked_resources[MAX_TRACKED_RESOURCES] = { nullptr };
+    uint8_t n_tracked_resources = 0u;
+
+    __host__ void track(void* ptr) {
+        assert(n_tracked_resources < MAX_TRACKED_RESOURCES);
+        tracked_resources[n_tracked_resources++] = ptr;
+    }
+
+    __host__ void* core_ptr() const {
+        switch (type) {
+            case MaterialType::Lambertian: return mat_lambertian;
+            case MaterialType::Dielectric: return mat_dielectric;
+            case MaterialType::Emissive:   return mat_emissive;
+            case MaterialType::Isotropic:  return mat_isotropic;
+            case MaterialType::PBR:        return mat_pbr;
+            default: return nullptr;
+        }
+    }
+
 public:
 
     // CONSTRUCTORS ===========================================================
@@ -404,24 +469,33 @@ public:
     __host__ __device__ Material() : type(MaterialType::Null) { }
     __host__ __device__ Material(MaterialType type) : type(type) { }
 
-    __device__ Material(
-        MaterialType type,
-        MaterialCore* mat
-    ) : type(type) { 
+    __device__ Material(MaterialType type, void* mat) : type(type) { 
         switch (type) {
             case MaterialType::Null: return;
-            case MaterialType::Lambertian: 
-                mat_lambertian = reinterpret_cast<Lambertian*>(mat); break;
-            case MaterialType::Dielectric: 
-                mat_dielectric = reinterpret_cast<Dielectric*>(mat); break;
-            case MaterialType::Emissive:   
-                mat_emissive = reinterpret_cast<Emissive*>(mat); break;
-            case MaterialType::Isotropic:  
-                mat_isotropic = reinterpret_cast<Isotropic*>(mat); break;
-            case MaterialType::PBR:        
-                mat_pbr = reinterpret_cast<PBR*>(mat); break;
+            #define X(Name, Member) case MaterialType::Name: \
+                Member = reinterpret_cast<Name*>(mat); break;
+            FOR_EACH_MATERIAL_TYPE(X)
+            #undef X
         }
     }
+
+    __host__ Material(Material&& other) noexcept {
+        std::memcpy(this, &other, sizeof(Material));
+        other.type = MaterialType::Null;
+        other.n_tracked_resources = 0;
+    }
+
+    __host__ Material& operator=(Material&& other) noexcept {
+        if (this != &other) {
+            std::memcpy(this, &other, sizeof(Material));
+            other.type = MaterialType::Null;
+            other.n_tracked_resources = 0;
+        }
+        return *this;
+    }
+
+    Material(const Material&)            = default;
+    Material& operator=(const Material&) = default;
 
     // UTILITIES ==============================================================
 
@@ -431,16 +505,10 @@ public:
         if (type != other.type) return false;
         switch (type) {
             case MaterialType::Null: return true;
-            case MaterialType::Lambertian: 
-                return mat_lambertian == other.mat_lambertian;
-            case MaterialType::Dielectric: 
-                return mat_dielectric == other.mat_dielectric;
-            case MaterialType::Emissive:   
-                return mat_emissive == other.mat_emissive;
-            case MaterialType::Isotropic:  
-                return mat_isotropic == other.mat_isotropic;
-            case MaterialType::PBR:        
-                return mat_pbr == other.mat_pbr;
+            #define X(Name, Member) case MaterialType::Name: \
+                return Member == other.Member;
+            FOR_EACH_MATERIAL_TYPE(X)
+            #undef X
         }
         return false;
     }
@@ -450,7 +518,8 @@ public:
     template<typename T>
     __host__ static Material lambertian(const T& texture) {
         Material m(MaterialType::Lambertian); 
-        m.mat_lambertian = device_build<Lambertian>(texture.build());
+        Texture* t = texture.build(); m.track(t);
+        m.mat_lambertian = device_build<Lambertian>(t);
         return m;
     }
 
@@ -468,10 +537,14 @@ public:
         const T& emission,
         const T& normal
     ) {
-        Material m(MaterialType::PBR); 
+        Material m(MaterialType::PBR);
+        Texture* albedo_    = albedo.build();    m.track(albedo_);
+        Texture* roughness_ = roughness.build(); m.track(roughness_);
+        Texture* metallic_  = metallic.build();  m.track(metallic_);
+        Texture* emission_  = emission.build();  m.track(emission_);
+        Texture* normal_    = normal.build();    m.track(normal_);
         m.mat_pbr = device_build<PBR>(
-            albedo.build(), roughness.build(), metallic.build(), 
-            emission.build(), normal.build()
+            albedo_, roughness_, metallic_, emission_, normal_
         );
         return m;
     }
@@ -492,7 +565,8 @@ public:
         const float brightness = 35.0f
     ) {
         Material m(MaterialType::Emissive); 
-        m.mat_emissive = device_build<Emissive>(texture.build(), brightness);
+        Texture* t = texture.build(); m.track(t);
+        m.mat_emissive = device_build<Emissive>(t, brightness);
         return m;
     }
 
@@ -508,7 +582,8 @@ public:
     template<typename T>
     __host__ static Material isotropic(const T& texture) {
         Material m(MaterialType::Isotropic);
-        m.mat_isotropic = device_build<Isotropic>(texture.build());
+        Texture* t = texture.build(); m.track(t);
+        m.mat_isotropic = device_build<Isotropic>(t);
         return m;
     }
 
@@ -519,36 +594,25 @@ public:
     // UPDATE =================================================================
 
     __host__ Material* build() const {
-        MaterialCore* d_mat_ptr = nullptr;
-        switch (type) {
-            case MaterialType::Lambertian: d_mat_ptr = mat_lambertian; break;
-            case MaterialType::Dielectric: d_mat_ptr = mat_dielectric; break;
-            case MaterialType::Emissive:   d_mat_ptr = mat_emissive;   break;
-            case MaterialType::Isotropic:  d_mat_ptr = mat_isotropic;  break;
-            case MaterialType::PBR:        d_mat_ptr = mat_pbr;        break;
-        }
+        void* d_mat_ptr = core_ptr();
         return device_build<Material>(type, d_mat_ptr);
     }
 
+    __host__ void teardown() {
+        for (int i = 0; i < n_tracked_resources; i++)
+            if (tracked_resources[i]) cudaFree(tracked_resources[i]);
+        n_tracked_resources = 0;
+
+        void* core = core_ptr();
+        if (core) cudaFree(core);
+    }
+    
     __device__ void update(MaterialCore* mat) {
         switch (type) {
-            case MaterialType::Null: return;
-            case MaterialType::Lambertian: mat_lambertian->update(mat); break;
-            case MaterialType::Dielectric: mat_dielectric->update(mat); break;
-            case MaterialType::Emissive:   mat_emissive->update(mat);   break;
-            case MaterialType::Isotropic:  mat_isotropic->update(mat);  break;
-            case MaterialType::PBR:        mat_pbr->update(mat);        break;
-        }
-    }
-
-    __device__ void teardown() {
-        switch (type) {
-            case MaterialType::Null: return;
-            case MaterialType::Lambertian: mat_lambertian->teardown(); break;
-            case MaterialType::Dielectric: mat_dielectric->teardown(); break;
-            case MaterialType::Emissive:   mat_emissive->teardown();   break;
-            case MaterialType::Isotropic:  mat_isotropic->teardown();  break;
-            case MaterialType::PBR:        mat_pbr->teardown();        break;
+            #define X(Name, Member) case MaterialType::Name: \
+                return Member->update(mat); break;
+            FOR_EACH_MATERIAL_TYPE(X)
+            #undef X
         }
     }
 
@@ -561,16 +625,11 @@ public:
         Generator& gen
     ) const {
         switch (type) {
-            case MaterialType::Lambertian: 
-                return mat_lambertian->scatter(rec, ray, srec, gen);
-            case MaterialType::Dielectric: 
-                return mat_dielectric->scatter(rec, ray, srec, gen);
-            case MaterialType::Isotropic:  
-                return mat_isotropic->scatter(rec, ray, srec, gen);
-            case MaterialType::PBR:        
-                return mat_pbr->scatter(rec, ray, srec, gen);
-            default:
-                return false;
+            default: return false;
+            #define X(Name, Member) case MaterialType::Name: \
+                return Member->scatter(rec, ray, srec, gen);
+            FOR_EACH_MATERIAL_TYPE(X)
+            #undef X
         }
     }
 
@@ -582,14 +641,11 @@ public:
         const Vector3& light_dir
     ) const {
         switch (type) {
-            case MaterialType::Lambertian: 
-                return mat_lambertian->evaluate(rec, view_dir, light_dir);
-            case MaterialType::Isotropic:  
-                return mat_isotropic->evaluate(rec, view_dir, light_dir);
-            case MaterialType::PBR:        
-                return mat_pbr->evaluate(rec, view_dir, light_dir);
-            default:
-                return Color::black();
+            default: return Color::black();
+            #define X(Name, Member) case MaterialType::Name: \
+                return Member->evaluate(rec, view_dir, light_dir);
+            FOR_EACH_MATERIAL_TYPE(X)
+            #undef X
         }
     }
 
@@ -600,21 +656,15 @@ public:
         const HitRecord& rec
     ) const {
         switch (type) {
-            case MaterialType::Emissive: 
-                return mat_emissive->emitted(ray, rec);
-            case MaterialType::PBR: 
-                return mat_pbr->emitted(ray, rec);
-            default: 
-                return Color::black();
+            default: return Color::black();
+            #define X(Name, Member) case MaterialType::Name: \
+                return Member->emitted(ray, rec);
+            FOR_EACH_MATERIAL_TYPE(X)
+            #undef X
         }
     }
     
 };
-
-// void teardown_material(Material* d_mat_ptr);
-
-
-
 
 
 

@@ -29,6 +29,20 @@ public:
     
     __host__ size_t material_count() { return h_materials.size(); }
 
+    __host__ Material& get_material(size_t index) {
+        return h_materials[index];
+    }
+
+    __host__ Material* get_device_ptr(size_t index) {
+        return d_materials[index];
+    }
+
+    __host__ void destroy_device_materials() {
+        for (Material& m : h_materials) { m.teardown(); }
+        if (d_material_ptrs) cudaFree(d_material_ptrs);
+        d_materials.clear();
+    }
+
 private:
 
     std::vector<Material>  h_materials{};
@@ -37,38 +51,32 @@ private:
     Material** d_material_ptrs;
 
     __host__ void register_material(Hittable* obj) {
-        if (h_materials.size() > MAX_MATERIAL_COUNT - 1u)
+        if (h_materials.size() >= MAX_MATERIAL_COUNT)
             throw std::runtime_error(
                 "Maximum material count reached. Unable to register "
                 "additional materials."
             );
         
-        Material obj_mat = obj->material;
-        if (obj_mat.material_type() == MaterialType::Null) {
+        if (obj->material.material_type() == MaterialType::Null) {
             obj->material_index = (size_t)0; 
             return;
         }
         
-        auto it = std::find(h_materials.begin(), h_materials.end(), obj_mat);
+        auto it = std::find(
+            h_materials.begin(), h_materials.end(), obj->material
+        );
 
         if (it != h_materials.end()) {
-            size_t index = std::distance(h_materials.begin(), it);
-            obj->material_index = index;
+            obj->material_index = std::distance(h_materials.begin(), it);
+            obj->material = Material();
         } else {
-            size_t index = h_materials.size();
-            h_materials.push_back(obj_mat);
-            d_materials.push_back(obj_mat.build());
-            obj->material_index = index;
+            obj->material_index = h_materials.size();
+            h_materials.push_back(std::move(obj->material));
+            d_materials.push_back(h_materials.back().build());
         }
     }
 
     __host__ void build_device_materials() {
-        Material* d_ptrs[MAX_MATERIAL_COUNT];
-
-        for (uint32_t i = 0; i < d_materials.size(); i++) {
-            d_ptrs[i] = d_materials[i];
-        }
-
         size_t n_bytes = material_count() * sizeof(Material*);
         cudaMalloc(&d_material_ptrs, n_bytes);
         cudaMemcpy(
@@ -76,6 +84,8 @@ private:
             n_bytes, cudaMemcpyHostToDevice
         );
     }
+
+    
 
 };
 
