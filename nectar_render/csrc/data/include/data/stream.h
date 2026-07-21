@@ -2,8 +2,19 @@
 
 #include "data/include/data/data_object.h"
 
+void composite_overlay(
+    uint8_t* data,
+    uint8_t* mask,
+    Color    color,
+    size_t   C,
+    size_t   H,
+    size_t   W
+);
+
 class TransferStream {
 public:
+
+    size_t C, H, W;
 
     /* CONSTRUCTORS */
 
@@ -40,6 +51,17 @@ public:
         enabled = false;
     }
 
+    /* OVERLAYS */
+
+    __host__ void remove_overlay() { overlay_mask = nullptr; }
+    __host__ void overlay(uint8_t* mask_ptr, Color color = Color::white()) { 
+        if (overlay_mask) {
+            cudaFree(overlay_mask); overlay_mask = nullptr;
+        }
+        overlay_mask = mask_ptr; 
+        overlay_color = color;
+    }
+    
     /* DATA ACCESS */
 
     __host__ uintptr_t buffer_ptr() {
@@ -48,6 +70,11 @@ public:
 
     __host__ uintptr_t readback() {
         to_image(data->view(), image_buffer);
+        if (overlay_mask) {
+            composite_overlay(
+                image_buffer, overlay_mask, overlay_color, C, H, W
+            );
+        }
 
         cudaMemcpyAsync(
             stream_buffer, image_buffer, n_bytes(),
@@ -67,13 +94,15 @@ public:
 
 private:
 
-    size_t C, H, W;
     bool enabled = false;
     DataObject* data = nullptr;
 
     uint8_t* stream_buffer = nullptr;
     uint8_t* image_buffer  = nullptr;
     cudaStream_t transfer_stream;
+
+    Color overlay_color;
+    uint8_t* overlay_mask = nullptr;
 
     __host__ bool destroy_buffer(uint8_t* buffer) {
         if (!buffer) return false;

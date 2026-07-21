@@ -1,81 +1,85 @@
 #include "interface/include/scene_interface.h"
 
-__global__ void generate_mask_kernel(
-    DataView      data,
+__global__ void mask_selected_kernel(
+    uint8_t*      base_mask,
+    size_t        H, 
+    size_t        W,
     DeviceCamera* cam,
     SceneGraph*   scene,
-    Hittable*     selected_object,
-    float*        mask_out
+    Hittable*     selected_object
 ) {
 
     ProcessIndex p_idx = get_process_index();
-    if (p_idx.x >= data.W || p_idx.y >= data.H) return;
-    uint32_t pixel_idx = p_idx.y * data.W + p_idx.x;
+    if (p_idx.x >= W || p_idx.y >= H) return;
+    uint32_t pixel_idx = p_idx.y * W + p_idx.x;
 
-    if (!selected_object) { mask_out[pixel_idx] = 0.0f; return; }
+    if (!selected_object) { base_mask[pixel_idx] = 0u; return; }
 
-    float su = (p_idx.x + 0.5f) / (float)data.W;
-    float sv = (p_idx.y + 0.5f) / (float)data.H;
+    float su = (p_idx.x + 0.5f) / (float)W;
+    float sv = (p_idx.y + 0.5f) / (float)H;
     Ray ray = cam->screen_space_ray(su, sv);
 
     HitRecord rec;
     bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
-    mask_out[pixel_idx] = (
+    base_mask[pixel_idx] = (
         hit && rec.hit_object == selected_object
-    ) ? 1.0f : 0.0f;
+    ) ? 255u : 0u;
 }
 
-__global__ void composite_mask_kernel(
-    DataView data,
-    float*   mask,
-    int      outline_radius,
-    uint8_t  r, 
-    uint8_t  g,
-    uint8_t  b
+__global__ void build_outline_kernel(
+    uint8_t* base_mask,
+    uint8_t* out_mask,
+    size_t H, 
+    size_t W,
+    int    outline_radius
 ) {
     ProcessIndex p_idx = get_process_index();
-    if (p_idx.x >= data.W || p_idx.y >= data.H) return;
-    uint32_t idx = p_idx.y * data.W + p_idx.x;
+    if (p_idx.x >= W || p_idx.y >= H) return;
+    uint32_t idx = p_idx.y * W + p_idx.x;
+    out_mask[idx] = 0u;
 
-    if (mask[idx] != 0) return;
+    if (base_mask[idx] != 0) return;
 
     for (int dy = -outline_radius; dy <= outline_radius; dy++) {
         for (int dx = -outline_radius; dx <= outline_radius; dx++) {
-            int nx = (int)p_idx.x + dx, ny = (int)p_idx.y + dy;
+            int nx = p_idx.x + dx, ny = p_idx.y + dy;
             
-            if (nx < 0 || ny < 0 || nx >= (int)data.W || ny >= (int)data.H) 
+            if (nx < 0 || ny < 0 || nx >= W || ny >= H) 
                 continue;
             
-                if (mask[ny * data.W + nx] != 0) {
-                    data.set_color(r, g, b);
-                    return;
-                }
+            if (base_mask[ny * W + nx] != 0) {
+                out_mask[idx] = 255u;
+                return;
+            }
         }
     }
 }
 
-void selection_mask(
-    DataView      data,
+uint8_t* selection_mask(
+    size_t        H, 
+    size_t        W,
     DeviceCamera* cam,
     SceneGraph*   scene,
     Hittable*     selected_object,
-    int      outline_radius,
-    uint8_t  r, 
-    uint8_t  g,
-    uint8_t  b
+    int           outline_radius
 ) {
-    float* d_mask_ptr;
-    cudaMalloc(&d_mask_ptr, data.H * data.W * sizeof(float));
-   
     dim3 block(BS2D, BS2D, 1);
-    dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
-    
-    generate_mask_kernel<<<grid, block>>>(
-        data, cam, scene, selected_object, d_mask_ptr
+    dim3 grid((W + BS2D - 1) / BS2D, (H + BS2D - 1) / BS2D, 1);
+
+    uint8_t* base_mask;
+    cudaMalloc(&base_mask, H * W * sizeof(uint8_t));
+    mask_selected_kernel<<<grid, block>>>(
+        base_mask, H, W, cam, scene, selected_object
     );
-    composite_mask_kernel<<<grid, block>>>(
-        data, d_mask_ptr, outline_radius, 255u, 120u, 45u
+
+    uint8_t* out_mask;
+    cudaMalloc(&out_mask, H * W * sizeof(uint8_t));
+    build_outline_kernel<<<grid, block>>>(
+        base_mask, out_mask, H, W, outline_radius
     );
+
+    cudaFree(base_mask);
+    return out_mask;
 }
 
 

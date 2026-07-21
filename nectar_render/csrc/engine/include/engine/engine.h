@@ -160,11 +160,7 @@ public:
     SceneInterface& get_scene_interface() { return scene_interface; }
 
     void screen_space_ray(float u, float v) {
-        std::cout << "Before: " << scene_interface.is_enabled() << std::endl;
-
         if (scene_interface.is_enabled()) scene_interface.disable();
-
-        std::cout << "After: " << scene_interface.is_enabled() << "\n" << std::endl;
 
         HitRecord* d_rec;
         cudaMalloc(&d_rec, sizeof(HitRecord));
@@ -232,8 +228,8 @@ private:
 
         if (scene_interface.is_enabled())
             scene_interface.build_selection_mask(
-                config.H, config.W, cam.device_camera(), 
-                current_scene.graph, aovs.beauty
+                &transfer_stream, cam.device_camera(), 
+                current_scene.graph
             );
 
         cudaDeviceSynchronize();

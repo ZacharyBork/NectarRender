@@ -9,15 +9,13 @@
 #include "engine/include/engine/scene.h"
 #include "engine/include/engine/light.h"
 
-void selection_mask(
-    DataView      data,
+uint8_t* selection_mask(
+    size_t        H, 
+    size_t        W,
     DeviceCamera* cam,
     SceneGraph*   scene,
     Hittable*     selected_object,
-    int      outline_radius,
-    uint8_t  r, 
-    uint8_t  g,
-    uint8_t  b
+    int           outline_radius
 );
 
 class SceneInterface {
@@ -59,18 +57,18 @@ public:
     /* SELECTION MASKING */
 
     __host__ void build_selection_mask(
-        size_t H, size_t W,
-        DeviceCamera* cam,
-        SceneGraph*   scene,
-        DataObject&   data,
-        const Color&  color = Color::white(),
-        int outline_radius = 3
+        TransferStream* stream,
+        DeviceCamera*   cam,
+        SceneGraph*     scene,
+        Color           color = Color::white(),
+        int             outline_radius = 3
     ) {
         if (!is_enabled()) return;
-        selection_mask(
-            data.view(), cam, scene, rec.hit_object, 
-            outline_radius, 255u, 120u, 45u
+        
+        uint8_t* d_mask_ptr = selection_mask(
+            stream->H, stream->W, cam, scene, rec.hit_object, outline_radius
         );
+        stream->overlay(d_mask_ptr, color);
     }
 
     /* STATE MANAGEMENT */
