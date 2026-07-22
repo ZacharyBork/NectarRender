@@ -12,13 +12,30 @@ void register_data(py::module_& m) {
     
     auto m_data = m.def_submodule("data", "Data module.");
 
+    py::enum_<StreamState>(m_data, "StreamState")
+        .value("ACTIVE",   StreamState::ACTIVE)
+        .value("INACTIVE", StreamState::INACTIVE)
+        .def("__repr__", [](const StreamState& state) {
+            switch (state) {
+                case StreamState::ACTIVE:   return "StreamState.ACTIVE";
+                case StreamState::INACTIVE: return "StreamState.INACTIVE";
+            }
+            return "StreamState.UNKNOWN";
+        });
+
     py::class_<TransferStream>(m_data, "TransferStream")
-        .def("buffer_ptr", &TransferStream::buffer_ptr)
-        .def("readback",   &TransferStream::readback)
-        .def("shape",      &TransferStream::shape)
-        .def("n_pixels",   &TransferStream::n_pixels)
-        .def("n_elements", &TransferStream::n_elements)
-        .def("n_bytes",    &TransferStream::n_bytes);
+        .def("buffer_ptr",     &TransferStream::buffer_ptr)
+        .def("readback",       &TransferStream::readback)
+        .def("get_state",      &TransferStream::get_state)
+        .def("is_active",      &TransferStream::is_active)
+        .def("is_inactive",    &TransferStream::is_inactive)
+        .def("is_linked",      &TransferStream::is_linked)
+        .def("has_overlay",    &TransferStream::has_overlay)
+        .def("remove_overlay", &TransferStream::remove_overlay)
+        .def("shape",          &TransferStream::shape)
+        .def("n_pixels",       &TransferStream::n_pixels)
+        .def("n_elements",     &TransferStream::n_elements)
+        .def("n_bytes",        &TransferStream::n_bytes);
 
     py::class_<DataObject>(m_data, "DataObject")
         .def("n_pixels",        &DataObject::n_pixels)

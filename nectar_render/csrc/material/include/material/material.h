@@ -144,7 +144,9 @@ public:
             && normal_tex    == other.normal_tex;
     }
 
-    __device__ NOINLINE Vector3 get_shading_normal(const HitRecord& rec) const {
+    __device__ NOINLINE Vector3 get_shading_normal(
+        const HitRecord& rec
+    ) const {
         Color tex_n = normal_tex->sample(rec.uv, rec.p);
         Vector3 map_n = normalize(Vector3(
             tex_n.r() * 2.0f - 1.0f, 

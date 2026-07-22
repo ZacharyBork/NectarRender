@@ -1,6 +1,9 @@
 #pragma once
 
-#include "data/include/data/data_object.h"
+#include <atomic>
+
+#include "core/include/core.h"
+#include "data_object.h"
 
 void composite_overlay(
     uint8_t* data,
@@ -11,6 +14,8 @@ void composite_overlay(
     size_t   W
 );
 
+enum class StreamState { ACTIVE, INACTIVE };
+
 class TransferStream {
 public:
 
@@ -18,45 +23,59 @@ public:
 
     /* CONSTRUCTORS */
 
-    __host__ ~TransferStream() { destroy(); }
+    ~TransferStream() { destroy(); }
 
-    __host__ TransferStream() : data(nullptr), C(0), H(0), W(0) { }
+    TransferStream() : data(nullptr), C(0), H(0), W(0) { }
+
+    /* STREAM STATE */
+
+    StreamState get_state() const {
+        return state.load(std::memory_order_relaxed);
+    }
+
+    bool is_active()   const { return get_state()==StreamState::ACTIVE;   }
+    bool is_inactive() const { return get_state()==StreamState::INACTIVE; }
 
     /* LINKING */
 
-    __host__ void link(DataObject* obj) {
-        if (enabled) { destroy(); enabled = false; }
+    void link(DataObject* obj) {
+        if (is_active()) { destroy(); }
         C = obj->C; H = obj->H; W = obj->W;
         data = obj;
     }
 
-    __host__ void unlink(DataObject* obj) { link(nullptr); }
-    __host__ bool is_linked() const { return data != nullptr; }
+    void unlink(DataObject* obj) { link(nullptr); }
+    bool is_linked() const { return data != nullptr; }
 
     /* STREAM CONTROL */
 
-    __host__ void start() {
-        if (enabled) destroy();
+    void start() {
+        if (is_active()) destroy();
         cudaMallocHost(&stream_buffer, n_bytes());
         cudaMalloc(&image_buffer, n_bytes());
         cudaStreamCreate(&transfer_stream);
-        enabled = true;
+        set_state(StreamState::ACTIVE);
     }
 
-    __host__ void destroy() {
-        if (!enabled) return;
+    void destroy() {
+        if (is_inactive()) return;
         destroy_buffer(stream_buffer);
         destroy_buffer(image_buffer);
         if (transfer_stream) cudaStreamDestroy(transfer_stream);
-        enabled = false;
+        set_state(StreamState::INACTIVE);
     }
 
     /* OVERLAYS */
 
-    __host__ void remove_overlay() { overlay_mask = nullptr; }
-    __host__ void overlay(uint8_t* mask_ptr, Color color = Color::white()) { 
-        if (overlay_mask) {
-            cudaFree(overlay_mask); overlay_mask = nullptr;
+    bool has_overlay() const { return overlay_mask != nullptr; }
+
+    void remove_overlay() { 
+        should_disable_overlay.store(true, std::memory_order_relaxed);
+    }
+
+    void overlay(uint8_t* mask_ptr, Color color = Color::white()) { 
+        if (has_overlay()) { 
+            cudaFree(overlay_mask); overlay_mask = nullptr; 
         }
         overlay_mask = mask_ptr; 
         overlay_color = color;
@@ -64,16 +83,23 @@ public:
     
     /* DATA ACCESS */
 
-    __host__ uintptr_t buffer_ptr() {
+    uintptr_t buffer_ptr() {
         return reinterpret_cast<uintptr_t>(stream_buffer);
     }
 
-    __host__ uintptr_t readback() {
+    uintptr_t readback() {
         to_image(data->view(), image_buffer);
-        if (overlay_mask) {
-            composite_overlay(
-                image_buffer, overlay_mask, overlay_color, C, H, W
-            );
+        if (overlay_mask != nullptr) {
+            if (should_disable_overlay.load(std::memory_order_relaxed)) {
+                cudaDeviceSynchronize();
+                cudaFree(overlay_mask); 
+                overlay_mask = nullptr;
+                should_disable_overlay.store(false, std::memory_order_relaxed);
+            } else {
+                composite_overlay(
+                    image_buffer, overlay_mask, overlay_color, C, H, W
+                );
+            }
         }
 
         cudaMemcpyAsync(
@@ -85,14 +111,17 @@ public:
         return buffer_ptr();
     }
 
-    __host__ std::array<size_t, 3> shape() { return { C, H, W }; }
-    __host__ size_t n_pixels()   const { return data->n_pixels(); }
-    __host__ size_t n_elements() const { return data->n_elements(); }
-    __host__ size_t n_bytes()    const { 
+    std::array<size_t, 3> shape() { return { C, H, W }; }
+    size_t n_pixels()   const { return data->n_pixels(); }
+    size_t n_elements() const { return data->n_elements(); }
+    size_t n_bytes()    const { 
         return n_elements() * sizeof(uint8_t); 
     }
 
 private:
+
+    std::atomic<bool> should_disable_overlay { false };
+    std::atomic<StreamState> state { StreamState::INACTIVE };
 
     bool enabled = false;
     DataObject* data = nullptr;
@@ -104,7 +133,11 @@ private:
     Color overlay_color;
     uint8_t* overlay_mask = nullptr;
 
-    __host__ bool destroy_buffer(uint8_t* buffer) {
+    void set_state(StreamState new_state) {
+        state.store(new_state, std::memory_order_relaxed);
+    }
+
+    bool destroy_buffer(uint8_t* buffer) {
         if (!buffer) return false;
         cudaFreeHost(buffer); buffer = nullptr;
         return true;

@@ -25,6 +25,24 @@ class MatSettings(W.QFrame):
         raise NotImplementedError
 
 ###############################################################################
+# Lambertian
+###############################################################################
+
+class MatSettingsLambertian(MatSettings):
+    def __init__(self: Self) -> None:
+        super().__init__()
+        layout = W.QFormLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.albedo = VectorWidget(
+            (1.0, 1.0, 1.0), min_value=0.0, max_value=1.0
+        )
+        layout.addRow('Albedo', self.albedo)
+        self.setLayout(layout)
+
+    def get_material(self: Self) -> Material:        
+        raise NotImplementedError
+
+###############################################################################
 # PBR METAL ROUGHNESS
 ###############################################################################
 

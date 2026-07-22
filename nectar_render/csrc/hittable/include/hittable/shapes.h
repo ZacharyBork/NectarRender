@@ -144,51 +144,47 @@ public:
     __host__ Hittable* build() const override {
         Hittable* d_faces[6];
 
-        d_faces[0] = Quad( // Front
+        d_faces[0] = device_build<Quad>( // Front
             Vector3(0.0f, 0.0f, 0.5f), 
             Vector3(90.0f, 0.0f, 0.0f), 
             Vector3(1.0f),
-            material
-        ).build();
-        d_faces[1] = Quad( // Back
+            material_index
+        );
+        d_faces[1] = device_build<Quad>( // Back
             Vector3(0.0f, 0.0f, -0.5f), 
             Vector3(-90.0f, 0.0f, 0.0f), 
             Vector3(1.0f),
-            material
-        ).build();
-        d_faces[2] = Quad( // Right
+            material_index
+        );
+        d_faces[2] = device_build<Quad>( // Right
             Vector3(0.5f, 0.0f, 0.0f), 
             Vector3(0.0f, 0.0f, -90.0f), 
             Vector3(1.0f),
-            material
-        ).build();
-        d_faces[3] = Quad( // Left
+            material_index
+        );
+        d_faces[3] = device_build<Quad>( // Left
             Vector3(-0.5f, 0.0f, 0.0f), 
             Vector3(0.0f, 0.0f, 90.0f),
             Vector3(1.0f),
-            material
-        ).build();
-        d_faces[4] = Quad( // Top
+            material_index
+        );
+        d_faces[4] = device_build<Quad>( // Top
             Vector3(0.0f, 0.5f, 0.0f), 
             Vector3(0.0f, 0.0f, 0.0f), 
             Vector3(1.0f),
-            material
-        ).build();
-        d_faces[5] = Quad( // Bottom
+            material_index
+        );
+        d_faces[5] = device_build<Quad>( // Bottom
             Vector3(0.0f, -0.5f, 0.0f), 
             Vector3(180.0f, 0.0f, 0.0f), 
             Vector3(1.0f),
-            material
-        ).build();
-
-        Hittable** d_face_ptrs;
-        cudaMalloc(&d_face_ptrs, 6 * sizeof(Hittable*));
-        cudaMemcpy(
-            d_face_ptrs, d_faces, 
-            6 * sizeof(Hittable*), 
-            cudaMemcpyHostToDevice
+            material_index
         );
 
+        Hittable** d_face_ptrs;
+        size_t n_bytes = 6 * sizeof(Hittable*);
+        cudaMalloc(&d_face_ptrs, n_bytes);
+        cudaMemcpy(d_face_ptrs, d_faces, n_bytes, cudaMemcpyHostToDevice);
         return device_build<Cube>(xform, delta, d_face_ptrs, material_index);
     }
 

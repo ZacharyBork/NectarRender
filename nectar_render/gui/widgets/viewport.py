@@ -7,7 +7,9 @@ from dataclasses import dataclass, field
 
 from PySide6        import QtWidgets as W
 from PySide6.QtCore import Qt, Slot, QPointF
-from PySide6.QtGui  import QKeyEvent, QMouseEvent, QImage, QPixmap
+from PySide6.QtGui  import (
+    QKeyEvent, QMouseEvent, QImage, QPixmap, QResizeEvent
+)
 
 from nectar_render import Vector3, SceneInterface, CameraParams
 from nectar_render.gui.widgets.object_info import ObjectInfo
@@ -21,6 +23,8 @@ from nectar_render.gui.bridge import Bridge
 class FrameBuffer:
     data: np.ndarray
     
+    _pixmap: QPixmap = field(init=False)
+    
     @property
     def C(self: Self) -> int: return self.data.shape[2]
     @property
@@ -29,6 +33,15 @@ class FrameBuffer:
     def W(self: Self) -> int: return self.data.shape[1]
     @property
     def strides(self: Self) -> int: return self.data.strides[0]
+    @property
+    def pixmap(self: Self) -> QPixmap: return self._pixmap
+    
+    def __post_init__(self: Self) -> None:
+        self._pixmap = QPixmap.fromImage(
+            QImage(
+                self.data, self.W, self.H, self.strides, QImage.Format_RGB888
+            ).copy()
+        )
 
 @dataclass
 class CameraUpdateInfo:
@@ -82,6 +95,7 @@ class ViewportWidget(W.QLabel):
         settings: W.QTabWidget
     ) -> None:
         super().__init__()
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         self.buffer: FrameBuffer = None
         
@@ -108,23 +122,12 @@ class ViewportWidget(W.QLabel):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._held_keys: set[Qt.Key] = set()
         
-        self._build_image_label()
-    
-#### INITIALIZATION ###########################################################
-        
-    def _build_image_label(self: Self) -> None:
-        self.image_label = W.QLabel()
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter) 
-        
-        self.setLayout(W.QVBoxLayout())
-        self.layout().addWidget(self.image_label)
-
 #### KEYPRESS UTILITIES #######################################################
 
     def keyPressEvent(self: Self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_Escape:
-            if self.object_info is not None:
-                Bridge.queue_function(lambda : self.object_info.destroy())
+            self.object_info.destroy()
+            Bridge.scene_interface.disable()
                 
         if event.isAutoRepeat(): return
         self._held_keys.add(event.key())
@@ -139,23 +142,53 @@ class ViewportWidget(W.QLabel):
     
 #### SCENE INTERACTION ########################################################
     
-    def _handle_scene_interaction(self: Self, click_pos: QPointF) -> None:
-        self.object_info.destroy()
-        
-        size = self.size()
-        Bridge.instance.ENGINE.screen_space_ray(
-            click_pos.x() / size.width(), click_pos.y() / size.height()
-        )
+    def _handle_scene_interaction(
+        self:      Self, 
+        click_pos: tuple[float, float]
+    ) -> None:
+        if self.object_info.is_enabled: self.object_info.destroy()
+        Bridge.instance.ENGINE.screen_space_ray(*click_pos)
         self.object_info.build()
       
 #### MOUSE UTILITIES ##########################################################
+
+    def _normalize_click_pos(
+        self:      Self, 
+        click_pos: QPointF
+    ) -> tuple[float, float] | None:
+        pixmap = self.pixmap()
+        if pixmap is None or pixmap.isNull():
+            return None
+
+        label_w, label_h = self.width(), self.height()
+        pix_w, pix_h = pixmap.width(), pixmap.height()
+
+        scale = min(label_w / pix_w, label_h / pix_h)
+        displayed_w = pix_w * scale
+        displayed_h = pix_h * scale
+
+        offset_x = (label_w - displayed_w) / 2.0
+        offset_y = (label_h - displayed_h) / 2.0
+
+        local_x = click_pos.x() - offset_x
+        local_y = click_pos.y() - offset_y
+
+        if local_x < 0 \
+        or local_y < 0 \
+        or local_x > displayed_w \
+        or local_y > displayed_h:
+            return None
+
+        return (local_x / displayed_w, local_y / displayed_h)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.RightButton:
             self._looking = True
             self._curr_mouse_pos = self._prev_mouse_pos = event.position()
         elif event.button() == Qt.MouseButton.LeftButton:
-            self._handle_scene_interaction(event.position())
+            click_pos = self._normalize_click_pos(event.position())
+            if click_pos is not None:
+                self._handle_scene_interaction(click_pos)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self._looking:
@@ -222,18 +255,30 @@ class ViewportWidget(W.QLabel):
             
 #### IMAGE UTILITIES ##########################################################
     
-    def update_image(self: Self) -> None:
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self.update_pixmap()
+    
+    def update_buffer(self: Self) -> None:
         data = np.ascontiguousarray(Bridge.instance.get_data())
         self.buffer = FrameBuffer(data)
-        
-        qimg = QImage(
-            self.buffer.data, self.buffer.W, self.buffer.H, 
-            self.buffer.strides, QImage.Format_RGB888
+    
+    def update_pixmap(self: Self) -> None:
+        if self.buffer is None \
+        or self.buffer.pixmap is None \
+        or self.buffer.pixmap.isNull():
+            return
+        scaled = self.buffer.pixmap.scaled(
+            self.size(),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
         )
-        qimg = qimg.copy()
-        pixmap = QPixmap.fromImage(qimg)
-        self.image_label.setPixmap(pixmap)
+        self.setPixmap(scaled)
         
+    def update_render(self: Self) -> None:
+        self.update_buffer()
+        self.update_pixmap()
+    
     def save_image(self: Self) -> None:
         if self.buffer is None: return
         

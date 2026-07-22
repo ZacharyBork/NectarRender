@@ -24,7 +24,9 @@ T* device_build(Args... args) {
 
 // HITTABLES ==================================================================
 
-template Quad*   device_build<Quad>(Transform, Transform, size_t);
+template Quad* device_build<Quad>(Transform, Transform, size_t);
+template Quad* device_build<Quad>(Vector3, Vector3, Vector3, size_t);
+
 template Sphere* device_build<Sphere>(Transform, Transform, float, size_t);
 template Cube*   device_build<Cube>(
     Transform, Transform, Hittable**, size_t

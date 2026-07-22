@@ -39,6 +39,24 @@ public:
         area = n.length();
     }
 
+    __device__ Quad(
+        Vector3& position,
+        Vector3& rotation,
+        Vector3& scale, 
+        size_t   mat_idx
+    ) { 
+        xform = Transform(position, rotation, scale);
+        material_index = mat_idx; 
+
+        u = Vector3(1.0f, 0.0f, 0.0f);
+        v = Vector3(0.0f, 0.0f, -1.0f);
+
+        Vector3 n = cross(u, v);
+        normal = normalize(n);
+        w = n / dot(n, n);
+        area = n.length();
+    }
+
     __host__ Hittable* build() const override {
         return device_build<Quad>(xform, delta, material_index);
     }

@@ -58,7 +58,7 @@ class Interface(QObject):
     
     @Slot(int)
     def _on_frame_finished(self: Self, frame_idx: int) -> None:
-        self.viewport.update_image()
+        self.viewport.update_render()
         self.progress_bar.update(frame_idx, Bridge.instance.n_samples)
         
     def _on_render_finished(self: Self) -> None:

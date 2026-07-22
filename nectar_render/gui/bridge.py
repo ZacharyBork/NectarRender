@@ -9,7 +9,9 @@ from collections.abc import Callable
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from nectar_render.python import RenderEngine, Camera, Scene, SceneInterface
+from nectar_render.python import (
+    RenderEngine, Camera, Scene, SceneInterface, TransferStream
+)
 
 ###############################################################################
 # SIGNAL INTERFACE
@@ -73,7 +75,7 @@ class BridgeMeta(type):
 
     @property
     def instance(self: Self) -> RenderBridge: 
-        if self._instance is not None: return self._instance
+        if BridgeMeta._instance is not None: return BridgeMeta._instance
         raise RuntimeError(
             f'Bridge.instance accessed on Bridge object prior to bridge being '
             f'set. Please call Bridge.set_instance() first to set the global '
@@ -82,7 +84,11 @@ class BridgeMeta(type):
         
     @property
     def scene_interface(self: Self) -> SceneInterface:
-        return self._instance.ENGINE.get_scene_interface()
+        return BridgeMeta._instance.ENGINE.get_scene_interface()
+    
+    @property
+    def transfer_stream(self: Self) -> TransferStream:
+        return BridgeMeta._instance.ENGINE.stream()
 
 class Bridge(metaclass=BridgeMeta):
     

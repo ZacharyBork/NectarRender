@@ -103,6 +103,7 @@ public:
             }
 
             sample(idx);
+            scene_interface.update(cam.device_camera());
             with_gil_scoped_acquire(on_frame_finished, idx);
             sample_idx++;
         }
@@ -160,8 +161,6 @@ public:
     SceneInterface& get_scene_interface() { return scene_interface; }
 
     void screen_space_ray(float u, float v) {
-        if (scene_interface.is_enabled()) scene_interface.disable();
-
         HitRecord* d_rec;
         cudaMalloc(&d_rec, sizeof(HitRecord));
         hit_test_ray(u, v, current_scene.graph, cam.device_camera(), d_rec);
@@ -170,7 +169,7 @@ public:
         cudaMemcpy(&rec, d_rec, sizeof(HitRecord), cudaMemcpyDeviceToHost);
         cudaFree(d_rec);
 
-        scene_interface = SceneInterface(&current_scene, rec);
+        scene_interface.configure(&current_scene, &transfer_stream, rec);
     }
 
 private:
@@ -191,8 +190,8 @@ private:
     uint32_t sample_idx = 1u;
 
     Scene current_scene;
-    SceneInterface scene_interface;
     TransferStream transfer_stream;
+    SceneInterface scene_interface;
 
     __host__ void set_state(EngineState s) {
         state.store(s, std::memory_order_relaxed);
@@ -225,12 +224,6 @@ private:
             aovs.accumulate(sample_aovs, sample_index);
         else aovs.combine(sample_aovs);
         sample_aovs.clear();
-
-        if (scene_interface.is_enabled())
-            scene_interface.build_selection_mask(
-                &transfer_stream, cam.device_camera(), 
-                current_scene.graph
-            );
 
         cudaDeviceSynchronize();
     }

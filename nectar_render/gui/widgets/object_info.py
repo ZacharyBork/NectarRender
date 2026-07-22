@@ -15,8 +15,9 @@ class MaterialSettings(W.QGroupBox):
         super().__init__()        
         
         
-        mat = Bridge.scene_interface.get_material()
-        print(mat.material_type())
+        # mat = Bridge.scene_interface.get_material()
+        # print(mat)
+        # print(mat.material_type())
         
         
         
@@ -54,10 +55,11 @@ class ObjectInfo(QObject):
     def __init__(self: Self, settings: W.QTabWidget) -> None:
         super().__init__()
         self.setObjectName('object_info')
+        self.is_enabled = True
         self.settings = settings
         self.settings.setTabVisible(0, False)
         self.root = settings.findChild(W.QFrame, 'selected_settings').layout()
-
+        
     def build(self: Self) -> None:
         self.settings.setTabVisible(0, True)
         self.settings.setCurrentIndex(0)
@@ -68,10 +70,12 @@ class ObjectInfo(QObject):
                 
         self.root.addWidget(XformController())
         self.root.addWidget(MaterialSettings())
+        self.is_enabled = True
         
     def destroy(self: Self) -> None:
         self.settings.setTabVisible(0, False)
         self._clear()
+        self.is_enabled = False            
 
     def _clear(self: Self) -> None:
         def _delete_widgets(layout):

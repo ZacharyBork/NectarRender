@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+
 #include "core/include/core.h"
 #include "hittable/include/hittable/hittable.h"
 #include "material/include/material/material.h"
@@ -18,77 +20,113 @@ uint8_t* selection_mask(
     int           outline_radius
 );
 
+struct SelectionMaskConfig {
+    Color color = Color(0.98f, 0.75f, 0.17f);
+    size_t outline_radius = (size_t)3;
+};
+
 class SceneInterface {
 public:
 
     /* CONSTRUCTORS */
 
-    __host__ SceneInterface() : rec(HitRecord()) { }
+    ~SceneInterface() = default;
+    SceneInterface() : rec(HitRecord()) { }
 
-    __host__ explicit SceneInterface(Scene* scene, HitRecord rec) 
-      : scene(scene), rec(rec) { }
+    /* CONFIGURATION */
 
+    void configure(
+        Scene*          current_scene,
+        TransferStream* transfer_stream,
+        HitRecord       hit_record
+    ) { 
+        scene  = current_scene; 
+        stream = transfer_stream;
+        rec    = hit_record; 
+        enabled.store(true, std::memory_order_relaxed);
+    }
+
+    /* UPDATE HANDLING */
+
+    void update(DeviceCamera* cam) {
+        if (!is_enabled()) return;
+        if (is_pending_teardown()) teardown(); return;
+        build_selection_mask(cam);
+    }
+
+    /* STATE CONTROL */
+
+    void disable() { 
+        enabled.store(false, std::memory_order_relaxed);
+        teardown_pending.store(true, std::memory_order_relaxed);
+    }
+
+    bool is_enabled() const { return enabled.load(std::memory_order_relaxed); }
+    bool is_disabled() const { return !is_enabled(); }
+    bool is_pending_teardown() const {
+        return teardown_pending.load(std::memory_order_relaxed); 
+    }
+    
     /* PROPERTY ACCESS */
 
-    __host__ bool is_enabled() const { return scene != nullptr; }
-    __host__ HitRecord& hit_record() { return rec; }
+    Scene* get_scene() { return scene; }
+    HitRecord& get_hit_record() { return rec; }
 
     /* TRANSFORM UTILS */
 
-    __host__ Transform get_transform() { 
+    Transform get_transform() { 
         return hit_object()->xform; 
     }
 
-    __host__ void set_transform(const Transform& xform) {
+    void set_transform(const Transform& xform) {
         hit_object()->xform = xform;
     }
 
     /* MATERIAL UTILS */
 
-    __host__ void update_material(const Material& material) {
+    void update_material(const Material& material) {
         // object->material = material.build();
         return;
     }
 
-    __host__ Material& get_material() {
+    Material& get_material() {
         return scene->material_registry.get_material(rec.material_index);
     }
-
-    /* SELECTION MASKING */
-
-    __host__ void build_selection_mask(
-        TransferStream* stream,
-        DeviceCamera*   cam,
-        SceneGraph*     scene,
-        Color           color = Color::white(),
-        int             outline_radius = 3
-    ) {
-        if (!is_enabled()) return;
-        
-        uint8_t* d_mask_ptr = selection_mask(
-            stream->H, stream->W, cam, scene, rec.hit_object, outline_radius
-        );
-        stream->overlay(d_mask_ptr, color);
-    }
-
-    /* STATE MANAGEMENT */
-
-    __host__ void disable() { rec = HitRecord(); scene = nullptr; }
 
 private:
 
     HitRecord rec;
     Scene* scene = nullptr;
+    TransferStream* stream = nullptr;
 
-    __host__ size_t material_index() { return rec.material_index; }
-    __host__ uint32_t object_index() { return rec.object_index; }
+    SelectionMaskConfig mask_cfg;
 
-    __host__ Hittable* hit_object() {
+    std::atomic<bool> enabled { false };
+    std::atomic<bool> teardown_pending { false };
+
+    size_t material_index() { return rec.material_index; }
+    uint32_t object_index() { return rec.object_index; }
+
+    Hittable* hit_object() {
         return scene->hittables_registry.get_object(object_index());
     }
 
-    __host__ Material& host_material() {
+    Material& host_material() {
         return scene->material_registry.get_material(material_index());
+    }
+
+    void build_selection_mask(DeviceCamera* cam) {
+        uint8_t* d_mask_ptr = selection_mask(
+            stream->H, stream->W, cam, scene->graph, 
+            rec.hit_object, mask_cfg.outline_radius
+        );
+        stream->overlay(d_mask_ptr, mask_cfg.color);
+    }
+
+    void teardown() {
+        stream->remove_overlay();
+        scene = nullptr; stream = nullptr; rec = HitRecord();
+        teardown_pending.store(false, std::memory_order_relaxed);
     }
     
 };
