@@ -3,11 +3,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "hittable/include/hittable/hittable.h"
-#include "hittable/include/hittable/primitives.h"
-#include "hittable/include/hittable/shapes.h"
-#include "hittable/include/hittable/volumes.h"
-#include "hittable/include/hittable/hit_record.h"
+#include "hittable/include/hittable.h"
 
 namespace py = pybind11;
 
@@ -42,7 +38,7 @@ void register_hittable(py::module_& m) {
         }),
             py::arg("center")   = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("radius")   = 1.0f,
-            py::arg("material") = Material::lambertian(Color::purple())
+            py::arg("material") = default_material
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 
@@ -58,7 +54,7 @@ void register_hittable(py::module_& m) {
             py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
-            py::arg("material") = Material::lambertian(Color::purple())
+            py::arg("material") = default_material
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 
@@ -74,7 +70,7 @@ void register_hittable(py::module_& m) {
             py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
-            py::arg("material") = Material::lambertian(Color::purple())
+            py::arg("material") = default_material
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 
@@ -104,6 +100,17 @@ void register_hittable(py::module_& m) {
             py::arg("texture")  = ConstantTexture(Color(1.0f, 1.0f, 1.0f))
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
+
+    /* MESH */
+
+    py::class_<Mesh, Hittable>(m_hittable, "Mesh")
+        .def_static("from_obj", &Mesh::from_obj,
+            py::arg("path"),
+            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
+            py::arg("material") = default_material
+        );
 
 }
 

@@ -66,8 +66,9 @@ private:
     std::unordered_map<Hittable*, Hittable*> map_host_to_device;
 
     __host__ void build_bvh() {
-        BVH bvh;
-        bvh.build(h_hittables);
+        BVH<Hittable*> bvh;
+        bvh.build(h_hittables, [](Hittable* h){ return h->build_bbox(); });
+        h_hittables = std::move(bvh.items);
         n_bvh_nodes = bvh.nodes.size();
 
         size_t n_bytes = n_bvh_nodes * sizeof(BVHNode);

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "hittable/include/hittable/hittable.h"
-#include "hittable/include/hittable/primitives.h"
-#include "hittable/include/hittable/shapes.h"
-#include "hittable/include/hittable/volumes.h"
+#include "hittable/hittable.h"
+#include "hittable/primitives.h"
+#include "hittable/shapes.h"
+#include "hittable/volumes.h"
+#include "hittable/mesh.h"
 
-#include "hittable/include/hittable/hit_record.h"
+#include "hittable/hit_record.h"

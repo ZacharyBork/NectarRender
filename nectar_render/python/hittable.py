@@ -9,6 +9,7 @@ class Hittable(root.Hittable):
     SPHERE = root.Sphere
     QUAD   = root.Quad
     CUBE   = root.Cube
+    MESH   = root.Mesh
     
 class Volumetric(root.Hittable):
     CONSTANT = root.ConstantMedium

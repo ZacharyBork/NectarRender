@@ -10,72 +10,69 @@ struct BVHNode {
     int  object;
 };
 
+template<typename T>
 class BVH {
 public:
-    std::vector<BVHNode>   nodes;
-    std::vector<Hittable*> objects;
+    std::vector<BVHNode> nodes;
+    std::vector<T> items;
 
-    __host__ BVH() {}
+    template<typename BBoxFn>
+    __host__ void build(std::vector<T> input_items, BBoxFn&& get_bbox) {
+        items = std::move(input_items);
+        nodes.clear();
+        if (items.empty()) return;
+        nodes.reserve(items.size() * 2);
 
-    void build(std::vector<Hittable*>& objs) {
-        objects = objs;
-        nodes.reserve(objs.size() * 2);
-        build_recursive(objs, 0, objs.size());
+        std::vector<AABB> boxes(items.size());
+        for (size_t i = 0; i < items.size(); i++) boxes[i] = get_bbox(items[i]);
+
+        std::vector<int> order(items.size());
+        std::iota(order.begin(), order.end(), 0);
+
+        build_recursive(order, boxes, 0, (int)order.size());
+
+        std::vector<T> reordered(items.size());
+        for (size_t i = 0; i < order.size(); i++) reordered[i] = items[order[i]];
+        items = std::move(reordered);
     }
 
 private:
 
-    int build_recursive(std::vector<Hittable*>& objs, int start, int end) {
-        int idx = nodes.size();
+    __host__ int build_recursive(
+        std::vector<int>& order, std::vector<AABB>& boxes, int start, int end
+    ) {
+        int idx = (int)nodes.size();
         nodes.push_back({});
 
-        size_t span = end - start;
+        int span = end - start;
 
         if (span == 1) {
             nodes[idx].object = start;
             nodes[idx].left   = -1;
             nodes[idx].right  = -1;
-            nodes[idx].bbox   = objs[start]->build_bbox();
+            nodes[idx].bbox   = boxes[order[start]];
             return idx;
         }
 
-        AABB combined = objs[start]->build_bbox();
+        AABB combined = boxes[order[start]];
         for (int i = start + 1; i < end; i++)
-            combined = AABB(combined, objs[i]->build_bbox());
+            combined = AABB(combined, boxes[order[i]]);
 
         float x_len = combined.x.max - combined.x.min;
         float y_len = combined.y.max - combined.y.min;
         float z_len = combined.z.max - combined.z.min;
-        int axis = (x_len>y_len && x_len>z_len) ? 0 : (y_len>z_len) ? 1 : 2;
+        int axis = (x_len > y_len && x_len > z_len) ? 0 : (y_len > z_len ? 1 : 2);
 
-        auto comparator = (axis == 0) ? box_x_compare
-                        : (axis == 1) ? box_y_compare
-                                      : box_z_compare;
+        std::sort(order.begin() + start, order.begin() + end, [&](int a, int b) {
+            return boxes[a].axis_interval(axis).min < boxes[b].axis_interval(axis).min;
+        });
 
-        std::sort(objs.begin() + start, objs.begin() + end, comparator);
         int mid = start + span / 2;
-
         nodes[idx].object = -1;
-        nodes[idx].left   = build_recursive(objs, start, mid);
-        nodes[idx].right  = build_recursive(objs, mid, end);
-        nodes[idx].bbox   = AABB(
-            nodes[nodes[idx].left].bbox,
-            nodes[nodes[idx].right].bbox
-        );
+        nodes[idx].left   = build_recursive(order, boxes, start, mid);
+        nodes[idx].right  = build_recursive(order, boxes, mid, end);
+        nodes[idx].bbox   = AABB(nodes[nodes[idx].left].bbox, nodes[nodes[idx].right].bbox);
         return idx;
     }
-
-    static bool box_compare(const Hittable* a, const Hittable* b, int axis) {
-        return a->build_bbox().axis_interval(axis).min 
-             < b->build_bbox().axis_interval(axis).min;
-    }
-    static bool box_x_compare(const Hittable* a, const Hittable* b) { 
-        return box_compare(a, b, 0); 
-    }
-    static bool box_y_compare(const Hittable* a, const Hittable* b) { 
-        return box_compare(a, b, 1); 
-    }
-    static bool box_z_compare(const Hittable* a, const Hittable* b) { 
-        return box_compare(a, b, 2); 
-    }
 };
+
