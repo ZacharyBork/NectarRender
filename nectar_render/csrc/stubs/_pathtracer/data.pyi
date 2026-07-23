@@ -3,13 +3,11 @@ Data module.
 """
 from __future__ import annotations
 import typing
-__all__: list[str] = ['DataObject', 'LayerType', 'RenderLayers', 'RenderLayersConfig', 'StreamState', 'TransferStream']
+__all__: list[str] = ['DataObject', 'LayerType', 'RenderLayers', 'RenderLayersConfig', 'StreamConfig', 'StreamState', 'TonemapMethod', 'TransferStream']
 class DataObject:
     def device_ptr(self) -> int:
         ...
     def is_enabled(self) -> bool:
-        ...
-    def linear_to_gamma(self) -> None:
         ...
     def n_bytes(self) -> int:
         ...
@@ -20,8 +18,6 @@ class DataObject:
     def numpy(self) -> numpy.ndarray:
         ...
     def shape(self) -> list[int]:
-        ...
-    def tonemap(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def C(self) -> int:
@@ -139,6 +135,12 @@ class RenderLayersConfig:
     @typing.overload
     def __init__(self, beauty: bool = True, diffuse: bool = False, specular: bool = False, normal: bool = False, shadow: bool = False, depth: bool = False, emission: bool = False, object_id: bool = False) -> None:
         ...
+class StreamConfig:
+    apply_tonemapping: bool
+    linear_to_gamma: bool
+    tonemap_method: TonemapMethod
+    def __init__(self) -> None:
+        ...
 class StreamState:
     """
     Members:
@@ -150,6 +152,44 @@ class StreamState:
     ACTIVE: typing.ClassVar[StreamState]  # value = <StreamState.ACTIVE: 0>
     INACTIVE: typing.ClassVar[StreamState]  # value = <StreamState.INACTIVE: 1>
     __members__: typing.ClassVar[dict[str, StreamState]]  # value = {'ACTIVE': <StreamState.ACTIVE: 0>, 'INACTIVE': <StreamState.INACTIVE: 1>}
+    def __eq__(self, other: typing.Any) -> bool:
+        ...
+    def __getstate__(self) -> int:
+        ...
+    def __hash__(self) -> int:
+        ...
+    def __index__(self) -> int:
+        ...
+    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __int__(self) -> int:
+        ...
+    def __ne__(self, other: typing.Any) -> bool:
+        ...
+    @typing.overload
+    def __repr__(self) -> str:
+        ...
+    @typing.overload
+    def __repr__(self) -> str:
+        ...
+    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __str__(self) -> str:
+        ...
+    @property
+    def name(self) -> str:
+        ...
+    @property
+    def value(self) -> int:
+        ...
+class TonemapMethod:
+    """
+    Members:
+    
+      REINHARD
+    """
+    REINHARD: typing.ClassVar[TonemapMethod]  # value = <TonemapMethod.REINHARD: 0>
+    __members__: typing.ClassVar[dict[str, TonemapMethod]]  # value = {'REINHARD': <TonemapMethod.REINHARD: 0>}
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:
@@ -204,4 +244,6 @@ class TransferStream:
     def remove_overlay(self) -> None:
         ...
     def shape(self) -> typing.Annotated[list[int], "FixedSize(3)"]:
+        ...
+    def update_config(self, arg0: StreamConfig) -> None:
         ...

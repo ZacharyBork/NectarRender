@@ -178,6 +178,9 @@ private:
     std::atomic<bool> bvh_build_pending { false };
     std::atomic<EngineState> state { EngineState::IDLE };
 
+    std::atomic<bool> apply_outlier_rejection { false };
+    std::atomic<float> outlier_rejection_threshold { 5.0f };
+
     std::mutex function_queue_mutex;
     std::vector<std::function<void()>> function_queue{};
 
@@ -214,18 +217,23 @@ private:
     }
 
     void sample(uint32_t sample_index = 1u) {
+        bool* hit_light = cam.make_buffer<bool>((size_t)1);
         trace(
             config, cam.device_camera(), current_scene.graph, 
             sample_aovs.aovs(), sample_index
         );
 
-        sample_aovs.replace_invalid_values();
+        if (apply_outlier_rejection.load(std::memory_order_relaxed)) {
+            reject_outliers(sample_aovs, outlier_rejection_threshold);
+        }
+        
         if (sample_mode == SampleMode::ACCUMULATE) 
             aovs.accumulate(sample_aovs, sample_index);
         else aovs.combine(sample_aovs);
         sample_aovs.clear();
 
         cudaDeviceSynchronize();
+        cudaFree(hit_light);
     }
 
 };

@@ -35,6 +35,20 @@ public:
 
     /* IN-PLACE MATH OPS */
 
+    __host__ __device__ bool operator==(const VecType& v) {
+        auto& self = derived();
+        bool is_equal = true;
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            if (self.e[i] != v.e[i]) is_equal = false;
+        return is_equal;
+    }
+
+    __host__ __device__ bool operator!=(const VecType& v) {
+        auto& self = derived();
+        return !(self==v);
+    }
+
     __host__ __device__ VecType operator-() const { 
         VecType result = derived();
         #pragma unroll

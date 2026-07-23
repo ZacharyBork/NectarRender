@@ -1,26 +1,6 @@
 #include "data/include/data/data_object.h"
 
 // ============================================================================
-// UTILITIES
-// ============================================================================
-
-__global__ void linear_to_gamma_kernel(DataView data) {
-
-    Color curr = data.get_color();
-    data.set_color(Color(
-        curr.r() > 0.0f ? sqrtf(curr.r()) : 0.0f,
-        curr.g() > 0.0f ? sqrtf(curr.g()) : 0.0f,
-        curr.b() > 0.0f ? sqrtf(curr.b()) : 0.0f
-    ));
-};
-
-void run_linear_to_gamma(DataView data) {
-    dim3 block(BS2D, BS2D, 1);
-    dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
-    linear_to_gamma_kernel<<<grid, block>>>(data);
-}
-
-// ============================================================================
 // COMBINATION
 // ============================================================================
 
@@ -60,23 +40,6 @@ void run_accumulate_samples(
 }
 
 // ============================================================================
-// ERROR CORRECTION
-// ============================================================================
-
-__global__ void replace_invalid_kernel(DataView data) {
-    Color c = data.get_color();
-    for (int channel = 0; channel < data.C; channel++)
-        if (isnan(c[channel])) c[channel] = 0.0f;
-    data.set_color(c);
-}
-
-void run_replace_invalid(DataView data) {
-    dim3 block(BS2D, BS2D, 1);
-    dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
-    replace_invalid_kernel<<<grid, block>>>(data);
-}
-
-// ============================================================================
 // NORMALIZATION
 // ============================================================================
 
@@ -98,28 +61,10 @@ void run_norm_by_samples(
 }
 
 // ============================================================================
-// COLOR CORRECTION
-// ============================================================================
-
-__global__ void tonemap_reinhard_kernel(DataView data) {
-    Color c = data.get_color();
-    data.set_color(c / (c + 1.0f));
-}
-
-void run_tonemap(
-    DataView data, 
-    float exposure
-) {
-    dim3 block(BS2D, BS2D, 1);
-    dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
-    tonemap_reinhard_kernel<<<grid, block>>>(data);
-}
-
-// ============================================================================
 // IMAGE CONVERSION
 // ============================================================================
 
-__global__ void to_image_kernel(DataView data, uint8_t* result) {
+__global__ void data_to_image_kernel(DataView data, uint8_t* result) {
     ColorIndex idx = data.get_color_index();
     Color c = data.get_color();
 
@@ -136,9 +81,9 @@ __global__ void to_image_kernel(DataView data, uint8_t* result) {
     );
 }
 
-void to_image(DataView data, uint8_t* result) {
+void data_to_image(DataView data, uint8_t* result) {
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
-    to_image_kernel<<<grid, block>>>(data, result);
+    data_to_image_kernel<<<grid, block>>>(data, result);
 }
 

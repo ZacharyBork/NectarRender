@@ -134,11 +134,6 @@ public:
                 cudaMemset(obj->data_ptr(), 0, obj->n_bytes());
     }
 
-    __host__ void replace_invalid_values() {
-        for (DataObject* obj : get_data())
-            if (obj->is_enabled()) obj->replace_invalid();
-    }
-
     __host__ void normalize_by_samples(uint32_t total_samples) {
         for (DataObject* obj : get_data())
             if (obj->is_enabled()) obj->normalize_by_samples(total_samples);

@@ -5,16 +5,21 @@
 #include "core/include/core.h"
 #include "data_object.h"
 
+enum class StreamState { ACTIVE, INACTIVE };
+enum class TonemapMethod{ REINHARD };
+struct StreamConfig {
+    bool linear_to_gamma = true;
+
+    bool apply_tonemapping = true;
+    TonemapMethod tonemap_method = TonemapMethod::REINHARD;
+    float tonemap_alpha = 1.0f;
+};
+
+void process_stream(DataView data, uint8_t* result, StreamConfig cfg);
 void composite_overlay(
-    uint8_t* data,
-    uint8_t* mask,
-    Color    color,
-    size_t   C,
-    size_t   H,
-    size_t   W
+    uint8_t* data, uint8_t* mask, Color color, size_t C, size_t H, size_t W
 );
 
-enum class StreamState { ACTIVE, INACTIVE };
 
 class TransferStream {
 public:
@@ -65,6 +70,10 @@ public:
         set_state(StreamState::INACTIVE);
     }
 
+    void update_config(StreamConfig cfg) {
+        stream_config.store(cfg, std::memory_order_relaxed);
+    }
+
     /* OVERLAYS */
 
     bool has_overlay() const { return overlay_mask != nullptr; }
@@ -88,7 +97,9 @@ public:
     }
 
     uintptr_t readback() {
-        to_image(data->view(), image_buffer);
+        process_stream(data->view(), image_buffer, stream_config);
+        
+        
         if (overlay_mask != nullptr) {
             if (should_disable_overlay.load(std::memory_order_relaxed)) {
                 cudaDeviceSynchronize();
@@ -122,6 +133,9 @@ private:
 
     std::atomic<bool> should_disable_overlay { false };
     std::atomic<StreamState> state { StreamState::INACTIVE };
+
+    
+    std::atomic<StreamConfig> stream_config {};
 
     bool enabled = false;
     DataObject* data = nullptr;

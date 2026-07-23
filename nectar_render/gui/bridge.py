@@ -10,7 +10,7 @@ from collections.abc import Callable
 from PySide6.QtCore import QObject, Signal, Slot
 
 from nectar_render.python import (
-    RenderEngine, Camera, Scene, SceneInterface, TransferStream
+    RenderEngine, Camera, Scene, SceneInterface, TransferStream, StreamConfig
 )
 
 ###############################################################################
@@ -67,11 +67,13 @@ class RenderBridge(RenderEngine):
 ###############################################################################
 
 class BridgeMeta(type):
-    _instance: RenderBridge = None
+    _instance:      RenderBridge = None
+    _stream_config: StreamConfig = None
 
     @staticmethod
     def set_instance(bridge_instance: RenderBridge) -> None:
-        setattr(BridgeMeta, '_instance', bridge_instance)
+        setattr(BridgeMeta, '_instance', bridge_instance) 
+        setattr(BridgeMeta, '_stream_config', StreamConfig())
 
     @property
     def instance(self: Self) -> RenderBridge: 
@@ -89,6 +91,10 @@ class BridgeMeta(type):
     @property
     def transfer_stream(self: Self) -> TransferStream:
         return BridgeMeta._instance.ENGINE.stream()
+    
+    @property
+    def stream_config(self: Self) -> StreamConfig:
+        return BridgeMeta._stream_config
 
 class Bridge(metaclass=BridgeMeta):
     
@@ -111,5 +117,9 @@ class Bridge(metaclass=BridgeMeta):
         Bridge.instance.stop_thread()
         Bridge.instance.reset()
         Bridge.instance.start_thread()
+        
+    @staticmethod
+    def update_stream_config() -> None:
+        Bridge.transfer_stream.update_config(Bridge.stream_config)
         
 

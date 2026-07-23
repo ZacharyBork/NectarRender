@@ -89,10 +89,7 @@ public:
 void run_combine_data(DataView a, DataView b);
 void run_norm_by_samples(DataView data, uint32_t samples);
 void run_accumulate_samples(DataView a, DataView b,uint32_t current_sample);
-void run_replace_invalid(DataView data);
-void run_linear_to_gamma(DataView data);
-void run_tonemap(DataView data, float exposure);
-void to_image(DataView data, uint8_t* result);
+void data_to_image(DataView data, uint8_t* result);
 
 // ============================================================================
 // DATA OBJECT CLASS
@@ -183,14 +180,15 @@ public:
         }
     }
 
-    void replace_invalid() { if (enabled) run_replace_invalid(view()); }
-    void linear_to_gamma() { if (enabled) run_linear_to_gamma(view()); }
-    void tonemap(float exposure) {if (enabled) run_tonemap(view(), exposure);}
-
     /* HOST UTILITIES */
 
     __host__ DataView view() { 
         return DataView{ data_ptr(), C, H, W, enabled}; 
+    }
+
+    __host__ void overwrite(float* new_d_ptr) {
+        if (d_ptr) cudaFree(d_ptr);
+        d_ptr = new_d_ptr;
     }
 
     __host__ pybind11::array numpy() {
@@ -198,7 +196,7 @@ public:
 
         uint8_t* image_ptr;
         cudaMalloc(&image_ptr, n_elements() * sizeof(uint8_t));
-        to_image(view(), image_ptr);
+        data_to_image(view(), image_ptr);
 
         auto result = pybind11::array_t<uint8_t>(shape());
         cudaMemcpy(

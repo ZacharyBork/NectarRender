@@ -308,6 +308,15 @@ public:
         p.update(other);
         __construct(seed_);
     }
+
+    template<typename T>
+    __host__ T* make_buffer(size_t channels) {
+        T* d_buffer_ptr;
+        Vector2 r = resolution();
+        size_t n_bytes = channels * (size_t)r.x() * (size_t)r.y() * sizeof(T);
+        cudaMalloc(&d_buffer_ptr, n_bytes);
+        return d_buffer_ptr;
+    }
         
 private:
 

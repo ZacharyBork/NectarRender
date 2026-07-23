@@ -23,7 +23,24 @@ void register_data(py::module_& m) {
             return "StreamState.UNKNOWN";
         });
 
+    py::enum_<TonemapMethod>(m_data, "TonemapMethod")
+        .value("REINHARD",   TonemapMethod::REINHARD)
+        .def("__repr__", [](const TonemapMethod& method) {
+            switch (method) {
+                case TonemapMethod::REINHARD: return "StreamState.REINHARD";
+            }
+            return "TonemapMethod.UNKNOWN";
+        });
+
+    py::class_<StreamConfig>(m_data, "StreamConfig")
+        .def(py::init<>())
+        .def_readwrite("linear_to_gamma",   &StreamConfig::linear_to_gamma)
+        .def_readwrite("apply_tonemapping", &StreamConfig::apply_tonemapping)
+        .def_readwrite("tonemap_method",    &StreamConfig::tonemap_method)
+        .def_readwrite("tonemap_alpha",     &StreamConfig::tonemap_alpha);
+
     py::class_<TransferStream>(m_data, "TransferStream")
+        .def("update_config",  &TransferStream::update_config)
         .def("buffer_ptr",     &TransferStream::buffer_ptr)
         .def("readback",       &TransferStream::readback)
         .def("get_state",      &TransferStream::get_state)
@@ -44,8 +61,6 @@ void register_data(py::module_& m) {
         .def("shape",           &DataObject::shape)
         .def("numpy",           &DataObject::numpy)
         .def("is_enabled",      &DataObject::is_enabled)
-        .def("linear_to_gamma", &DataObject::linear_to_gamma)
-        .def("tonemap",         &DataObject::tonemap)
         .def("device_ptr",      &DataObject::device_ptr)
         .def_readonly("C",      &DataObject::C)
         .def_readonly("H",      &DataObject::H)

@@ -56,7 +56,8 @@ class HitRecord:
 class Hittable:
     pass
 class Mesh(Hittable):
-    def from_obj(self, path: str, position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ..., material: _pathtracer.material.Material = ...) -> Mesh:
+    @staticmethod
+    def from_obj(path: str, position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ..., material: _pathtracer.material.Material = ...) -> Mesh:
         ...
 class Quad(Hittable):
     def __init__(self, position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ..., material: _pathtracer.material.Material = ...) -> None:

@@ -16,6 +16,8 @@ struct TraceConfig {
 
 };
 
+void reject_outliers(RenderLayers& layers, float threshold);
+
 void trace(
     TraceConfig   cfg, 
     DeviceCamera* cam,

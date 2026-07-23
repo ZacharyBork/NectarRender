@@ -242,7 +242,7 @@
               </sizepolicy>
              </property>
              <property name="currentIndex">
-              <number>0</number>
+              <number>1</number>
              </property>
              <widget class="QWidget" name="selected_tab">
               <property name="sizePolicy">
@@ -629,6 +629,92 @@
                         </property>
                         <property name="value">
                          <double>1.000000000000000</double>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QGroupBox" name="tonemapping_settings">
+                     <property name="title">
+                      <string>Tonemapping</string>
+                     </property>
+                     <layout class="QFormLayout" name="formLayout_5">
+                      <property name="leftMargin">
+                       <number>3</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>3</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>3</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>3</number>
+                      </property>
+                      <item row="0" column="0">
+                       <widget class="QCheckBox" name="enable_tonemap">
+                        <property name="text">
+                         <string>Enable</string>
+                        </property>
+                        <property name="checked">
+                         <bool>true</bool>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="0" column="1">
+                       <widget class="QComboBox" name="tonemap_method">
+                        <property name="currentText">
+                         <string/>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="2" column="0">
+                       <widget class="QLabel" name="label_12">
+                        <property name="text">
+                         <string>Blend</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="2" column="1">
+                       <layout class="QHBoxLayout" name="horizontalLayout">
+                        <item>
+                         <widget class="QSlider" name="tonemap_alpha">
+                          <property name="maximum">
+                           <number>100</number>
+                          </property>
+                          <property name="value">
+                           <number>100</number>
+                          </property>
+                          <property name="orientation">
+                           <enum>Qt::Horizontal</enum>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QLabel" name="tonemap_blend_percent">
+                          <property name="text">
+                           <string>100%</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </item>
+                      <item row="1" column="0">
+                       <widget class="QLabel" name="label_14">
+                        <property name="text">
+                         <string>To Gamma</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="1">
+                       <widget class="QCheckBox" name="linear_to_gamma">
+                        <property name="text">
+                         <string/>
+                        </property>
+                        <property name="checked">
+                         <bool>true</bool>
                         </property>
                        </widget>
                       </item>

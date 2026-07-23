@@ -33,6 +33,81 @@ __device__ Color trace_shadow_rays(
 }
 
 // ============================================================================
+// OUTLIER REJECTION
+// ============================================================================
+
+__device__ inline float luminance(const Color& c) {
+    return 0.2126f * c.r() + 0.7152f * c.g() + 0.0722f * c.b();
+}
+
+__global__ void reject_outliers_kernel(
+    DataView beauty,
+    float*   dst,
+    float    threshold
+) {
+    size_t H = beauty.H, W = beauty.W;
+    ProcessIndex p_idx = get_process_index();
+    if (p_idx.x >= W || p_idx.y >= H) return;
+
+    Color center = beauty.get_color();
+
+    float neighbor_lum[8];
+    int n = 0;
+    for (int dy = -1; dy <= 1; dy++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            if (dx == 0 && dy == 0) continue;
+            int nx = p_idx.x + dx, ny = p_idx.y + dy;
+            if (nx < 0 || ny < 0 || nx >= (int)W || ny >= (int)H) continue;
+            size_t plane = beauty.H * beauty.W;
+            uint32_t nidx = ny * W + nx;
+            Color neighbor(
+                beauty.ptr[0 * plane + nidx],
+                beauty.ptr[1 * plane + nidx],
+                beauty.ptr[2 * plane + nidx]
+            );
+            neighbor_lum[n++] = luminance(neighbor);
+        }
+    }
+
+    for (int i = 1; i < n; i++) {
+        float key = neighbor_lum[i];
+        int j = i - 1;
+        while (j >= 0 && neighbor_lum[j] > key) {
+            neighbor_lum[j + 1] = neighbor_lum[j];
+            j--;
+        }
+        neighbor_lum[j + 1] = key;
+    }
+    float median = (n > 0) ? neighbor_lum[n / 2] : 0.0f;
+
+    Color result;
+    float center_lum = luminance(center);
+    if (median > 1e-6f && center_lum > threshold * median) {
+        result = center * (threshold * median / center_lum);
+    } else {
+        result = center;
+    }
+
+    ColorIndex c_idx(beauty.C, beauty.H, beauty.W);
+    dst[c_idx.r] = result.r();
+    dst[c_idx.g] = result.g();
+    dst[c_idx.b] = result.b();
+}
+
+void reject_outliers(RenderLayers& layers, float threshold) {
+    size_t H = layers.beauty.H, W = layers.beauty.W;
+    dim3 block(BS2D, BS2D, 1);
+    dim3 grid((W + BS2D - 1) / BS2D, (H + BS2D - 1) / BS2D, 1);
+
+    float* result;
+    cudaMalloc(&result, layers.beauty.n_bytes());
+    reject_outliers_kernel<<<grid, block>>>(
+        layers.beauty.view(), result, threshold
+    );
+    layers.beauty.overwrite(result);
+}
+
+// ============================================================================
 // TRACE SINGLE RAY
 // ============================================================================
 

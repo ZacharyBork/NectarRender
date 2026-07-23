@@ -70,11 +70,12 @@ set_target_properties(_pathtracer
 # LINK LIBRARIES
 ##############################################################################
 
-target_link_libraries(nectar_cuda PRIVATE CUDA::cudart cublas)
+target_link_libraries(nectar_cuda PRIVATE CUDA::cudart cublas atomic)
 target_link_libraries(_pathtracer PRIVATE
     nectar_cuda
     CUDA::cudart
     cublas
+    atomic
 )
 
 

@@ -7,7 +7,7 @@ from PySide6.QtCore    import QFile, QObject, Slot, QSize, QTimer
 from PySide6.QtGui     import QIcon
 from PySide6.QtUiTools import QUiLoader
 
-from nectar_render import Camera
+from nectar_render import Camera, TonemapMethod
 from nectar_render.gui         import utils
 from nectar_render.gui.bridge  import RenderBridge, Bridge
 from nectar_render.gui.widgets import ViewportWidget, ProgressBar, Profiler
@@ -174,6 +174,38 @@ class Interface(QObject):
 
         connect_groupbox('general_settings')
         connect_groupbox('camera_settings')
+        
+        def set_tonemap_enabled(enabled: bool):
+            Bridge.stream_config.apply_tonemapping = enabled
+            Bridge.update_stream_config()
+            
+        self.find(W.QCheckBox, 'enable_tonemap').stateChanged.connect(
+            set_tonemap_enabled
+        )
+        
+        def set_tonemap_method(method: str):
+            match method:
+                case 'Reinhard': method = TonemapMethod.REINHARD
+            Bridge.stream_config.tonemap_method = method
+            Bridge.update_stream_config()
+        
+        tonemap_method = self.find(W.QComboBox, 'tonemap_method')
+        tonemap_method.addItems(['Reinhard'])
+        tonemap_method.currentTextChanged.connect(set_tonemap_method)
+        
+        def tonemap_alpha(value: int) -> None:
+            Bridge.stream_config.tonemap_alpha = float(value) / 100.0
+            Bridge.update_stream_config()
+        self.find(W.QSlider, 'tonemap_alpha').valueChanged.connect(
+            tonemap_alpha
+        )
+        
+        def linear_to_gamma(value: bool):
+            Bridge.stream_config.linear_to_gamma = value
+            Bridge.update_stream_config()
+        self.find(W.QCheckBox, 'linear_to_gamma').stateChanged.connect(
+            linear_to_gamma
+        )
         
     def _build_control_bar(self: Self) -> None:        
         icon_paths = {
