@@ -10,8 +10,8 @@ public:
     __host__ Sphere(
         const Vector3& position, 
         float radius,
-        const Material& material
-    ) : Hittable(position, material), 
+        Material material
+    ) : Hittable(position, std::move(material)), 
         radius(radius + FMIN) 
     { }
 
@@ -122,15 +122,18 @@ private:
 class Cube : public Hittable {
 public:
     
-    __host__ Cube(const Material& material) 
-        : Cube(Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), material) { }
+    __host__ Cube(Material material) 
+        : Cube(
+            Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), std::move(material)
+        ) 
+    { }
 
     __host__ Cube(
         const Vector3&  position,
         const Vector3&  rotation,
         const Vector3&  scale, 
-        const Material& material
-    ) : Hittable(position, rotation, scale, material) { }
+        Material material
+    ) : Hittable(position, rotation, scale, std::move(material)) { }
 
     __device__ Cube(
         Transform& xform, 

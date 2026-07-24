@@ -14,16 +14,18 @@ public:
         const Vector3& scale
     ) : Hittable(position, rotation, scale) { }
 
-    __host__ Quad(const Material& material) 
-        : Quad(Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), material) { }
+    __host__ Quad(Material material) 
+        : Quad(
+            Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), std::move(material)
+        ) 
+    { }
 
-    template <typename M>
     __host__ Quad(
         const Vector3& position,
         const Vector3& rotation,
         const Vector3& scale, 
-        const M&       material
-    ) : Hittable(position, rotation, scale, material) { }
+        Material material
+    ) : Hittable(position, rotation, scale, std::move(material)) { }
 
     __device__ Quad(
         Transform& xform, 

@@ -33,24 +33,12 @@ struct ScatterRecord {
 class Lambertian : public MaterialCore {
 public:
 
-    __host__ Lambertian(const Color& albedo) 
-        : texture(ConstantTexture(albedo).build()) { }
-
-    template<typename T>
-    __host__ Lambertian(const T& texture) : texture(texture.build()) {}
-
-    __device__ Lambertian(Texture* texture) : texture(texture) { }
+    __device__ Lambertian(TextureView albedo) : albedo(albedo) { }
 
     __device__ void update(MaterialCore* mat) {
         Lambertian* other = reinterpret_cast<Lambertian*>(mat);
-        texture = other->texture;
+        albedo = other->albedo;
     };
-
-    __host__ void teardown() { if (texture) cudaFree(texture); }
-
-    __host__ bool operator==(const Lambertian& other) {
-        return texture == other.texture;
-    }
     
     __device__ bool scatter(
         HitRecord& rec,
@@ -58,7 +46,7 @@ public:
         ScatterRecord& srec,
         Generator& gen
     ) const { 
-        srec.atten = texture->sample(rec.uv, rec.p);
+        srec.atten = albedo.sample(rec.uv, rec.p);
         srec.pdf   = PDF::cosine(rec.n);
         srec.skip_pdf = false;
         return true;
@@ -71,7 +59,7 @@ public:
     ) const {
         float cos_theta = dot(rec.n, normalize(light_dir));
         if (cos_theta <= 0.0f) return Color::black();
-        return texture->sample(rec.uv, rec.p) * (cos_theta / PI);
+        return albedo.sample(rec.uv, rec.p) * (cos_theta / PI);
     }
 
     __device__ Color emitted(
@@ -81,7 +69,7 @@ public:
 
 private:
 
-    Texture* texture;
+    TextureView albedo;
     
 };
 
@@ -92,26 +80,12 @@ private:
 class PBR : public MaterialCore {
 public:
 
-    template<typename T>
-    __host__ PBR(
-        const T& albedo,
-        const T& roughness,
-        const T& metallic,
-        const T& emission,
-        const T& normal
-    ) : albedo_tex   (albedo.build()), 
-        roughness_tex(roughness.build()), 
-        metallic_tex (metallic.build()),
-        emission_tex (emission.build()), 
-        normal_tex   (normal.build())
-    { }
-
     __device__ PBR(
-        Texture* albedo,
-        Texture* roughness,
-        Texture* metallic,
-        Texture* emission,
-        Texture* normal
+        TextureView albedo,
+        TextureView roughness,
+        TextureView metallic,
+        TextureView emission,
+        TextureView normal
     ) : albedo_tex   (albedo), 
         roughness_tex(roughness), 
         metallic_tex (metallic),
@@ -128,26 +102,10 @@ public:
         normal_tex    = other->normal_tex;
     }
 
-    __host__ void teardown() { 
-        if (albedo_tex)    cudaFree(albedo_tex);
-        if (roughness_tex) cudaFree(roughness_tex);
-        if (metallic_tex)  cudaFree(metallic_tex);
-        if (emission_tex)  cudaFree(emission_tex);
-        if (normal_tex)    cudaFree(normal_tex);
-    }
-
-    __host__ bool operator==(const PBR& other) {
-        return albedo_tex    == other.albedo_tex
-            && roughness_tex == other.roughness_tex
-            && metallic_tex  == other.metallic_tex
-            && emission_tex  == other.emission_tex
-            && normal_tex    == other.normal_tex;
-    }
-
     __device__ NOINLINE Vector3 get_shading_normal(
         const HitRecord& rec
     ) const {
-        Color tex_n = normal_tex->sample(rec.uv, rec.p);
+        Color tex_n = normal_tex.sample(rec.uv, rec.p);
         Vector3 map_n = normalize(Vector3(
             tex_n.r() * 2.0f - 1.0f, 
             tex_n.g() * 2.0f - 1.0f, 
@@ -165,8 +123,8 @@ public:
         Generator& gen
     ) const {
         Vector3 n        = get_shading_normal(rec);
-        Color   albedo   = albedo_tex->sample(rec.uv, rec.p);
-        float   metallic = metallic_tex->sample(rec.uv, rec.p).r();
+        Color   albedo   = albedo_tex.sample(rec.uv, rec.p);
+        float   metallic = metallic_tex.sample(rec.uv, rec.p).r();
 
         Color F0 = Color(0.04f) * (1.0f - metallic) + albedo * metallic;
         float spec_prob = fminf(
@@ -177,7 +135,7 @@ public:
         srec.skip_pdf = false;
         srec.pdf      = PDF::pbr_lobe(
             n, normalize(-ray.direction()), 
-            roughness_tex->sample(rec.uv, rec.p).r(), 
+            roughness_tex.sample(rec.uv, rec.p).r(), 
             spec_prob
         );
         return true;
@@ -193,9 +151,9 @@ public:
         float n_dot_v = dot(n, view_dir);
         if (n_dot_l <= 0.0f || n_dot_v <= 0.0f) return Color::black();
 
-        Color albedo    = albedo_tex->sample(rec.uv, rec.p);
-        float roughness = roughness_tex->sample(rec.uv, rec.p).r();
-        float metallic  = metallic_tex->sample(rec.uv, rec.p).r();
+        Color albedo    = albedo_tex.sample(rec.uv, rec.p);
+        float roughness = roughness_tex.sample(rec.uv, rec.p).r();
+        float metallic  = metallic_tex.sample(rec.uv, rec.p).r();
         float alpha     = fmaxf(roughness * roughness, 1e-3f);
 
         Vector3 h = normalize(view_dir + light_dir);
@@ -218,16 +176,16 @@ public:
         const HitRecord& rec
     ) const {
         if (!rec.front_face) return Color::black();
-        return emission_tex->sample(rec.uv, rec.p);
+        return emission_tex.sample(rec.uv, rec.p);
     }
 
 private:
 
-    Texture* albedo_tex;
-    Texture* roughness_tex;
-    Texture* metallic_tex;
-    Texture* emission_tex;
-    Texture* normal_tex;
+    TextureView albedo_tex;
+    TextureView roughness_tex;
+    TextureView metallic_tex;
+    TextureView emission_tex;
+    TextureView normal_tex;
 
 };
 
@@ -238,18 +196,12 @@ private:
 class Dielectric : public MaterialCore {
 public:
 
-    __host__ __device__ Dielectric(float ior = 1.5f) : ior(ior) {}
+    __device__ Dielectric(float ior = 1.5f) : ior(ior) {}
 
     __device__ void update(MaterialCore* mat) {
         Dielectric* other = reinterpret_cast<Dielectric*>(mat);
         ior = other->ior;
     };
-
-    __host__ void teardown() { }
-
-    __host__ bool operator==(const Dielectric& other) {
-        return ior == other.ior;
-    }
 
     __device__ NOINLINE bool scatter(
         HitRecord& rec,
@@ -310,14 +262,7 @@ private:
 class Emissive : public MaterialCore {
 public:
 
-    __host__ Emissive(const Color& albedo, const float brightness = 35.0f) 
-        : texture(ConstantTexture(albedo).build()), brightness(brightness) {}
-
-    template<typename T>
-    __host__ Emissive(const T& texture, const float brightness = 35.0f) 
-        : texture(texture.build()), brightness(brightness) {}
-
-    __device__ Emissive(Texture* texture, float brightness) 
+    __device__ Emissive(TextureView texture, float brightness) 
         : texture(texture), brightness(brightness) { }
 
     __device__ void update(MaterialCore* mat) {
@@ -325,13 +270,6 @@ public:
         texture = other->texture;
         brightness = other->brightness;
     };
-
-    __host__ void teardown() { if (texture) cudaFree(texture); }
-
-    __host__ bool operator==(const Emissive& other) {
-        return texture    == other.texture
-            && brightness == other.brightness;
-    }
 
     __device__ bool scatter(
         HitRecord& rec, 
@@ -351,13 +289,13 @@ public:
         const HitRecord& rec
     ) const {
         if (!rec.front_face) return Color::black();
-        return texture->sample(rec.uv, rec.p) * brightness;
+        return texture.sample(rec.uv, rec.p) * brightness;
     }
 
 private:
 
-    Texture* texture;
-    float    brightness;
+    TextureView texture;
+    float brightness;
 
 };
 
@@ -368,24 +306,12 @@ private:
 class Isotropic : public MaterialCore {
 public:
 
-    __host__ Isotropic(const Color& albedo) 
-        : texture(ConstantTexture(albedo).build()) {}
-
-    template<typename T>
-    __host__ Isotropic(const T& texture) : texture(texture.build()) {}
-
-    __device__ Isotropic(Texture* texture) : texture(texture) { }
+    __device__ Isotropic(TextureView texture) : texture(texture) { }
 
     __device__ void update(MaterialCore* mat) {
         Isotropic* other = reinterpret_cast<Isotropic*>(mat);
         texture = other->texture;
     };
-
-    __host__ void teardown() { if (texture) cudaFree(texture); }
-
-    __host__ bool operator==(const Isotropic& other) {
-        return texture == other.texture;
-    }
 
     __device__ bool scatter(
         HitRecord& rec,
@@ -393,7 +319,7 @@ public:
         ScatterRecord& srec,
         Generator& gen
     ) const { 
-        srec.atten = texture->sample(rec.uv, rec.p);
+        srec.atten = texture.sample(rec.uv, rec.p);
         srec.pdf   = PDF::sphere();
         srec.skip_pdf = false;
         return true;
@@ -404,7 +330,7 @@ public:
         const Vector3& view_dir, 
         const Vector3& light_dir
     ) const {
-        return texture->sample(rec.uv, rec.p) * (1.0f / PI4);
+        return texture.sample(rec.uv, rec.p) * (1.0f / PI4);
     }
 
     __device__ Color emitted(
@@ -414,7 +340,8 @@ public:
 
 private:
 
-    Texture* texture;
+    TextureView texture;
+
 };
 
 // ############################################################################
@@ -444,13 +371,21 @@ private:
         Isotropic*  mat_isotropic;
     };
 
-    static constexpr uint8_t MAX_TRACKED_RESOURCES = 6u;
-    void* tracked_resources[MAX_TRACKED_RESOURCES] = { nullptr };
-    uint8_t n_tracked_resources = 0u;
+    struct TextureTracker {
+        static constexpr uint8_t MAX_TEXTURES = 6u;
+        std::shared_ptr<Texture> textures[MAX_TEXTURES];
+        uint8_t count = 0u;
+    };
+    TextureTracker* tracker = nullptr;
 
-    __host__ void track(void* ptr) {
-        assert(n_tracked_resources < MAX_TRACKED_RESOURCES);
-        tracked_resources[n_tracked_resources++] = ptr;
+    __host__ void track(std::shared_ptr<Texture> texture) {
+        if (!tracker) tracker = new TextureTracker();
+        assert(tracker->count < TextureTracker::MAX_TEXTURES);
+        tracker->textures[tracker->count++] = std::move(texture);
+    }
+
+    __host__ void track(std::vector<std::shared_ptr<Texture>> textures) {
+        for (std::shared_ptr<Texture> texture : textures) track(texture);
     }
 
     __host__ void* core_ptr() const {
@@ -469,11 +404,17 @@ public:
     // CONSTRUCTORS ===========================================================
 
     __host__ ~Material() = default;
-    __host__ Material(const Material&) = default;
+    __host__ Material(const Material&) = delete;
 
+    __host__ Material(Material&& other) noexcept {
+        std::memcpy(this, &other, sizeof(Material));
+        other.type = MaterialType::Null;
+        other.tracker = nullptr;
+    }
+    
     __host__ __device__ Material() : type(MaterialType::Null) { }
     __host__ __device__ Material(MaterialType type) : type(type) { }
-
+    
     __device__ Material(MaterialType type, void* mat) : type(type) { 
         switch (type) {
             case MaterialType::Null: return;
@@ -484,74 +425,41 @@ public:
         }
     }
 
-    __host__ Material(Material&& other) noexcept {
-        std::memcpy(this, &other, sizeof(Material));
-        other.type = MaterialType::Null;
-        other.n_tracked_resources = 0;
-    }
-
-    // OPERATORS ==============================================================
-
-    __host__ bool operator==(const Material& other) {
-        if (type != other.type) return false;
-        switch (type) {
-            case MaterialType::Null: return true;
-            #define X(Name, Member) case MaterialType::Name: \
-                return Member == other.Member;
-            FOR_EACH_MATERIAL_TYPE(X)
-            #undef X
-        }
-        return false;
-    }
-
-    __host__ Material& operator=(Material&& other) noexcept {
-        if (this != &other) {
-            std::memcpy(this, &other, sizeof(Material));
-            other.type = MaterialType::Null;
-            other.n_tracked_resources = 0;
-        }
-        return *this;
-    }
-
-    __host__ Material& operator=(const Material&) = default;
-
-    // UTILITIES ==============================================================
-
-    __host__ MaterialType material_type() const { return type; }
-    __host__ uint8_t resource_count() const { return n_tracked_resources; } 
+    
 
     // LAMBERTIAN =============================================================
 
-    template<typename T>
-    __host__ static Material lambertian(const T& texture) {
+    __host__ static Material lambertian(std::shared_ptr<Texture> texture) {
         Material m(MaterialType::Lambertian); 
-        Texture* t = texture.build(); m.track(t);
-        m.mat_lambertian = device_build<Lambertian>(t);
+        TextureView v = texture->view(); m.track(texture);
+        m.mat_lambertian = device_build<Lambertian>(v);
         return m;
     }
 
     __host__ static Material lambertian(const Color& albedo) {
-        return Material::lambertian(ConstantTexture(albedo));
+        return Material::lambertian(Texture::from_color(albedo));
     }
 
     // PBR METAL ROUGHNESS ====================================================
 
-    template<typename T>
     __host__ static Material pbr(
-        const T& albedo,
-        const T& roughness,
-        const T& metallic,
-        const T& emission,
-        const T& normal
+        std::shared_ptr<Texture> albedo,
+        std::shared_ptr<Texture> roughness,
+        std::shared_ptr<Texture> metallic,
+        std::shared_ptr<Texture> emission,
+        std::shared_ptr<Texture> normal
     ) {
         Material m(MaterialType::PBR);
-        Texture* albedo_    = albedo.build();    m.track(albedo_);
-        Texture* roughness_ = roughness.build(); m.track(roughness_);
-        Texture* metallic_  = metallic.build();  m.track(metallic_);
-        Texture* emission_  = emission.build();  m.track(emission_);
-        Texture* normal_    = normal.build();    m.track(normal_);
+
+        TextureView v_albedo    = albedo->view();
+        TextureView v_roughness = roughness->view();
+        TextureView v_metallic  = metallic->view();
+        TextureView v_emission  = emission->view();
+        TextureView v_normal    = normal->view();
+
+        m.track({ albedo, roughness, metallic, emission, normal });
         m.mat_pbr = device_build<PBR>(
-            albedo_, roughness_, metallic_, emission_, normal_
+            v_albedo, v_roughness, v_metallic, v_emission, v_normal
         );
         return m;
     }
@@ -566,14 +474,13 @@ public:
 
     // EMISSIVE ===============================================================
 
-    template<typename T>
     __host__ static Material emissive(
-        const T& texture,
+        std::shared_ptr<Texture> texture,
         const float brightness = 35.0f
     ) {
         Material m(MaterialType::Emissive); 
-        Texture* t = texture.build(); m.track(t);
-        m.mat_emissive = device_build<Emissive>(t, brightness);
+        TextureView v = texture->view(); m.track(texture);
+        m.mat_emissive = device_build<Emissive>(v, brightness);
         return m;
     }
 
@@ -581,22 +488,41 @@ public:
         const Color& albedo, 
         const float brightness = 35.0f
     ) {
-        return Material::emissive(ConstantTexture(albedo), brightness);
+        return Material::emissive(Texture::from_color(albedo), brightness);
     }
 
     // ISOTROPIC ==============================================================
 
-    template<typename T>
-    __host__ static Material isotropic(const T& texture) {
-        Material m(MaterialType::Isotropic);
-        Texture* t = texture.build(); m.track(t);
-        m.mat_isotropic = device_build<Isotropic>(t);
+    __host__ static Material isotropic(std::shared_ptr<Texture> texture) {
+        Material m(MaterialType::Isotropic); 
+        TextureView v = texture->view(); m.track(texture);
+        m.mat_isotropic = device_build<Isotropic>(v);
         return m;
     }
 
     __host__ static Material isotropic(const Color& albedo) {
-        return Material::isotropic(ConstantTexture(albedo));
+        return Material::isotropic(Texture::from_color(albedo));
     }
+
+    // OPERATORS ==============================================================
+
+    __host__ Material& operator=(Material&& other) noexcept {
+        if (this != &other) {
+            std::memcpy(this, &other, sizeof(Material));
+            other.type = MaterialType::Null;
+            other.tracker = nullptr;
+        }
+        return *this;
+    }
+
+    __host__ Material& operator=(const Material&) = delete;
+
+    // UTILITIES ==============================================================
+
+    __host__ MaterialType material_type() const { return type; }
+    __host__ uint8_t texture_count() const { 
+        return tracker ? tracker->count : 0u; 
+    } 
 
     // UPDATE =================================================================
 
@@ -605,10 +531,12 @@ public:
     }
 
     __host__ void teardown() {
-        for (int i = 0; i < n_tracked_resources; i++)
-            if (tracked_resources[i]) cudaFree(tracked_resources[i]);
-        n_tracked_resources = 0;
-
+        if (tracker) {
+            for (int i = 0; i < tracker->count; i++)
+                tracker->textures[i]->teardown();
+            delete tracker;
+            tracker = nullptr;
+        }
         void* core = core_ptr();
         if (core) cudaFree(core);
     }
@@ -672,6 +600,8 @@ public:
     
 };
 
-
+__host__ inline Material make_default_material() {
+    return Material::lambertian(Color::purple());
+}
 
 

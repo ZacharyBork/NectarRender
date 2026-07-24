@@ -636,11 +636,14 @@
                     </widget>
                    </item>
                    <item>
-                    <widget class="QGroupBox" name="tonemapping_settings">
+                    <widget class="QGroupBox" name="color_correction_settings">
                      <property name="title">
-                      <string>Tonemapping</string>
+                      <string>Color Correction</string>
                      </property>
-                     <layout class="QFormLayout" name="formLayout_5">
+                     <property name="checkable">
+                      <bool>true</bool>
+                     </property>
+                     <layout class="QVBoxLayout" name="verticalLayout_14">
                       <property name="leftMargin">
                        <number>3</number>
                       </property>
@@ -653,69 +656,155 @@
                       <property name="bottomMargin">
                        <number>3</number>
                       </property>
-                      <item row="0" column="0">
-                       <widget class="QCheckBox" name="enable_tonemap">
-                        <property name="text">
-                         <string>Enable</string>
+                      <item>
+                       <widget class="QGroupBox" name="groupBox_2">
+                        <property name="title">
+                         <string>Image</string>
                         </property>
-                        <property name="checked">
+                        <property name="flat">
                          <bool>true</bool>
                         </property>
+                        <layout class="QFormLayout" name="formLayout_5">
+                         <property name="verticalSpacing">
+                          <number>3</number>
+                         </property>
+                         <property name="leftMargin">
+                          <number>3</number>
+                         </property>
+                         <property name="topMargin">
+                          <number>3</number>
+                         </property>
+                         <property name="rightMargin">
+                          <number>3</number>
+                         </property>
+                         <property name="bottomMargin">
+                          <number>3</number>
+                         </property>
+                         <item row="0" column="0">
+                          <widget class="QLabel" name="label_14">
+                           <property name="text">
+                            <string>To Gamma</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="0" column="1">
+                          <widget class="QCheckBox" name="linear_to_gamma">
+                           <property name="text">
+                            <string/>
+                           </property>
+                           <property name="checked">
+                            <bool>true</bool>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
                        </widget>
                       </item>
-                      <item row="0" column="1">
-                       <widget class="QComboBox" name="tonemap_method">
-                        <property name="currentText">
-                         <string/>
+                      <item>
+                       <widget class="QGroupBox" name="groupBox_3">
+                        <property name="title">
+                         <string>Tonemapping</string>
                         </property>
-                       </widget>
-                      </item>
-                      <item row="2" column="0">
-                       <widget class="QLabel" name="label_12">
-                        <property name="text">
-                         <string>Blend</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="2" column="1">
-                       <layout class="QHBoxLayout" name="horizontalLayout">
-                        <item>
-                         <widget class="QSlider" name="tonemap_alpha">
-                          <property name="maximum">
-                           <number>100</number>
-                          </property>
-                          <property name="value">
-                           <number>100</number>
-                          </property>
-                          <property name="orientation">
-                           <enum>Qt::Horizontal</enum>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="tonemap_blend_percent">
-                          <property name="text">
-                           <string>100%</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </item>
-                      <item row="1" column="0">
-                       <widget class="QLabel" name="label_14">
-                        <property name="text">
-                         <string>To Gamma</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="1" column="1">
-                       <widget class="QCheckBox" name="linear_to_gamma">
-                        <property name="text">
-                         <string/>
-                        </property>
-                        <property name="checked">
+                        <property name="flat">
                          <bool>true</bool>
                         </property>
+                        <layout class="QFormLayout" name="formLayout_6">
+                         <property name="verticalSpacing">
+                          <number>3</number>
+                         </property>
+                         <property name="leftMargin">
+                          <number>3</number>
+                         </property>
+                         <property name="topMargin">
+                          <number>3</number>
+                         </property>
+                         <property name="rightMargin">
+                          <number>3</number>
+                         </property>
+                         <property name="bottomMargin">
+                          <number>3</number>
+                         </property>
+                         <item row="0" column="0">
+                          <widget class="QCheckBox" name="enable_tonemap">
+                           <property name="text">
+                            <string>Enable</string>
+                           </property>
+                           <property name="checked">
+                            <bool>true</bool>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="0" column="1">
+                          <widget class="QComboBox" name="tonemap_method">
+                           <property name="currentText">
+                            <string/>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="1" column="0">
+                          <widget class="QLabel" name="label_12">
+                           <property name="text">
+                            <string>Blend</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="1" column="1">
+                          <layout class="QHBoxLayout" name="horizontalLayout">
+                           <item>
+                            <widget class="QSlider" name="tonemap_alpha">
+                             <property name="maximum">
+                              <number>100</number>
+                             </property>
+                             <property name="value">
+                              <number>100</number>
+                             </property>
+                             <property name="orientation">
+                              <enum>Qt::Horizontal</enum>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QLabel" name="tonemap_blend_percent">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="minimumSize">
+                              <size>
+                               <width>40</width>
+                               <height>0</height>
+                              </size>
+                             </property>
+                             <property name="text">
+                              <string>100%</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </item>
+                         <item row="2" column="0">
+                          <widget class="QLabel" name="label_15">
+                           <property name="text">
+                            <string>White Point</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="2" column="1">
+                          <widget class="QDoubleSpinBox" name="tonemap_white_point">
+                           <property name="singleStep">
+                            <double>0.200000000000000</double>
+                           </property>
+                           <property name="value">
+                            <double>1.000000000000000</double>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
                        </widget>
                       </item>
                      </layout>

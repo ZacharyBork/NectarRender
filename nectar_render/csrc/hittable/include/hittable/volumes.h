@@ -11,7 +11,7 @@ public:
     __host__ ConstantMedium(
         Hittable& bound_obj,
         float density,
-        const Texture& texture
+        std::shared_ptr<Texture> texture
     ) : Hittable(
             bound_obj.xform, 
             bound_obj.delta, 

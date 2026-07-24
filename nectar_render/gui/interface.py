@@ -185,16 +185,23 @@ class Interface(QObject):
         
         def set_tonemap_method(method: str):
             match method:
-                case 'Reinhard': method = TonemapMethod.REINHARD
-            Bridge.stream_config.tonemap_method = method
+                case 'Reinhard':
+                    method = TonemapMethod.REINHARD
+                case 'Reinhard Extended': 
+                    method = TonemapMethod.REINHARD_EXTENDED
+                case 'ACES': 
+                    method = TonemapMethod.ACES
+                    
+            Bridge.stream_config.tm_method = method
             Bridge.update_stream_config()
         
         tonemap_method = self.find(W.QComboBox, 'tonemap_method')
-        tonemap_method.addItems(['Reinhard'])
+        tonemap_method.addItems(['Reinhard', 'Reinhard Extended', 'ACES'])
         tonemap_method.currentTextChanged.connect(set_tonemap_method)
         
         def tonemap_alpha(value: int) -> None:
-            Bridge.stream_config.tonemap_alpha = float(value) / 100.0
+            self.find(W.QLabel, 'tonemap_blend_percent').setText(f'{value}%')
+            Bridge.stream_config.tm_alpha = float(value) / 100.0
             Bridge.update_stream_config()
         self.find(W.QSlider, 'tonemap_alpha').valueChanged.connect(
             tonemap_alpha
@@ -206,6 +213,13 @@ class Interface(QObject):
         self.find(W.QCheckBox, 'linear_to_gamma').stateChanged.connect(
             linear_to_gamma
         )
+        
+        def tonemap_white_point(value: float):
+            if (value <= 0.0): return
+            Bridge.stream_config.tm_white_point = value
+            Bridge.update_stream_config()
+        tm_white_pt = self.find(W.QDoubleSpinBox, 'tonemap_white_point')
+        tm_white_pt.valueChanged.connect(tonemap_white_point)
         
     def _build_control_bar(self: Self) -> None:        
         icon_paths = {

@@ -105,20 +105,20 @@ void register_engine(py::module_& m) {
         .def(py::init([](
             Hittable& obj,
             float brightness,
-            const Texture& texture
+            std::shared_ptr<Texture> texture
         ) {
             return ObjectLight(obj, brightness, texture);
         }),
             py::arg("obj"),
             py::arg("brightness") = 35.0f,
-            py::arg("texture") = ConstantTexture(Color(1.0f, 1.0f, 1.0f))
+            py::arg("texture") = Texture::from_color(Color::white())
         );
 
 // ############################################################################
 // SCENE
 // ############################################################################
 
-    py::class_<Scene>(m_engine, "Scene")
+    py::classh<Scene>(m_engine, "Scene")
         .def(py::init([](
             py::list hittables,
             py::list lights,
@@ -215,6 +215,13 @@ void register_engine(py::module_& m) {
             py::arg("immediate")   = true
         )
 
+        .def("set_scene", [](
+            RenderEngine& self,
+            std::unique_ptr<Scene> scene
+        ) {
+            self.set_scene(std::move(*scene));
+        })
+
         .def("render", ([](RenderEngine& self) {
             py::gil_scoped_release release;
             self.render();
@@ -231,7 +238,6 @@ void register_engine(py::module_& m) {
         .def("scene",  &RenderEngine::scene,  return_policy::reference)
         .def("stream", &RenderEngine::stream, return_policy::reference)
 
-        .def("set_scene",       &RenderEngine::set_scene)
         .def("set_sample_mode", &RenderEngine::set_sample_mode)
         .def("request_stop",    &RenderEngine::request_stop)
         .def("reset",           &RenderEngine::reset)

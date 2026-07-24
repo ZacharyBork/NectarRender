@@ -4,7 +4,6 @@ tex  = root.texture
 
 import numpy as np
 from os      import PathLike
-from typing  import Self, TypeAlias
 from pathlib import Path
 from PIL     import Image
 
@@ -14,25 +13,28 @@ from nectar_render.python.core import Color
 # TEXTURES
 ###############################################################################
 
-Texture: TypeAlias = tex.Texture
-
-class ImageTexture(tex.ImageTexture):
-    def __init__(
-        self: Self,
-        fp:   PathLike    
-    ) -> None:
-        fp = Path(fp)
+class Texture:
+    
+    @staticmethod
+    def from_color(
+        color: Color | tuple[float, float, float] = (1.0, 1.0, 1.0)
+    ) -> tex.Texture:
+        if isinstance(color, _pathtracer.core.vector.Color): 
+            return tex.Texture.from_color(color)
+        return tex.Texture.from_color(*color)
+    
+    @staticmethod
+    def from_image(filepath: PathLike) -> tex.Texture:
+        fp = Path(filepath)
         if not fp.exists():
             raise FileNotFoundError(
-                f'Unable to locate image file at path: {fp.as_posix()}'
-            )
+                f'Unable to locate image file at path: {fp.as_posix()}')
         
         img = Image.open(fp).convert('RGB')
         arr = np.array(img, dtype=np.uint8).transpose((2, 0, 1))
         ptr = np.ascontiguousarray(arr).ctypes.data
         C, H, W = arr.shape
-        
-        super().__init__(ptr, C, H, W)
+        return tex.Texture.from_image(fp.as_posix(), ptr, C, H, W)
 
 ###############################################################################
 # MATERIAL
@@ -90,16 +92,16 @@ class Material:
     def _to_texture(
         input:    PathLike | Texture | Color | float | None,
         fallback: Color = Color(0.0, 0.0, 0.0)
-    ) -> tex.ConstantTexture | ImageTexture:
-        if input is None: return tex.ConstantTexture(fallback)
+    ) -> tex.Texture:
+        if input is None: return Texture.from_color(fallback)
         
-        if isinstance(input, Texture): return input
-        if isinstance(input, float): return tex.ConstantTexture(Color(input))
+        if isinstance(input, tex.Texture): return input
+        if isinstance(input, float): return Texture.from_color(Color(input))
         if isinstance(input, _pathtracer.core.vector.Color):
-            return tex.ConstantTexture(input)
+            return Texture.from_color(input)
         
         path = Path(input).resolve()
-        if path.exists(): return ImageTexture(path)
+        if path.exists(): return Texture.from_image(path)
         raise FileNotFoundError(
             f'Unable to locate texture at path: {path.as_posix()}'
         )

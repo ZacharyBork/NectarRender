@@ -24,10 +24,17 @@ void register_data(py::module_& m) {
         });
 
     py::enum_<TonemapMethod>(m_data, "TonemapMethod")
-        .value("REINHARD",   TonemapMethod::REINHARD)
+        .value("REINHARD",          TonemapMethod::REINHARD)
+        .value("REINHARD_EXTENDED", TonemapMethod::REINHARD_EXTENDED)
+        .value("ACES",              TonemapMethod::ACES)
         .def("__repr__", [](const TonemapMethod& method) {
             switch (method) {
-                case TonemapMethod::REINHARD: return "StreamState.REINHARD";
+                case TonemapMethod::REINHARD:
+                    return "TonemapMethod.REINHARD";
+                case TonemapMethod::REINHARD_EXTENDED:
+                    return "TonemapMethod.REINHARD_EXTENDED";
+                case TonemapMethod::ACES:
+                    return "TonemapMethod.ACES";
             }
             return "TonemapMethod.UNKNOWN";
         });
@@ -36,8 +43,9 @@ void register_data(py::module_& m) {
         .def(py::init<>())
         .def_readwrite("linear_to_gamma",   &StreamConfig::linear_to_gamma)
         .def_readwrite("apply_tonemapping", &StreamConfig::apply_tonemapping)
-        .def_readwrite("tonemap_method",    &StreamConfig::tonemap_method)
-        .def_readwrite("tonemap_alpha",     &StreamConfig::tonemap_alpha);
+        .def_readwrite("tm_method",         &StreamConfig::tm_method)
+        .def_readwrite("tm_white_point",    &StreamConfig::tm_white_point)
+        .def_readwrite("tm_alpha",          &StreamConfig::tm_alpha);
 
     py::class_<TransferStream>(m_data, "TransferStream")
         .def("update_config",  &TransferStream::update_config)

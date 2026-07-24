@@ -84,7 +84,10 @@ public:
 
     /* SAMPLING / RENDERING */
 
-    void set_scene(Scene input_scene) { current_scene = input_scene; }
+    void set_scene(Scene input_scene) { 
+        current_scene = std::move(input_scene); 
+    }
+    
     void set_sample_mode(SampleMode mode) { sample_mode = mode; }
 
     void render() {

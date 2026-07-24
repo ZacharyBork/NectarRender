@@ -34,10 +34,10 @@ public:
     /* CONSTRUCTORS */
 
     __host__ Hittable() : material(Material::lambertian(Color::purple())) { }
-    __host__ Hittable(const Material& material) : material(material) { }
+    __host__ Hittable(Material material) : material(std::move(material)) { }
 
-    __host__ Hittable(const Vector3& position, const Material& material) 
-        : xform(Transform(position)), material(material) { }
+    __host__ Hittable(const Vector3& position, Material material) 
+        : xform(Transform(position)), material(std::move(material)) { }
 
     __host__ Hittable(
         const Vector3& position, 
@@ -51,25 +51,25 @@ public:
         const Vector3&  position, 
         const Vector3&  rotation,
         const Vector3&  scale,
-        const Material& material
+        Material material
     ) : xform(Transform(position, rotation, scale)),
-        material(material)
+        material(std::move(material))
     { }
 
     __host__ Hittable(
         const Vector3&  position, 
         const Vector3&  delta_position,
-        const Material& material
+        Material material
     ) : xform(Transform(position)),
         delta(Transform(delta_position)),
-        material(material)
+        material(std::move(material))
     { }
 
     __host__ Hittable(
         Transform& xform, 
         Transform& delta, 
-        const Material& material
-    ) : xform(xform), delta(delta), material(material) { }
+        Material material
+    ) : xform(xform), delta(delta), material(std::move(material)) { }
 
     __device__ Hittable(
         Transform& xform, 

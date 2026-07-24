@@ -32,13 +32,13 @@ void register_hittable(py::module_& m) {
         .def(py::init([](
             const Vector3 center, 
             float radius, 
-            const Material& material
+            std::unique_ptr<Material> material
         ) {
-            return Sphere(center, radius, material);
+            return Sphere(center, radius, std::move(*material));
         }),
             py::arg("center")   = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("radius")   = 1.0f,
-            py::arg("material") = default_material
+            py::arg("material") = make_default_material()
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 
@@ -47,14 +47,14 @@ void register_hittable(py::module_& m) {
             const Vector3 position, 
             const Vector3 rotation, 
             const Vector3 scale, 
-            const Material& material
+            std::unique_ptr<Material> material
         ) {
-            return Quad(position, rotation, scale, material);
+            return Quad(position, rotation, scale, std::move(*material));
         }),
             py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
-            py::arg("material") = default_material
+            py::arg("material") = make_default_material()
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 
@@ -63,14 +63,14 @@ void register_hittable(py::module_& m) {
             const Vector3 position, 
             const Vector3 rotation, 
             const Vector3 scale, 
-            const Material& material
+            std::unique_ptr<Material> material
         ) {
-            return Cube(position, rotation, scale, material);
+            return Cube(position, rotation, scale, std::move(*material));
         }),
             py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
-            py::arg("material") = default_material
+            py::arg("material") = make_default_material()
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 
@@ -91,25 +91,35 @@ void register_hittable(py::module_& m) {
         .def(py::init([](
             Hittable& boundary,
             float     density,
-            const Texture& texture
+            std::shared_ptr<Texture> texture
         ) {
             return ConstantMedium(boundary, density, texture);
         }),
             py::arg("boundary"),
             py::arg("density")  = 1.0f,
-            py::arg("texture")  = ConstantTexture(Color(1.0f, 1.0f, 1.0f))
+            py::arg("texture")  = Texture::from_color(Color(1.0f, 1.0f, 1.0f))
         )
         .def("set_motion_vector", &Hittable::set_motion_vector);
 
     /* MESH */
 
     py::class_<Mesh, Hittable>(m_hittable, "Mesh")
-        .def_static("from_obj", &Mesh::from_obj,
+        .def_static("from_obj", [](
+            const std::string& path,
+            const Vector3 position,
+            const Vector3 rotation,
+            const Vector3 scale,
+            std::unique_ptr<Material> material
+        ) {
+            return Mesh::from_obj(
+                path, position, rotation, scale, std::move(*material)
+            );
+        },
             py::arg("path"),
             py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
-            py::arg("material") = default_material
+            py::arg("material") = make_default_material()
         );
 
 }

@@ -138,8 +138,20 @@ class RenderLayersConfig:
 class StreamConfig:
     apply_tonemapping: bool
     linear_to_gamma: bool
-    tonemap_method: TonemapMethod
+    tm_method: TonemapMethod
     def __init__(self) -> None:
+        ...
+    @property
+    def tm_alpha(self) -> float:
+        ...
+    @tm_alpha.setter
+    def tm_alpha(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def tm_white_point(self) -> float:
+        ...
+    @tm_white_point.setter
+    def tm_white_point(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
 class StreamState:
     """
@@ -187,9 +199,15 @@ class TonemapMethod:
     Members:
     
       REINHARD
+    
+      REINHARD_EXTENDED
+    
+      ACES
     """
+    ACES: typing.ClassVar[TonemapMethod]  # value = <TonemapMethod.ACES: 2>
     REINHARD: typing.ClassVar[TonemapMethod]  # value = <TonemapMethod.REINHARD: 0>
-    __members__: typing.ClassVar[dict[str, TonemapMethod]]  # value = {'REINHARD': <TonemapMethod.REINHARD: 0>}
+    REINHARD_EXTENDED: typing.ClassVar[TonemapMethod]  # value = <TonemapMethod.REINHARD_EXTENDED: 1>
+    __members__: typing.ClassVar[dict[str, TonemapMethod]]  # value = {'REINHARD': <TonemapMethod.REINHARD: 0>, 'REINHARD_EXTENDED': <TonemapMethod.REINHARD_EXTENDED: 1>, 'ACES': <TonemapMethod.ACES: 2>}
     def __eq__(self, other: typing.Any) -> bool:
         ...
     def __getstate__(self) -> int:

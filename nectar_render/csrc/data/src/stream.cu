@@ -1,21 +1,56 @@
 #include "data/include/data/stream.h"
 
 // ============================================================================
-// COLOR UTILS
+// TONEMAPPING
 // ============================================================================
 
-__device__ void linear_to_gamma(Color& pixel_color) {
-    pixel_color = Color(
-        pixel_color.r() > 0.0f ? sqrtf(pixel_color.r()) : 0.0f,
-        pixel_color.g() > 0.0f ? sqrtf(pixel_color.g()) : 0.0f,
-        pixel_color.b() > 0.0f ? sqrtf(pixel_color.b()) : 0.0f
-    );
-};
-
-__device__ void tonemap_reinhard(Color& pixel_color, float alpha) {
+__device__ void tonemap_reinhard(Color& pixel_color) {
     Color temp = Color(pixel_color.r(), pixel_color.g(), pixel_color.b());
     temp /= temp + 1.0f;
-    pixel_color = ((1.0f - alpha) * pixel_color + alpha * temp);
+    
+}
+
+__device__ void tonemap_reinhard_extended(
+    Color& pixel_color, 
+    float white_point
+) {
+    float inv_white2 = 1.0f / (white_point * white_point);
+    Color numerator = pixel_color * (Color(1.0f) + pixel_color * inv_white2);
+    pixel_color = numerator / (Color(1.0f) + pixel_color);
+}
+
+__device__ void tonemap_aces(Color& pixel_color) {
+    const float a = 2.51f, b = 0.03f, c = 2.43f, d = 0.59f, e = 0.14f;
+    Color x = Color(pixel_color.r(), pixel_color.g(), pixel_color.b());
+    Color numerator   = x * (x * a + b);
+    Color denominator = x * (x * c + d) + e;
+    pixel_color = Color(
+        fminf(1.0f, fmaxf(0.0f, numerator.r() / denominator.r())),
+        fminf(1.0f, fmaxf(0.0f, numerator.g() / denominator.g())),
+        fminf(1.0f, fmaxf(0.0f, numerator.b() / denominator.b()))
+    );
+}
+
+__device__ void apply_tonemapping(
+    Color& pixel_color,
+    StreamConfig cfg
+) {
+    Color col = Color(pixel_color.r(), pixel_color.g(), pixel_color.b());
+    
+    switch (cfg.tm_method) {
+        case TonemapMethod::REINHARD: 
+            tonemap_reinhard(col);
+            break;
+        case TonemapMethod::REINHARD_EXTENDED: 
+            tonemap_reinhard_extended(col, cfg.tm_white_point); 
+            break;
+        case TonemapMethod::ACES:
+            tonemap_aces(col); 
+            break;
+    }
+
+    float alpha = cfg.tm_alpha;
+    pixel_color = ((1.0f - alpha) * pixel_color + alpha * col);
     pixel_color = Color(
         fminf(1.0f, fmaxf(0.0f, pixel_color.r())),
         fminf(1.0f, fmaxf(0.0f, pixel_color.g())),
@@ -26,6 +61,14 @@ __device__ void tonemap_reinhard(Color& pixel_color, float alpha) {
 // ============================================================================
 // DATA UTILS
 // ============================================================================
+
+__device__ void linear_to_gamma(Color& pixel_color) {
+    pixel_color = Color(
+        pixel_color.r() > 0.0f ? sqrtf(pixel_color.r()) : 0.0f,
+        pixel_color.g() > 0.0f ? sqrtf(pixel_color.g()) : 0.0f,
+        pixel_color.b() > 0.0f ? sqrtf(pixel_color.b()) : 0.0f
+    );
+};
 
 __device__ void to_image(
     size_t C,
@@ -58,10 +101,8 @@ __global__ void process_stream_kernel(
     ColorIndex c_idx(data.C, data.H, data.W);
     Color pixel_color = c_idx.get_color(data.ptr);
     
-    if (cfg.apply_tonemapping) 
-        tonemap_reinhard(pixel_color, cfg.tonemap_alpha);
-    if (cfg.linear_to_gamma) 
-        linear_to_gamma(pixel_color);
+    if (cfg.apply_tonemapping) apply_tonemapping(pixel_color, cfg);
+    if (cfg.linear_to_gamma)   linear_to_gamma(pixel_color);
     
     to_image(data.C, pixel_color, c_idx, result);
 }

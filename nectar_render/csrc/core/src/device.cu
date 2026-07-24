@@ -54,22 +54,22 @@ template Perlin* device_build<Perlin>(
 
 // TEXTURES ===================================================================
 
-template ConstantTexture* device_build<ConstantTexture>(Color);
-template CheckerTexture*  device_build<CheckerTexture>(Color, Color, float);
-template NoiseTexture*    device_build<NoiseTexture>(Perlin*, float, int);
-template ImageTexture*    device_build<ImageTexture>(
-    uint8_t*, size_t, size_t, size_t
-);
+// template ConstantTexture* device_build<ConstantTexture>(Color);
+// template CheckerTexture*  device_build<CheckerTexture>(Color, Color, float);
+// template NoiseTexture*    device_build<NoiseTexture>(Perlin*, float, int);
+// template ImageTexture*    device_build<ImageTexture>(
+//     uint8_t*, size_t, size_t, size_t
+// );
 
 // MATERIALS ================================================================== 
 
-template Lambertian* device_build<Lambertian>(Texture*);
+template Lambertian* device_build<Lambertian>(TextureView);
 template Dielectric* device_build<Dielectric>(float);
-template Emissive*   device_build<Emissive>(Texture*, float);
-template Isotropic*  device_build<Isotropic>(Texture*);
+template Emissive*   device_build<Emissive>(TextureView, float);
+template Isotropic*  device_build<Isotropic>(TextureView);
 
 template PBR* device_build<PBR>(
-    Texture*, Texture*, Texture*, Texture*, Texture*
+    TextureView, TextureView, TextureView, TextureView, TextureView
 );
 
 template Material* device_build<Material>(MaterialType, void*);

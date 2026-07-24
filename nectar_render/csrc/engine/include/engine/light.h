@@ -47,7 +47,7 @@ public:
     __host__ ObjectLight(
         Hittable& obj,
         float brightness,
-        const Texture& texture
+        std::shared_ptr<Texture> texture
     ) : Light(obj.xform, obj.delta, Material::emissive(texture, brightness)),
         boundary(obj.build())
     { bbox = obj.build_bbox(); }

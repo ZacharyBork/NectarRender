@@ -14,65 +14,69 @@ void register_material(py::module_& m) {
 
     /* TEXTURE CLASSES */
 
-    py::class_<Texture>(m_texture, "Texture");
-
-    py::class_<ConstantTexture, Texture>(m_texture, "ConstantTexture")
-        .def(py::init([](const Color albedo) {
-            return ConstantTexture(albedo);
-        }),
-            py::arg("albedo") = Color(0.8f, 0.8f, 0.8f)
-        )
-        .def(py::init([](float r, float g, float b) {
-            return ConstantTexture(r, g, b);
-        }),
-            py::arg("r") = 0.8f,
-            py::arg("g") = 0.8f,
-            py::arg("b") = 0.8f
-        )
-        .def("__repr__", [](ConstantTexture& t) {
-            return "ConstantTexture(" 
-                 + std::to_string(t.color()[0]) + ", "
-                 + std::to_string(t.color()[1]) + ", "
-                 + std::to_string(t.color()[2]) + ")";
-        });
-
-    py::class_<CheckerTexture, Texture>(m_texture, "CheckerTexture")
-        .def(py::init([](
-            const Color& color1,
-            const Color& color2,
-            float scale
-        ) {
-            return CheckerTexture(color1, color2, scale);
-        }),
-            py::arg("color1") = Color(0.0f, 0.0f, 0.0f),
-            py::arg("color1") = Color(1.0f, 1.0f, 1.0f),
-            py::arg("scale")  = 1.0f
+    py::class_<Texture, std::shared_ptr<Texture>>(m_texture, "Texture")
+        .def_static("from_color",
+            py::overload_cast<const Color&>(&Texture::from_color),
+            py::arg("color"))
+        .def_static("from_color",
+            py::overload_cast<float, float, float>(&Texture::from_color),
+            py::arg("r"), py::arg("g"), py::arg("b"))
+        .def_static("from_image", &Texture::from_image,
+            py::arg("filepath"), py::arg("host_ptr"),
+            py::arg("channels"), py::arg("height"), py::arg("width")
         );
 
-    py::class_<ImageTexture, Texture>(m_texture, "ImageTexture")
-        .def(py::init([](
-            uintptr_t    host_ptr, 
-            const size_t channels,
-            const size_t height,
-            const size_t width
-        ) {
-            return ImageTexture(host_ptr, channels, height, width);
-        }),
-            py::arg("host_ptr"),
-            py::arg("channels"),
-            py::arg("height"),
-            py::arg("width")
-        )
-        .def("n_bytes", &ImageTexture::n_bytes);
 
-    py::class_<NoiseTexture, Texture>(m_texture, "NoiseTexture")
-        .def(py::init<>()) 
-        .def(py::init([](float scale, uint32_t seed) {
-            return NoiseTexture(scale, seed);
-        }),
-            py::arg("scale"),
-            py::arg("seed") = 42u
-        );
+
+
+    // /* TEXTURE CLASSES */
+
+    // py::class_<Texture>(m_texture, "Texture");
+
+    // py::class_<ConstantTexture, Texture>(m_texture, "ConstantTexture")
+    //     .def(py::init([](const Color albedo) {
+    //         return ConstantTexture(albedo);
+    //     }),
+    //         py::arg("albedo") = Color(0.8f, 0.8f, 0.8f)
+    //     )
+    //     .def(py::init([](float r, float g, float b) {
+    //         return ConstantTexture(r, g, b);
+    //     }),
+    //         py::arg("r") = 0.8f,
+    //         py::arg("g") = 0.8f,
+    //         py::arg("b") = 0.8f
+    //     )
+    //     .def("__repr__", [](ConstantTexture& t) {
+    //         return "ConstantTexture(" 
+    //              + std::to_string(t.color()[0]) + ", "
+    //              + std::to_string(t.color()[1]) + ", "
+    //              + std::to_string(t.color()[2]) + ")";
+    //     });
+
+    // py::class_<ImageTexture, Texture>(m_texture, "ImageTexture")
+    //     .def(py::init([](
+    //         uintptr_t    host_ptr, 
+    //         const size_t channels,
+    //         const size_t height,
+    //         const size_t width
+    //     ) {
+    //         return ImageTexture(host_ptr, channels, height, width);
+    //     }),
+    //         py::arg("host_ptr"),
+    //         py::arg("channels"),
+    //         py::arg("height"),
+    //         py::arg("width")
+    //     )
+    //     .def("n_bytes", &ImageTexture::n_bytes);
+
+    // py::class_<NoiseTexture, Texture>(m_texture, "NoiseTexture")
+    //     .def(py::init<>()) 
+    //     .def(py::init([](float scale, uint32_t seed) {
+    //         return NoiseTexture(scale, seed);
+    //     }),
+    //         py::arg("scale"),
+    //         py::arg("seed") = 42u
+    //     );
 
     /* MATERIAL CLASS */
 
@@ -102,10 +106,10 @@ void register_material(py::module_& m) {
     py::class_<Emissive,   MaterialCore>  (m_material, "Emissive");
     py::class_<Isotropic,  MaterialCore>  (m_material, "Isotropic");
 
-    py::class_<Material>(m_material, "Material")
+    py::classh<Material>(m_material, "Material")
         .def(py::init<>())
-        .def("material_type",  &Material::material_type)
-        .def("resource_count", &Material::resource_count)
+        .def("material_type", &Material::material_type)
+        .def("texture_count", &Material::texture_count)
         .def("__repr__", [](const Material& mat) {
             std::string output = "Material(type = ";
             switch (mat.material_type()) {
@@ -121,78 +125,51 @@ void register_material(py::module_& m) {
 
         /* LAMBERTIAN */
 
-        .def_static("lambertian", ([](const Color& albedo) {
-            return Material::lambertian(albedo);
-        }),
-            py::arg("albedo") = Color(0.8f, 0.8f, 0.8f)
-        )
-        .def_static("lambertian", ([](const Texture& texture) {
-            return Material::lambertian(texture);
-        }),
-            py::arg("texture") = ConstantTexture(Color(0.8f, 0.8f, 0.8f))
-        )
+        .def_static("lambertian",
+            py::overload_cast<const Color&>(&Material::lambertian),
+            py::arg("color") = Color::white())
+        .def_static("lambertian",
+            py::overload_cast<std::shared_ptr<Texture>>(&Material::lambertian),
+            py::arg("texture") = Texture::from_color(Color::white()))
 
         /* PBR */
 
-        .def_static("pbr", ([](
-            const Texture& albedo,
-            const Texture& roughness,
-            const Texture& metallic,
-            const Texture& emission,
-            const Texture& normal
-        ) {
-            return Material::pbr(
-                albedo, roughness, metallic, emission, normal
-            );
-        }),
-            py::arg("albedo")    = ConstantTexture(Color::white()),
-            py::arg("roughness") = ConstantTexture(Color(0.8f)),
-            py::arg("metallic")  = ConstantTexture(Color(0.0f)),
-            py::arg("emission")  = ConstantTexture(Color::black()),
-            py::arg("normal")    = ConstantTexture(Color(0.5f, 0.5f, 1.0f))
+        .def_static("pbr", &Material::pbr,
+            py::arg("albedo")    = Texture::from_color(Color::white()),
+            py::arg("roughness") = Texture::from_color(Color(0.8f)),
+            py::arg("metallic")  = Texture::from_color(Color(0.0f)),
+            py::arg("emission")  = Texture::from_color(Color::black()),
+            py::arg("normal")    = Texture::from_color(Color(0.5f, 0.5f, 1.0f))
         )
 
         /* DIELECTRIC */
 
-        .def_static("dielectric", ([](float ior) {
-            return Material::dielectric(ior);
-        }),
-            py::arg("ior") = 1.5f
-        )
+        .def_static("dielectric", &Material::dielectric, py::arg("ior") = 1.5f)
 
         /* EMISSIVE */
 
-        .def_static("emissive", ([](
-            const Color& albedo, 
-            const float brightness
-        ) {
-            return Material::emissive(albedo, brightness);
-        }),
-            py::arg("albedo")     = Color::white(),
+        .def_static("emissive",
+            py::overload_cast<const Color&, float>(&Material::emissive),
+            py::arg("albedo") = Color::white(),
             py::arg("brightness") = 35.0f
         )
-        .def_static("emissive", ([](
-            const Texture& texture, 
-            const float brightness
-        ) {
-            return Material::emissive(texture, brightness);
-        }),
-            py::arg("texture")    = ConstantTexture(Color::white()),
+        .def_static("emissive",
+            py::overload_cast<std::shared_ptr<Texture>, float>(
+                &Material::emissive
+            ),
+            py::arg("texture") = Texture::from_color(Color::white()),
             py::arg("brightness") = 35.0f
         )
 
         /* ISOTROPIC */
 
-        .def_static("isotropic", ([](const Color& albedo) {
-            return Material::isotropic(albedo);
-        }),
-            py::arg("albedo") = Color::white()
-        )
-        .def_static("isotropic", ([](const Texture& texture) {
-            return Material::isotropic(texture);
-        }),
-            py::arg("texture") = ConstantTexture(Color::white())
-        );
+        .def_static("isotropic",
+            py::overload_cast<const Color&>(&Material::isotropic),
+            py::arg("albedo") = Color::white())
+        .def_static("isotropic",
+            py::overload_cast<std::shared_ptr<Texture>>(&Material::isotropic),
+            py::arg("texture") = Texture::from_color(Color::white()));
+
 
 }
 

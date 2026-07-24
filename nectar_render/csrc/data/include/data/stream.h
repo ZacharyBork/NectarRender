@@ -6,13 +6,14 @@
 #include "data_object.h"
 
 enum class StreamState { ACTIVE, INACTIVE };
-enum class TonemapMethod{ REINHARD };
+enum class TonemapMethod{ REINHARD, REINHARD_EXTENDED, ACES };
 struct StreamConfig {
     bool linear_to_gamma = true;
 
     bool apply_tonemapping = true;
-    TonemapMethod tonemap_method = TonemapMethod::REINHARD;
-    float tonemap_alpha = 1.0f;
+    TonemapMethod tm_method = TonemapMethod::REINHARD;
+    float tm_white_point = 1.0f;
+    float tm_alpha = 1.0f;
 };
 
 void process_stream(DataView data, uint8_t* result, StreamConfig cfg);

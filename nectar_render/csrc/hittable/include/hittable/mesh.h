@@ -162,15 +162,18 @@ public:
         host_data = new HostData();
     }
 
-    __host__ Mesh(const Material& material) 
-        : Mesh(Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), material) { }
+    __host__ Mesh(Material material) 
+        : Mesh(
+            Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), std::move(material)
+        ) 
+    { }
 
     __host__ Mesh(
         const Vector3&  position,
         const Vector3&  rotation,
         const Vector3&  scale, 
-        const Material& material
-    ) : Hittable(position, rotation, scale, material) {
+        Material material
+    ) : Hittable(position, rotation, scale, std::move(material)) {
         host_data = new HostData();
     }
 
@@ -192,9 +195,9 @@ public:
         const Vector3&  position, 
         const Vector3& rotation, 
         const Vector3& scale,
-        const Material& material
+        Material material
     ) {
-        Mesh mesh(position, rotation, scale, material);
+        Mesh mesh(position, rotation, scale, std::move(material));
         MeshLoadResult loaded = load_obj(path);
         mesh.set_geometry(
             std::move(loaded.vertices), 

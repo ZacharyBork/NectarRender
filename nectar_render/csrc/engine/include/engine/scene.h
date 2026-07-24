@@ -81,6 +81,12 @@ public:
     HittablesRegistry hittables_registry;
     MaterialRegisty   material_registry;
 
+    __host__ Scene(const Scene&) = delete;
+    __host__ Scene& operator=(const Scene&) = delete;
+
+    __host__ Scene(Scene&&) noexcept = default;
+    __host__ Scene& operator=(Scene&&) noexcept = default;
+
     __host__ Scene() 
       : lights(std::vector<Light*>{}),
         skylight(SkyLight())

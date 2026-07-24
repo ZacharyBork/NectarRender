@@ -2,116 +2,28 @@
 
 #include "core/include/core.h"
 
-// ############################################################################
-// ABSTRACT PARENT
-// ############################################################################
+enum class TextureType { CONSTANT, IMAGE };
 
-class Texture {
+struct TextureView {
 public:
 
-    __host__ __device__ Texture() {}
-    __host__ __device__ virtual ~Texture() = default;
-    __device__ virtual Color sample(Vector2 uv, const Vector3& p) const = 0;
+    TextureType type;
 
-    __host__ virtual Texture* build() const = 0;
-};
-
-// ############################################################################
-// CONSTANT TEXTURE
-// ############################################################################
-
-class ConstantTexture : public Texture {
-public:
-
-    __host__ ConstantTexture(float r, float g, float b) 
-        : albedo(Color(r, g, b)) { }
-
-    __host__ __device__ ConstantTexture(const Color& albedo) 
-        : albedo(albedo) { }
-
-    __host__ Texture* build() const {
-        return device_build<ConstantTexture>(albedo);
-    }
-
-    __device__ Color sample(Vector2 uv, const Vector3& p) const override {
-        return albedo;
-    }
-
-    __device__ Color color() { return albedo; }
-
-private:
-
-    Color albedo;
-
-};
-
-// ############################################################################
-// CHECKER TEXTURE
-// ############################################################################
-
-class CheckerTexture : public Texture {
-public:
-
-    __host__ __device__ CheckerTexture(
-        const Color& color1,
-        const Color& color2,
-        float scale
-    ) : color1(color1), color2(color2), inv_scale(1.0f / (scale + FMIN)) { }
+    uint8_t* d_texture_ptr;
+    Color constant_color;
+    size_t C, H, W;
     
-    __host__ Texture* build() const {
-        return device_build<CheckerTexture>(color1, color2, inv_scale);
-    }
-
-    __device__ Color sample(Vector2 uv, const Vector3& p) const override {
-        int x = int(floorf(inv_scale * p.x()));
-        int y = int(floorf(inv_scale * p.y()));
-        int z = int(floorf(inv_scale * p.z()));
-        bool isEven = (x + y + z) % 2 == 0;
-        return isEven ? color1 : color2;
-    }
+    __device__ Color sample(Vector2 uv, const Vector3& p) const {
+        switch (type) {
+            case TextureType::CONSTANT: return constant_color;
+            case TextureType::IMAGE:    return sample_image(uv, p);
+        }
+        return Color::black();
+    };
 
 private:
 
-    Color color1, color2;
-    float inv_scale;
-
-};
-
-// ############################################################################
-// IMAGE TEXTURE
-// ############################################################################
-
-class ImageTexture : public Texture {
-public:
-
-    __host__ ImageTexture(
-        uintptr_t    host_ptr, 
-        const size_t channels,
-        const size_t height,
-        const size_t width
-    ) : C(channels), H(height), W(width) { 
-        cudaMalloc(&device_ptr, n_bytes());
-        cudaMemcpy(
-            reinterpret_cast<void*>(device_ptr), 
-            reinterpret_cast<void*>(host_ptr), 
-            n_bytes(), cudaMemcpyHostToDevice
-        );
-    }
-
-    __device__ ImageTexture(uint8_t* ptr, size_t c, size_t h, size_t w) 
-        : device_ptr(ptr), C(c), H(h), W(w) {}
-
-    __host__ __device__ size_t n_bytes() const {
-        return C * H * W * sizeof(uint8_t);
-    }
-
-    __host__ Texture* build() const {
-        return device_build<ImageTexture>(device_ptr, C, H, W);
-    }
-
-    __device__ Color sample(Vector2 uv, const Vector3& p) const override {
-        if (H <= 0) return Color::purple();
-
+    __device__ Color sample_image(Vector2 uv, const Vector3& p) const {
         float u = Interval(0.0f, 1.0f).clamp(uv.u());
         float v = 1.0f - Interval(0.0f, 1.0f).clamp(uv.v());
 
@@ -121,55 +33,105 @@ public:
         size_t pixel = j * W + i;
 
         Color col(
-            (float)device_ptr[0 * H * W + pixel],
-            (float)device_ptr[1 * H * W + pixel],
-            (float)device_ptr[2 * H * W + pixel]
+            (float)d_texture_ptr[0 * H * W + pixel],
+            (float)d_texture_ptr[1 * H * W + pixel],
+            (float)d_texture_ptr[2 * H * W + pixel]
         );
         return col / 255.0f;
     }
 
-private:
-
-    uint8_t* device_ptr;
-    size_t C;
-    size_t H;
-    size_t W;
-
 };
 
-// ############################################################################
-// NOISE TEXTURE
-// ############################################################################
-
-class NoiseTexture : public Texture {
+class Texture {
 public:
 
-    __host__ NoiseTexture() : NoiseTexture(1.0f)  { }
+    TextureType type = TextureType::CONSTANT;
 
-    __host__ NoiseTexture(
-        float scale, 
-        int iterations = 7, 
-        uint32_t seed = 42u
-    ): perlin(Perlin(seed).build()), scale(scale), iters(iterations) { }
+    /* CONSTRUCTORS / DESTRUCTORS */
 
-    __device__ NoiseTexture(Perlin* p, float scale, int iterations) 
-        : perlin(p), scale(scale), iters(iterations) { }
+    __host__ __device__ Texture() {}
+    __host__ Texture(TextureType type) : type(type) {}
+    __host__ ~Texture() = default;
 
-    __host__ Texture* build() const {
-        return device_build<NoiseTexture>(perlin, scale, iters);
+    __host__ Texture(const Texture&) = delete;
+    __host__ Texture& operator=(const Texture&) = delete;
+
+    __host__ Texture(Texture&& other) noexcept
+        : type(other.type), 
+          texture_path(std::move(other.texture_path)),
+          d_texture_ptr(other.d_texture_ptr), 
+          constant_color(other.constant_color),
+          C(other.C), H(other.H), W(other.W)
+    {
+        other.d_texture_ptr = nullptr;
     }
 
-    __device__ Color sample(Vector2 uv, const Vector3& p) const override {
-        float n = perlin->turb(p, iters) * 10.0f;
-        return Color::white() * 0.5f * (1.0f + sinf(scale * p.z() + n));
+    __host__ Texture& operator=(Texture&& other) noexcept {
+        if (this != &other) {
+            teardown();
+            C = other.C; H = other.H; W = other.W;
+            type           = other.type;
+            texture_path   = std::move(other.texture_path);
+            d_texture_ptr  = other.d_texture_ptr;
+            constant_color = other.constant_color;
+            other.d_texture_ptr = nullptr;
+        }
+        return *this;
+    }
+
+    /* STATIC METHODS */
+
+    __host__ static std::shared_ptr<Texture> from_color(const Color& color) {
+        Texture t(TextureType::CONSTANT);
+        t.constant_color = color;
+        t.C = 3UL;
+        return std::make_shared<Texture>(std::move(t));
+    }
+
+    __host__ static std::shared_ptr<Texture> from_color(
+        float r, float g, float b
+    ) {
+        return Texture::from_color(Color(r, g, b));
+    }
+
+    __host__ static std::shared_ptr<Texture> from_image(
+        std::string  filepath,
+        uintptr_t    host_ptr, 
+        const size_t channels,
+        const size_t height,
+        const size_t width
+    ) { 
+        Texture t(TextureType::IMAGE);
+        t.texture_path = filepath.c_str();
+        t.C = channels; t.H = height, t.W = width;
+        size_t n_bytes = t.C * t.H * t.W * sizeof(uint8_t);
+
+        uint8_t* tex_ptr;
+        cudaMalloc(&tex_ptr, n_bytes);
+        cudaMemcpy(
+            tex_ptr, reinterpret_cast<void*>(host_ptr), 
+            n_bytes, cudaMemcpyHostToDevice
+        );
+        t.d_texture_ptr = tex_ptr;
+        return std::make_shared<Texture>(std::move(t));
+    }
+    
+    /* UTILITIES */
+
+    __host__ void teardown() { if (d_texture_ptr) cudaFree(d_texture_ptr); }
+
+    __host__ TextureView view() const {
+        return TextureView{ type, d_texture_ptr, constant_color, C, H, W };
     }
 
 private:
 
-    Perlin* perlin = nullptr;
-    
-    float scale;
-    int iters;
+    std::string texture_path = "";
+    uint8_t* d_texture_ptr = nullptr;
+    Color constant_color = Color::black();
+    size_t C = 0UL, H = 0UL, W = 0UL;
 
 };
+
+
 
