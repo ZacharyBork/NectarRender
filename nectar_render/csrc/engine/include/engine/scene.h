@@ -134,8 +134,8 @@ public:
         build_device_lights();
 
         size_t n_bytes = sizeof(h_graph);
-        cudaMalloc(&graph, n_bytes);
-        cudaMemcpy(graph, &h_graph, n_bytes, cudaMemcpyHostToDevice);
+        CUDAMemory::allocate<SceneGraph>(graph);
+        CUDAMemory::copy<SceneGraph>(graph, &h_graph);
 
         host_to_device.clear();
     }
@@ -149,18 +149,19 @@ private:
     std::unordered_map<Hittable*, Hittable*> host_to_device;
 
     __host__ void build_device_lights() {
-        std::vector<Hittable*> d_light_ptrs(lights.size());
+        std::vector<Light*> d_light_ptrs(lights.size());
         for (size_t i = 0; i < lights.size(); i++) {
-            d_light_ptrs[i] = hittables_registry.host_to_device(
-                static_cast<Hittable*>(lights[i])
+            d_light_ptrs[i] = static_cast<Light*>(
+                hittables_registry.host_to_device(
+                    static_cast<Hittable*>(lights[i])
+                )
             );
         }
 
         size_t n_bytes = lights.size() * sizeof(Hittable*);
-        cudaMalloc(&h_graph.lights, n_bytes);
-        cudaMemcpy(
-            h_graph.lights, d_light_ptrs.data(),
-            n_bytes, cudaMemcpyHostToDevice
+        CUDAMemory::allocate<Light*>(h_graph.lights, lights.size());
+        CUDAMemory::copy<Light*>(
+            h_graph.lights, d_light_ptrs.data(), lights.size()
         );
     }
 

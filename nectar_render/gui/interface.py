@@ -3,14 +3,16 @@ from typing  import Self
 from pathlib import Path
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore    import QFile, QObject, Slot, QSize, QTimer
-from PySide6.QtGui     import QIcon
+from PySide6.QtCore    import QFile, QObject, Slot
 from PySide6.QtUiTools import QUiLoader
 
-from nectar_render import Camera, TonemapMethod
+from nectar_render import Camera, EnginePollResponse
 from nectar_render.gui         import utils
-from nectar_render.gui.bridge  import RenderBridge, Bridge
-from nectar_render.gui.widgets import ViewportWidget, ProgressBar, Profiler
+from nectar_render.gui.utils   import TimeKeeper
+from nectar_render.gui.bridge  import Bridge
+from nectar_render.gui.widgets import (
+    ViewportWidget, ColorCorrection, ProgressBar, Profiler
+)
 from nectar_render.scenes.cornell_box import CornellBox
 
 ###############################################################################
@@ -24,46 +26,52 @@ class Interface(QObject):
         self.viewport:  ViewportWidget = None
         self.progress_bar: ProgressBar = None
         self.profiler:        Profiler = None
+        self.color_correction:  ColorCorrection = None
         
         self.scene = CornellBox.SCENE
         self.max_depth: int = 6
-        self.seed: int | None = None
+        self.seed:      int = 42
 
-        bridge = RenderBridge(
+        Bridge.init(
             Camera(
                 resolution   = (512, 512),
                 position     = (0.0, 0.0, 2.0),
                 rotation     = (0.0, 0.0, 0.0),
-                num_samples  = 2048,
+                num_samples  = 512,
                 focal_length = 3.0
             ), 
             self.max_depth, 
             self.seed
         )
-        bridge.set_scene(self.scene)
-        bridge.signals.frame_finished.connect(self._on_frame_finished)
-        bridge.signals.render_finished.connect(self._on_render_finished)
-        Bridge.set_instance(bridge)
-
-        self.update_timer = QTimer(self)
-        self.update_timer.setInterval(16)
-        self.update_timer.timeout.connect(self._poll_updates)
+        Bridge.set_scene(self.scene)
+        Bridge.signals.frame_finished.connect(self._on_frame_finished)
+        Bridge.signals.render_finished.connect(self._on_render_finished)
+        Bridge.ENGINE.poll_updates = self._engine_poll
+        
+        TimeKeeper.set_owner(self)
         
 #### ENGINE UTILITIES #########################################################
 
-    def _poll_updates(self: Self) -> None:
-        self.viewport.update_camera()
+    def _engine_poll(self: Self) -> None:
+        response = EnginePollResponse()
+        TimeKeeper.update_frame_delta()
         
+        self.viewport.camera_controller.update_transforms(TimeKeeper.dT())
+        if self.viewport.camera_controller.poll_updates():
+            response.camera_params = self.viewport.camera_controller.params
+            response.should_update_camera = True
+            self.viewport.gnomon.update_rotation()
+        
+        return response
+                
 #### ENGINE HOOKS #############################################################
     
     @Slot(int)
     def _on_frame_finished(self: Self, frame_idx: int) -> None:
-        self.viewport.update_render()
-        self.progress_bar.update(frame_idx, Bridge.instance.n_samples)
-        
+        self.progress_bar.update(frame_idx, Bridge.n_samples)
+
+    @Slot()
     def _on_render_finished(self: Self) -> None:
-        Bridge.instance.reset()
-        
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
@@ -81,36 +89,37 @@ class Interface(QObject):
             else: box.setStyleSheet('padding: -5px;')
 
     def play_button(self: Self) -> None:
-        Bridge.instance.start_thread()
+        Bridge.request_start()
         self.find(W.QPushButton, 'play').setEnabled(False)
         self.find(W.QPushButton, 'pause').setEnabled(True)
         self.find(W.QPushButton, 'stop').setEnabled(True)
         
     def pause_button(self: Self) -> None:
-        # Bridge.instance.pause()
+        # Bridge.ENGINE.request_pause()
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(True)
         
     def stop_button(self: Self) -> None:
-        Bridge.instance.stop_thread()
+        Bridge.request_stop()
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
         
     def refresh(self: Self) -> None:
-        Bridge.instance.request_reset()
+        if not Bridge.is_rendering: return
+        Bridge.request_restart()
 
     def set_n_samples(self: Self) -> None:
         value = self.find(W.QSpinBox, 'n_samples').value()
         Bridge.queue_function(
-            lambda : Bridge.instance.ENGINE.set_n_samples(value)
+            lambda : Bridge.ENGINE.set_n_samples(value)
         )
 
     def set_max_depth(self: Self) -> None:
         value = self.find(W.QSpinBox, 'max_depth').value()
         Bridge.queue_function(
-            lambda : Bridge.instance.ENGINE.set_max_depth(value)
+            lambda : Bridge.ENGINE.set_max_depth(value)
         )
             
     def _select_render_pass(self: Self, index: int) -> None:
@@ -174,52 +183,7 @@ class Interface(QObject):
 
         connect_groupbox('general_settings')
         connect_groupbox('camera_settings')
-        
-        def set_tonemap_enabled(enabled: bool):
-            Bridge.stream_config.apply_tonemapping = enabled
-            Bridge.update_stream_config()
-            
-        self.find(W.QCheckBox, 'enable_tonemap').stateChanged.connect(
-            set_tonemap_enabled
-        )
-        
-        def set_tonemap_method(method: str):
-            match method:
-                case 'Reinhard':
-                    method = TonemapMethod.REINHARD
-                case 'Reinhard Extended': 
-                    method = TonemapMethod.REINHARD_EXTENDED
-                case 'ACES': 
-                    method = TonemapMethod.ACES
-                    
-            Bridge.stream_config.tm_method = method
-            Bridge.update_stream_config()
-        
-        tonemap_method = self.find(W.QComboBox, 'tonemap_method')
-        tonemap_method.addItems(['Reinhard', 'Reinhard Extended', 'ACES'])
-        tonemap_method.currentTextChanged.connect(set_tonemap_method)
-        
-        def tonemap_alpha(value: int) -> None:
-            self.find(W.QLabel, 'tonemap_blend_percent').setText(f'{value}%')
-            Bridge.stream_config.tm_alpha = float(value) / 100.0
-            Bridge.update_stream_config()
-        self.find(W.QSlider, 'tonemap_alpha').valueChanged.connect(
-            tonemap_alpha
-        )
-        
-        def linear_to_gamma(value: bool):
-            Bridge.stream_config.linear_to_gamma = value
-            Bridge.update_stream_config()
-        self.find(W.QCheckBox, 'linear_to_gamma').stateChanged.connect(
-            linear_to_gamma
-        )
-        
-        def tonemap_white_point(value: float):
-            if (value <= 0.0): return
-            Bridge.stream_config.tm_white_point = value
-            Bridge.update_stream_config()
-        tm_white_pt = self.find(W.QDoubleSpinBox, 'tonemap_white_point')
-        tm_white_pt.valueChanged.connect(tonemap_white_point)
+        connect_groupbox('color_correction_settings')
         
     def _build_control_bar(self: Self) -> None:        
         icon_paths = {
@@ -261,11 +225,16 @@ class Interface(QObject):
         self._build_control_bar()
         self._build_profiler()
         self._init_callbacks()
+        
         self.progress_bar = ProgressBar(
             self.find(W.QFrame, 'progress_frame').layout()
         )
+        self.color_correction = ColorCorrection(
+            self.find(W.QGroupBox, 'color_correction_settings')
+        )
         
-        self.update_timer.start()
+        TimeKeeper.start()
+        Bridge.thread.start()
         self.mainwidget.show()
         
         sys.exit(self.app.exec())

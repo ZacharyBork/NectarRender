@@ -3,6 +3,7 @@ Matrix module.
 """
 from __future__ import annotations
 import _pathtracer.core.vector
+import typing
 __all__: list[str] = ['Matrix3', 'rotation_from_euler']
 class Matrix3:
     def T(self) -> Matrix3:
@@ -10,6 +11,8 @@ class Matrix3:
     def __init__(self) -> None:
         ...
     def forward(self) -> _pathtracer.core.vector.Vector3:
+        ...
+    def numpy(self) -> typing.Annotated[list[typing.Annotated[list[float], "FixedSize(3)"]], "FixedSize(3)"]:
         ...
     def right(self) -> _pathtracer.core.vector.Vector3:
         ...

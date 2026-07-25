@@ -21,10 +21,6 @@ void register_core(py::module_& m) {
     m_utils.def("destroy_cublas_handle", &destroy_cublas_handle, 
         "Destroys cuBLAS handle. Registered atexit for Python module.");
     
-    m_utils.def("allocate_cuda_memory", &allocate_cuda_memory, "");
-    m_utils.def("free_cuda_memory",     &free_cuda_memory,     "");
-    m_utils.def("cuda_synchronize",     &cuda_synchronize,     "");
-
 // ############################################################################
 // RNG
 // ############################################################################
@@ -144,7 +140,8 @@ void register_core(py::module_& m) {
         .def("T",         &Matrix3::T)
         .def("right",     &Matrix3::right)
         .def("up",        &Matrix3::up)
-        .def("forward",   &Matrix3::forward);
+        .def("forward",   &Matrix3::forward)
+        .def("numpy",     &Matrix3::numpy);
 
     m_mat.def("rotation_from_euler", &rotation_from_euler, "");
 

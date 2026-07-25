@@ -4,15 +4,15 @@ Hittable module.
 from __future__ import annotations
 import _pathtracer.core.vector
 import _pathtracer.material
-import _pathtracer.material.texture
 import typing
 __all__: list[str] = ['ConstantMedium', 'Cube', 'HitRecord', 'Hittable', 'Mesh', 'Quad', 'Sphere']
 class ConstantMedium(Hittable):
+    @staticmethod
     @typing.overload
-    def __init__(self, boundary: Hittable, density: typing.SupportsFloat | typing.SupportsIndex = 1.0, albedo: _pathtracer.core.vector.Color = ...) -> None:
+    def __init__(*args, **kwargs) -> None:
         ...
     @typing.overload
-    def __init__(self, boundary: Hittable, density: typing.SupportsFloat | typing.SupportsIndex = 1.0, texture: _pathtracer.material.texture.Texture = ...) -> None:
+    def __init__(self, boundary: Hittable, density: typing.SupportsFloat | typing.SupportsIndex = 1.0, albedo: _pathtracer.core.vector.Color = ...) -> None:
         ...
     def set_motion_vector(self, arg0: _pathtracer.core.vector.Vector3) -> None:
         ...

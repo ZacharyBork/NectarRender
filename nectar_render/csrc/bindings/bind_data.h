@@ -42,12 +42,19 @@ void register_data(py::module_& m) {
     py::class_<StreamConfig>(m_data, "StreamConfig")
         .def(py::init<>())
         .def_readwrite("linear_to_gamma",   &StreamConfig::linear_to_gamma)
+        .def_readwrite("apply_white_balance", &StreamConfig::apply_white_balance)
+        .def_readwrite("wb_temperature",         &StreamConfig::wb_temperature)
+        .def_readwrite("wb_tint",    &StreamConfig::wb_tint)
         .def_readwrite("apply_tonemapping", &StreamConfig::apply_tonemapping)
         .def_readwrite("tm_method",         &StreamConfig::tm_method)
         .def_readwrite("tm_white_point",    &StreamConfig::tm_white_point)
         .def_readwrite("tm_alpha",          &StreamConfig::tm_alpha);
 
     py::class_<TransferStream>(m_data, "TransferStream")
+        .def("readback", [](TransferStream& stream) {
+            py::gil_scoped_release release;
+            return stream.readback();
+        })
         .def("update_config",  &TransferStream::update_config)
         .def("buffer_ptr",     &TransferStream::buffer_ptr)
         .def("readback",       &TransferStream::readback)

@@ -104,13 +104,12 @@ public:
         Texture t(TextureType::IMAGE);
         t.texture_path = filepath.c_str();
         t.C = channels; t.H = height, t.W = width;
-        size_t n_bytes = t.C * t.H * t.W * sizeof(uint8_t);
+        size_t n_elements = t.C * t.H * t.W;
 
         uint8_t* tex_ptr;
-        cudaMalloc(&tex_ptr, n_bytes);
-        cudaMemcpy(
-            tex_ptr, reinterpret_cast<void*>(host_ptr), 
-            n_bytes, cudaMemcpyHostToDevice
+        CUDAMemory::allocate<uint8_t>(tex_ptr, n_elements);
+        CUDAMemory::copy<uint8_t>(
+            tex_ptr, reinterpret_cast<uint8_t*>(&host_ptr), n_elements
         );
         t.d_texture_ptr = tex_ptr;
         return std::make_shared<Texture>(std::move(t));

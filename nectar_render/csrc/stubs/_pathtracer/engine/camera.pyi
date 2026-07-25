@@ -2,6 +2,7 @@
 Camera submodule.
 """
 from __future__ import annotations
+import _pathtracer.core.matrix
 import _pathtracer.core.vector
 import typing
 __all__: list[str] = ['Camera', 'CameraParams']
@@ -10,7 +11,7 @@ class Camera:
         ...
     def parameters(self) -> CameraParams:
         ...
-    def update(self, arg0: CameraParams) -> None:
+    def update(self, arg0: CameraParams, arg1: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
 class CameraParams:
     position: _pathtracer.core.vector.Vector3
@@ -19,10 +20,16 @@ class CameraParams:
     def __init__(self, resolution: _pathtracer.core.vector.Vector2, position: _pathtracer.core.vector.Vector3, rotation: _pathtracer.core.vector.Vector3, samples_per_pixel: typing.SupportsInt | typing.SupportsIndex, focal_length: typing.SupportsFloat | typing.SupportsIndex, focus_distance: typing.SupportsFloat | typing.SupportsIndex, aperture: typing.SupportsFloat | typing.SupportsIndex, sensor_width: typing.SupportsFloat | typing.SupportsIndex, shutter_speed: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
+    def R(self) -> _pathtracer.core.matrix.Matrix3:
+        ...
+    @property
     def aperture(self) -> float:
         ...
     @aperture.setter
     def aperture(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def aspect_ratio(self) -> float:
         ...
     @property
     def focal_length(self) -> float:
@@ -53,4 +60,7 @@ class CameraParams:
         ...
     @shutter_speed.setter
     def shutter_speed(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def shutter_time(self) -> float:
         ...

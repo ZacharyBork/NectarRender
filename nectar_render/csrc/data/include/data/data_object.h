@@ -111,8 +111,8 @@ public:
         size_t h, 
         size_t w
     ) : C(n_channels), H(h), W(w) {
-        cudaMalloc(&d_ptr, n_bytes());
-        cudaMemset(d_ptr, 0, n_bytes());
+        CUDAMemory::allocate<float>(d_ptr, n_elements());
+        CUDAMemory::fill<float>(d_ptr, 0.0f, n_elements());
     }
 
     __host__ DataObject(DataObject* data) 
@@ -195,14 +195,13 @@ public:
         cudaDeviceSynchronize();
 
         uint8_t* image_ptr;
-        cudaMalloc(&image_ptr, n_elements() * sizeof(uint8_t));
+        CUDAMemory::allocate<uint8_t>(image_ptr, n_elements());
         data_to_image(view(), image_ptr);
 
         auto result = pybind11::array_t<uint8_t>(shape());
-        cudaMemcpy(
-            result.request().ptr, image_ptr, 
-            n_elements() * sizeof(uint8_t), 
-            cudaMemcpyDeviceToHost
+        uint8_t* target = reinterpret_cast<uint8_t*>(result.request().ptr);
+        CUDAMemory::copy<uint8_t>(
+            target, image_ptr, n_elements(), cudaMemcpyDeviceToHost
         );
         cudaFree(image_ptr);
 

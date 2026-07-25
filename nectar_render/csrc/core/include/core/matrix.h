@@ -51,6 +51,14 @@ public:
     __host__ __device__ Vector3 forward() const { 
         return Vector3(m[0][2], m[1][2], m[2][2]); 
     }
+
+    __host__ std::array<std::array<float, 3>, 3> numpy() const {
+        std::array<std::array<float, 3>, 3> output;
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                output[i][j] = m[i][j];
+        return output;
+    }
 };
 
 __host__ __device__ inline Matrix3 rotation_x(float angle_rad) {

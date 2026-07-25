@@ -92,11 +92,8 @@ public:
         );
 
         AOVs* d_aov_ptr;
-        size_t n_bytes = sizeof(aovs_obj);
-        cudaMalloc(&d_aov_ptr, n_bytes);
-        cudaMemcpy(
-            reinterpret_cast<void*>(d_aov_ptr), 
-            &aovs_obj, n_bytes, cudaMemcpyHostToDevice);
+        CUDAMemory::allocate<AOVs>(d_aov_ptr);
+        CUDAMemory::copy<AOVs>(d_aov_ptr, &aovs_obj);
 
         return d_aov_ptr;
 

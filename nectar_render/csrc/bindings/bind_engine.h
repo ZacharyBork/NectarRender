@@ -50,6 +50,9 @@ void register_engine(py::module_& m) {
             py::arg("sensor_width"),
             py::arg("shutter_speed")
         )
+        .def_readonly("R",                  &CameraParams::R)
+        .def_readonly("shutter_time",       &CameraParams::shutter_time)
+        .def_readonly("aspect_ratio",       &CameraParams::aspect_ratio)
         .def_readwrite("resolution",        &CameraParams::resolution)
         .def_readwrite("position",          &CameraParams::position)
         .def_readwrite("rotation",          &CameraParams::rotation)
@@ -66,7 +69,6 @@ void register_engine(py::module_& m) {
         }),
             py::arg("params")
         )
-        .def("update",     &Camera::update)
         .def("parameters", &Camera::parameters, return_policy::copy);
 
 // ############################################################################
@@ -167,17 +169,6 @@ void register_engine(py::module_& m) {
 // RENDER ENGINE CLASS
 // ############################################################################
 
-    py::enum_<SampleMode>(m_engine, "SampleMode")
-        .value("ACCUMULATE", SampleMode::ACCUMULATE)
-        .value("COMBINE",    SampleMode::COMBINE)
-        .def("__repr__", [](const SampleMode& mode) {
-            switch (mode) {
-                case SampleMode::ACCUMULATE: return "SampleMode.ACCUMULATE";
-                case SampleMode::COMBINE:    return "SampleMode.COMBINE";
-            }
-            return "SampleMode.UNKNOWN";
-        });
-
     py::enum_<EngineState>(m_engine, "EngineState")
         .value("IDLE",      EngineState::IDLE)
         .value("RENDERING", EngineState::RENDERING)
@@ -188,6 +179,13 @@ void register_engine(py::module_& m) {
             }
             return "EngineState.UNKNOWN";
         });
+
+    py::class_<EnginePollResponse>(m_engine, "EnginePollResponse")
+        .def(py::init<>())
+        .def_readwrite(
+            "should_update_camera", &EnginePollResponse::should_update_camera
+        )
+        .def_readwrite("camera_params", &EnginePollResponse::camera_params);
 
     py::class_<RenderEngine>(m_engine, "RenderEngine")
         .def(py::init([](
@@ -222,6 +220,11 @@ void register_engine(py::module_& m) {
             self.set_scene(std::move(*scene));
         })
 
+        .def("idle", ([](RenderEngine& self) {
+            py::gil_scoped_release release;
+            self.idle();
+        }))
+
         .def("render", ([](RenderEngine& self) {
             py::gil_scoped_release release;
             self.render();
@@ -231,27 +234,30 @@ void register_engine(py::module_& m) {
         .def_readwrite("on_frame_finished",  &RenderEngine::on_frame_finished)
         .def_readwrite("on_render_finished", &RenderEngine::on_render_finished)
         .def_readwrite("on_stopped",         &RenderEngine::on_stopped)
+        .def_readwrite("on_restarted",       &RenderEngine::on_restarted)
         .def_readwrite("on_reset",           &RenderEngine::on_reset)
+        .def_readwrite("on_shutdown",        &RenderEngine::on_shutdown)
+        .def_readwrite("poll_updates",       &RenderEngine::poll_updates)
 
         .def("camera", &RenderEngine::camera, return_policy::reference)
         .def("layers", &RenderEngine::layers, return_policy::reference)
         .def("scene",  &RenderEngine::scene,  return_policy::reference)
         .def("stream", &RenderEngine::stream, return_policy::reference)
 
-        .def("set_sample_mode", &RenderEngine::set_sample_mode)
-        .def("request_stop",    &RenderEngine::request_stop)
-        .def("reset",           &RenderEngine::reset)
+        .def("request_start",    &RenderEngine::request_start)
+        .def("request_stop",     &RenderEngine::request_stop)
+        .def("request_restart",  &RenderEngine::request_restart)
+        .def("request_shutdown", &RenderEngine::request_shutdown)
         
-        .def("get_state",      &RenderEngine::get_state)
-        .def("is_idle",        &RenderEngine::is_idle)
-        .def("is_rendering",   &RenderEngine::is_rendering)
+        .def("get_state",        &RenderEngine::get_state)
+        .def("is_idle",          &RenderEngine::is_idle)
+        .def("is_rendering",     &RenderEngine::is_rendering)
         
-        .def("n_samples",      &RenderEngine::n_samples)
-        .def("set_n_samples",  &RenderEngine::set_n_samples)
-        .def("max_depth",      &RenderEngine::max_depth)
-        .def("set_max_depth",  &RenderEngine::set_max_depth)
-        
-        
+        .def("n_samples",        &RenderEngine::n_samples)
+        .def("set_n_samples",    &RenderEngine::set_n_samples)
+        .def("max_depth",        &RenderEngine::max_depth)
+        .def("set_max_depth",    &RenderEngine::set_max_depth)
+
         .def("screen_space_ray",    &RenderEngine::screen_space_ray)
         .def("get_scene_interface", &RenderEngine::get_scene_interface, 
              return_policy::reference);

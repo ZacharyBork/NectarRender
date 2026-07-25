@@ -137,6 +137,7 @@ class RenderLayersConfig:
         ...
 class StreamConfig:
     apply_tonemapping: bool
+    apply_white_balance: bool
     linear_to_gamma: bool
     tm_method: TonemapMethod
     def __init__(self) -> None:
@@ -152,6 +153,18 @@ class StreamConfig:
         ...
     @tm_white_point.setter
     def tm_white_point(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def wb_temperature(self) -> float:
+        ...
+    @wb_temperature.setter
+    def wb_temperature(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def wb_tint(self) -> float:
+        ...
+    @wb_tint.setter
+    def wb_tint(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
 class StreamState:
     """

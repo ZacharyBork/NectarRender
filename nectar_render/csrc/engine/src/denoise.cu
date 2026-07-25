@@ -85,9 +85,9 @@ void tv_denoise(
 
     size_t bytes = data.n_pixels() * sizeof(float);
 
-    cudaMalloc(&d_u,      bytes);
-    cudaMalloc(&d_grad_x, bytes);
-    cudaMalloc(&d_grad_y, bytes);
+    CUDAMemory::allocate<float>(d_u);
+    CUDAMemory::allocate<float>(d_grad_x);
+    CUDAMemory::allocate<float>(d_grad_y);
 
     for (int c = 0; c < data.C; c++) {
         float* channel = data.data_ptr() + c * data.n_pixels();

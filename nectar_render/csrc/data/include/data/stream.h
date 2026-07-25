@@ -10,6 +10,10 @@ enum class TonemapMethod{ REINHARD, REINHARD_EXTENDED, ACES };
 struct StreamConfig {
     bool linear_to_gamma = true;
 
+    bool  apply_white_balance = true;
+    float wb_temperature = 6800.0f;
+    float wb_tint = 1.0f;
+
     bool apply_tonemapping = true;
     TonemapMethod tm_method = TonemapMethod::REINHARD;
     float tm_white_point = 1.0f;
@@ -57,17 +61,21 @@ public:
 
     void start() {
         if (is_active()) destroy();
-        cudaMallocHost(&stream_buffer, n_bytes());
-        cudaMalloc(&image_buffer, n_bytes());
-        cudaStreamCreate(&transfer_stream);
+
+        CUDAMemory::allocate_host(stream_buffer, n_elements());
+        CUDAMemory::allocate(image_buffer, n_bytes());
+        cudaStreamCreateWithFlags(&transfer_stream, cudaStreamNonBlocking);
+        
         set_state(StreamState::ACTIVE);
     }
 
     void destroy() {
         if (is_inactive()) return;
-        destroy_buffer(stream_buffer);
-        destroy_buffer(image_buffer);
+
+        if (stream_buffer)   CUDAMemory::free_host(stream_buffer);
+        if (image_buffer)    CUDAMemory::free(image_buffer);
         if (transfer_stream) cudaStreamDestroy(transfer_stream);
+
         set_state(StreamState::INACTIVE);
     }
 
@@ -150,12 +158,6 @@ private:
 
     void set_state(StreamState new_state) {
         state.store(new_state, std::memory_order_relaxed);
-    }
-
-    bool destroy_buffer(uint8_t* buffer) {
-        if (!buffer) return false;
-        cudaFreeHost(buffer); buffer = nullptr;
-        return true;
     }
 
 };

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <atomic>
 #include <mutex>
+#include <chrono>
+#include <atomic>
 #include <optional>
 #include <pybind11/functional.h>
 
@@ -15,8 +16,42 @@
 #include "camera.h"
 #include "trace.h"
 
-enum class SampleMode{ ACCUMULATE, COMBINE };
-enum class EngineState{ IDLE, RENDERING };
+// ============================================================================
+// GLOBALS
+// ============================================================================
+
+typedef std::chrono::high_resolution_clock Time;
+typedef std::chrono::duration<float> fsec;
+inline constexpr std::memory_order relaxed = std::memory_order_relaxed;
+
+// ============================================================================
+// DATA UTILS
+// ============================================================================
+
+enum class EngineState{ IDLE, RENDERING }; typedef EngineState ES;
+enum class RenderMode { FULL, INTERACTIVE };
+
+// ============================================================================
+// GUI POLLING
+// ============================================================================
+
+struct EnginePollResponse {    
+    bool should_update_camera = false;
+    CameraParams camera_params;
+
+    bool should_reset() const {
+        return should_update_camera;
+    }
+};
+
+static inline EnginePollResponse default_poll_response = {};
+inline EnginePollResponse poll_updates_default() { 
+    return default_poll_response; 
+}
+
+// ============================================================================
+// RENDER ENGINE CLASS
+// ============================================================================
 
 class RenderEngine {
 public:
@@ -25,7 +60,11 @@ public:
     std::function<void(uint32_t)> on_frame_finished  = hook_no_op<uint32_t>;
     std::function<void()>         on_render_finished = hook_no_op<>;
     std::function<void()>         on_stopped         = hook_no_op<>;
+    std::function<void()>         on_restarted       = hook_no_op<>;
     std::function<void()>         on_reset           = hook_no_op<>;
+    std::function<void()>         on_shutdown        = hook_no_op<>;
+
+    std::function<EnginePollResponse()> poll_updates = poll_updates_default;
 
     /* CONSTRUCTION */
 
@@ -35,16 +74,7 @@ public:
         const Camera& camera,
         uint32_t ray_depth = 8u,
         uint32_t seed      = 54321u
-    ) : cam(camera),
-        ray_depth(ray_depth),
-        seed(seed),
-        aovs(RenderLayers(cam.resolution())),
-        sample_aovs(RenderLayers(&aovs))
-    { 
-        reset();
-        transfer_stream.link(aovs.get_layer(LayerType::BEAUTY));
-        transfer_stream.start();
-    }
+    );
 
     /* PROPERTY ACCESS */
 
@@ -55,17 +85,24 @@ public:
 
     /* ENGINE STATE */
 
-    EngineState get_state() const {
-        return state.load(std::memory_order_relaxed);
-    }
+    EngineState get_state() const { return state.load(relaxed); }
 
-    bool is_idle()      const { return get_state()==EngineState::IDLE; }
-    bool is_rendering() const { 
-        return get_state()==EngineState::RENDERING
-            && !stop_render.load(std::memory_order_relaxed);
+    bool is_rendering() const { return get_state()==ES::RENDERING; }
+    bool is_idle()      const { return get_state()==ES::IDLE;      }
+
+    void request_start()    { start_requested.store(true, relaxed);    }
+    void request_stop()     { stop_requested.store(true, relaxed);     }
+    void request_restart()  { restart_requested.store(true, relaxed);  }
+    void request_shutdown() { shutdown_requested.store(true, relaxed); }
+
+    /* RENDER MODE */
+
+    RenderMode get_render_mode() const    { return render_mode.load(relaxed); }
+    void set_render_mode(RenderMode mode) { render_mode.store(mode, relaxed); }
+
+    bool is_interactive() const { 
+        return get_render_mode() == RenderMode::INTERACTIVE; 
     }
-    
-    void request_stop() { stop_render.store(true, std::memory_order_relaxed); }
 
     /* FUNCTION QUEUE */
 
@@ -73,172 +110,146 @@ public:
         std::function<void()> func, 
         bool rebuild_bvh = false, 
         bool immediate = true
-    ) {
-        { 
-            std::lock_guard<std::mutex> lock(function_queue_mutex); 
-            function_queue.push_back(func); 
-        }
-        if (rebuild_bvh)
-            bvh_build_pending.store(true, std::memory_order_relaxed);
-    }
+    );
 
-    /* SAMPLING / RENDERING */
+    /* RENDERING */
 
-    void set_scene(Scene input_scene) { 
-        current_scene = std::move(input_scene); 
-    }
-    
-    void set_sample_mode(SampleMode mode) { sample_mode = mode; }
+    void set_scene(Scene input_scene);
 
     void render() {
-        set_state(EngineState::RENDERING);
-        with_gil_scoped_acquire(on_render_started);
+        for (uint32_t s = sample_idx; s < n_samples(); s++) {
+            if (poll_gui_updates()) return;
 
-        uint32_t n_samples = cam.n_samples() + 1u;
-
-        for (uint32_t idx = sample_idx; idx < n_samples; idx++) {
-            if (stop_render.load(std::memory_order_relaxed)) {
-                cudaDeviceSynchronize();
+            if (stop_requested.exchange(false, relaxed)) {
                 with_gil_scoped_acquire(on_stopped);
-                stop_render.store(false, std::memory_order_relaxed);
-                set_state(EngineState::IDLE);
                 return;
             }
 
-            sample(idx);
-            scene_interface.update(cam.device_camera());
-            with_gil_scoped_acquire(on_frame_finished, idx);
+            if (restart_requested.exchange(false, relaxed)) {
+                start_requested.store(true, relaxed);
+                with_gil_scoped_acquire(on_restarted);
+                return;
+            }
+
+            sample(sample_idx);
+            with_gil_scoped_acquire(on_frame_finished, sample_idx);
             sample_idx++;
         }
-
-        cudaDeviceSynchronize();
-        with_gil_scoped_acquire(on_render_finished);
-        set_state(EngineState::IDLE);
     }
 
-    /* RESET */
+    void idle() {
+        set_state(EngineState::IDLE);
+        while (!shutdown_requested.load(relaxed)) {
 
-    __host__ void reset() {
-        cudaDeviceSynchronize();
+            if (start_requested.exchange(false, relaxed)) {                
+                reset(); set_state(ES::RENDERING);
+                with_gil_scoped_acquire(on_render_started);
+                
+                render(); cudaDeviceSynchronize(); 
+                
+                set_state(ES::IDLE);
+                with_gil_scoped_acquire(on_render_finished);
+                continue;
+            }
 
-        process_function_queue();
-
-        cam.__construct(seed);
-        
-        config.H = (size_t)cam.resolution()[0];
-        config.W = (size_t)cam.resolution()[1];
-        config.max_depth = ray_depth;
-        config.seed = seed;
-
-        sample_idx = 1u;
-
-        aovs.clear();
-
-        if (bvh_build_pending.load(std::memory_order_relaxed)) {
-            bvh_build_pending.store(false, std::memory_order_relaxed);
-            scene()->build();
+            std::this_thread::sleep_for(poll_interval);
         }
 
-        with_gil_scoped_acquire(on_reset);
-
+        with_gil_scoped_acquire(on_shutdown);
     }
 
     /* UTILITIES */
 
-    const uint32_t n_samples() const { return cam.n_samples(); }
-    void set_n_samples(uint32_t n) {
-        cudaDeviceSynchronize();
-        cam.parameters_()->samples_per_pixel = n;
-        reset();
-    }
+    const uint32_t n_samples() const;
+    void set_n_samples(uint32_t n);
 
-    const uint32_t max_depth() const { return ray_depth; }
-    void set_max_depth(uint32_t value) {
-        cudaDeviceSynchronize();
-        ray_depth = value;
-        reset();
-    }
+    const uint32_t max_depth() const;
+    void set_max_depth(uint32_t value);
 
     /* SCENE INTERFACE UTILS */
 
-    SceneInterface& get_scene_interface() { return scene_interface; }
-
-    void screen_space_ray(float u, float v) {
-        HitRecord* d_rec;
-        cudaMalloc(&d_rec, sizeof(HitRecord));
-        hit_test_ray(u, v, current_scene.graph, cam.device_camera(), d_rec);
-
-        HitRecord rec;
-        cudaMemcpy(&rec, d_rec, sizeof(HitRecord), cudaMemcpyDeviceToHost);
-        cudaFree(d_rec);
-
-        scene_interface.configure(&current_scene, &transfer_stream, rec);
-    }
+    SceneInterface& get_scene_interface();
+    void screen_space_ray(float u, float v);
 
 private:
 
-    std::atomic<bool> stop_render { false };
-    std::atomic<bool> bvh_build_pending { false };
-    std::atomic<EngineState> state { EngineState::IDLE };
-
-    std::atomic<bool> apply_outlier_rejection { false };
-    std::atomic<float> outlier_rejection_threshold { 5.0f };
-
-    std::mutex function_queue_mutex;
-    std::vector<std::function<void()>> function_queue{};
-
     Camera       cam;
-    SampleMode   sample_mode = SampleMode::ACCUMULATE;
     TraceConfig  config;
     RenderLayers aovs, sample_aovs;
     uint32_t     ray_depth, seed;
 
     uint32_t sample_idx = 1u;
 
-    Scene current_scene;
+    Scene          current_scene;
     TransferStream transfer_stream;
     SceneInterface scene_interface;
 
-    __host__ void set_state(EngineState s) {
-        state.store(s, std::memory_order_relaxed);
-    }
+    std::atomic<bool> start_requested    { false };
+    std::atomic<bool> stop_requested     { false };
+    std::atomic<bool> restart_requested  { false };
+    std::atomic<bool> shutdown_requested { false };
+    std::atomic<bool> bvh_build_pending  { false };
 
-    __host__ void process_function_queue() {
-        std::vector<std::function<void()>> to_run;
-        { 
-            std::lock_guard<std::mutex> lock(function_queue_mutex); 
-            to_run.swap(function_queue); 
-        }
-        if (to_run.empty()) return;
+    std::atomic<EngineState> state       { EngineState::IDLE };
+    std::atomic<RenderMode>  render_mode { RenderMode::FULL  };
 
-        {
-            py::gil_scoped_acquire acquire;
-            for (auto& func : to_run) func();
-            to_run.clear();
-        }
-        cudaDeviceSynchronize();
-    }
+    Time::time_point last_poll_time{};
+    static constexpr auto poll_interval = std::chrono::milliseconds(16);
 
-    void sample(uint32_t sample_index = 1u) {
-        bool* hit_light = cam.make_buffer<bool>((size_t)1);
-        trace(
-            config, cam.device_camera(), current_scene.graph, 
-            sample_aovs.aovs(), sample_index
-        );
+    std::mutex function_queue_mutex;
+    std::vector<std::function<void()>> function_queue{};
 
-        if (apply_outlier_rejection.load(std::memory_order_relaxed)) {
-            reject_outliers(sample_aovs, outlier_rejection_threshold);
-        }
+
+    void set_state(EngineState s);
+    void process_function_queue();
+    void sample(uint32_t sample_index = 1u);
+
+    bool poll_gui_updates() {
+        auto now = Time::now();
+        bool should_poll = now - last_poll_time >= poll_interval;
+        bool should_reset = false;
         
-        if (sample_mode == SampleMode::ACCUMULATE) 
-            aovs.accumulate(sample_aovs, sample_index);
-        else aovs.combine(sample_aovs);
-        sample_aovs.clear();
+        if (should_poll) {
+            last_poll_time = now;
+            EnginePollResponse response;
+            { py::gil_scoped_acquire acquire; response = poll_updates(); }
+        
+            if (response.should_reset()) {
+                
+                cudaDeviceSynchronize();
+                if (response.should_update_camera) {
+                    cam.parameters_()->update(response.camera_params);
+                    scene_interface.update(cam.device_camera());
+                    render_mode.store(RenderMode::INTERACTIVE, relaxed);
+                }
 
-        cudaDeviceSynchronize();
-        cudaFree(hit_light);
+                start_requested.store(true, relaxed); 
+                should_reset = true;
+            }
+        } else {
+            render_mode.store(RenderMode::FULL, relaxed);
+        }
+        return should_reset;
+    }
+
+    void reset() {
+        process_function_queue();
+
+        cam.__construct(seed);
+        
+        config.H = (size_t)cam.resolution()[0];
+        config.W = (size_t)cam.resolution()[1];
+        config.seed = seed;
+
+        sample_idx = 1u;
+        aovs.clear();
+
+        if (bvh_build_pending.load(relaxed)) {
+            bvh_build_pending.store(false, relaxed);
+            scene()->build();
+        }
+
+        with_gil_scoped_acquire(on_reset);
     }
 
 };
-
-

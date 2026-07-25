@@ -33,7 +33,7 @@ __device__ void tonemap_aces(Color& pixel_color) {
 
 __device__ void apply_tonemapping(
     Color& pixel_color,
-    StreamConfig cfg
+    const StreamConfig& cfg
 ) {
     Color col = Color(pixel_color.r(), pixel_color.g(), pixel_color.b());
     
@@ -55,6 +55,56 @@ __device__ void apply_tonemapping(
         fminf(1.0f, fmaxf(0.0f, pixel_color.r())),
         fminf(1.0f, fmaxf(0.0f, pixel_color.g())),
         fminf(1.0f, fmaxf(0.0f, pixel_color.b()))
+    );
+}
+
+// ============================================================================
+// WHITE BALANCE
+// ============================================================================
+
+__device__ Color kelvin_to_rgb(float kelvin) {
+    float temp = kelvin / 100.0f;
+    float r, g, b;
+
+    if (temp <= 66.0f) {
+        r = 255.0f;
+        g = 99.4708025861f * logf(temp) - 161.1195681661f;
+    } else {
+        r = 329.698727446f * powf(temp - 60.0f, -0.1332047592f);
+        g = 288.1221695283f * powf(temp - 60.0f, -0.0755148492f);
+    }
+
+    if (temp >= 66.0f)      b = 255.0f;
+    else if (temp <= 19.0f) b = 0.0f;
+    else b = 138.5177312231f * logf(temp - 10.0f) - 305.0447927307f;
+
+    return Color(
+        fminf(1.0f, fmaxf(0.0f, r / 255.0f)),
+        fminf(1.0f, fmaxf(0.0f, g / 255.0f)),
+        fminf(1.0f, fmaxf(0.0f, b / 255.0f))
+    );
+}
+
+__device__ void white_balance(Color& pixel_color, const StreamConfig& cfg) {
+    const float reference_kelvin = 6500.0f;
+
+    Color reference = kelvin_to_rgb(reference_kelvin);
+    Color target    = kelvin_to_rgb(fmaxf(
+        1000.0f, fminf(cfg.wb_temperature, 40000.0f))
+    );
+
+    Color ratio = Color(
+        target.r() / fmaxf(reference.r(), 1e-4f),
+        target.g() / fmaxf(reference.g(), 1e-4f),
+        target.b() / fmaxf(reference.b(), 1e-4f)
+    );
+    pixel_color = pixel_color * ratio;
+
+    float tint = cfg.wb_tint * 0.0025f;
+    pixel_color = Color(
+        pixel_color.r() * (1.0f + tint * 0.5f),
+        pixel_color.g() * (1.0f - tint),
+        pixel_color.b() * (1.0f + tint * 0.5f)
     );
 }
 
@@ -101,8 +151,9 @@ __global__ void process_stream_kernel(
     ColorIndex c_idx(data.C, data.H, data.W);
     Color pixel_color = c_idx.get_color(data.ptr);
     
-    if (cfg.apply_tonemapping) apply_tonemapping(pixel_color, cfg);
-    if (cfg.linear_to_gamma)   linear_to_gamma(pixel_color);
+    if (cfg.apply_white_balance) white_balance(pixel_color, cfg);
+    if (cfg.apply_tonemapping)   apply_tonemapping(pixel_color, cfg);
+    if (cfg.linear_to_gamma)     linear_to_gamma(pixel_color);
     
     to_image(data.C, pixel_color, c_idx, result);
 }

@@ -71,12 +71,8 @@ private:
         h_hittables = std::move(bvh.items);
         n_bvh_nodes = bvh.nodes.size();
 
-        size_t n_bytes = n_bvh_nodes * sizeof(BVHNode);
-        cudaMalloc(&bvh_nodes, n_bytes);
-        cudaMemcpy(
-            bvh_nodes, bvh.nodes.data(),
-            n_bytes, cudaMemcpyHostToDevice
-        );
+        CUDAMemory::allocate<BVHNode>(bvh_nodes, n_bvh_nodes);
+        CUDAMemory::copy<BVHNode>(bvh_nodes, bvh.nodes.data(), n_bvh_nodes);
     }
 
     __host__ void register_hittable(Hittable* obj) {
@@ -99,11 +95,9 @@ private:
             map_host_to_device[h_hittables[i]] = d_ptr;
         }
 
-        size_t n_bytes = d_hittables.size() * sizeof(Hittable*);
-        cudaMalloc(&d_hittables_ptrs, n_bytes);
-        cudaMemcpy(
-            d_hittables_ptrs, d_hittables.data(), 
-            n_bytes, cudaMemcpyHostToDevice
+        CUDAMemory::allocate<Hittable*>(d_hittables_ptrs, d_hittables.size());
+        CUDAMemory::copy<Hittable*>(
+            d_hittables_ptrs, d_hittables.data(), d_hittables.size()
         );
     }
 

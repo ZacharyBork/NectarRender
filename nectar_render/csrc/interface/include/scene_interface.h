@@ -50,7 +50,7 @@ public:
 
     void update(DeviceCamera* cam) {
         if (!is_enabled()) return;
-        if (is_pending_teardown()) teardown(); return;
+        if (is_pending_teardown()) { teardown(); return; }
         build_selection_mask(cam);
     }
 

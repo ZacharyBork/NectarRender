@@ -12,7 +12,18 @@ void register_material(py::module_& m) {
     auto m_material = m.def_submodule("material", "Material module.");
     auto m_texture = m_material.def_submodule("texture", "Texture submodule.");
 
-    /* TEXTURE CLASSES */
+    /* TEXTURE CLASS */
+
+    py::enum_<TextureType>(m_material, "TextureType")
+        .value("CONSTANT", TextureType::CONSTANT)
+        .value("IMAGE",      TextureType::IMAGE)
+        .def("__repr__", [](const TextureType& type) {
+            switch (type) {
+                case TextureType::CONSTANT: return "TextureType.CONSTANT";
+                case TextureType::IMAGE:    return "TextureType.IMAGE";
+                default: return "TextureType.UNKNOWN";
+            }
+        });
 
     py::class_<Texture, std::shared_ptr<Texture>>(m_texture, "Texture")
         .def_static("from_color",
@@ -24,59 +35,16 @@ void register_material(py::module_& m) {
         .def_static("from_image", &Texture::from_image,
             py::arg("filepath"), py::arg("host_ptr"),
             py::arg("channels"), py::arg("height"), py::arg("width")
-        );
-
-
-
-
-    // /* TEXTURE CLASSES */
-
-    // py::class_<Texture>(m_texture, "Texture");
-
-    // py::class_<ConstantTexture, Texture>(m_texture, "ConstantTexture")
-    //     .def(py::init([](const Color albedo) {
-    //         return ConstantTexture(albedo);
-    //     }),
-    //         py::arg("albedo") = Color(0.8f, 0.8f, 0.8f)
-    //     )
-    //     .def(py::init([](float r, float g, float b) {
-    //         return ConstantTexture(r, g, b);
-    //     }),
-    //         py::arg("r") = 0.8f,
-    //         py::arg("g") = 0.8f,
-    //         py::arg("b") = 0.8f
-    //     )
-    //     .def("__repr__", [](ConstantTexture& t) {
-    //         return "ConstantTexture(" 
-    //              + std::to_string(t.color()[0]) + ", "
-    //              + std::to_string(t.color()[1]) + ", "
-    //              + std::to_string(t.color()[2]) + ")";
-    //     });
-
-    // py::class_<ImageTexture, Texture>(m_texture, "ImageTexture")
-    //     .def(py::init([](
-    //         uintptr_t    host_ptr, 
-    //         const size_t channels,
-    //         const size_t height,
-    //         const size_t width
-    //     ) {
-    //         return ImageTexture(host_ptr, channels, height, width);
-    //     }),
-    //         py::arg("host_ptr"),
-    //         py::arg("channels"),
-    //         py::arg("height"),
-    //         py::arg("width")
-    //     )
-    //     .def("n_bytes", &ImageTexture::n_bytes);
-
-    // py::class_<NoiseTexture, Texture>(m_texture, "NoiseTexture")
-    //     .def(py::init<>()) 
-    //     .def(py::init([](float scale, uint32_t seed) {
-    //         return NoiseTexture(scale, seed);
-    //     }),
-    //         py::arg("scale"),
-    //         py::arg("seed") = 42u
-    //     );
+        )
+        .def("__repr__", [](const Texture& tex) {
+            std::string output = "Texture(type = ";
+            switch (tex.type) {
+                case TextureType::CONSTANT: output += "CONSTANT"; break;
+                case TextureType::IMAGE:    output += "IMAGE";    break;
+                default: output += "UNKNOWN"; break;
+            }
+            return output;
+        });
 
     /* MATERIAL CLASS */
 

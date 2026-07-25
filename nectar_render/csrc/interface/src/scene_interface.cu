@@ -67,13 +67,13 @@ uint8_t* selection_mask(
     dim3 grid((W + BS2D - 1) / BS2D, (H + BS2D - 1) / BS2D, 1);
 
     uint8_t* base_mask;
-    cudaMalloc(&base_mask, H * W * sizeof(uint8_t));
+    CUDAMemory::allocate<uint8_t>(base_mask, H * W);
     mask_selected_kernel<<<grid, block>>>(
         base_mask, H, W, cam, scene, selected_object
     );
 
     uint8_t* out_mask;
-    cudaMalloc(&out_mask, H * W * sizeof(uint8_t));
+    CUDAMemory::allocate<uint8_t>(out_mask, H * W);
     build_outline_kernel<<<grid, block>>>(
         base_mask, out_mask, H, W, outline_radius
     );

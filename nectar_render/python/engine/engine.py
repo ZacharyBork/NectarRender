@@ -16,8 +16,8 @@ from nectar_render.python.engine.scene   import Scene
 from nectar_render.python.engine.camera  import Camera
 from nectar_render.python.engine.denoise import Denoiser, TVDenoiser
 
-Engine:     TypeAlias = root.RenderEngine
-SampleMode: TypeAlias = root.SampleMode
+Engine:             TypeAlias = root.RenderEngine
+EnginePollResponse: TypeAlias = root.EnginePollResponse
 
 class RenderEngine:
     ENGINE: Engine = None
@@ -68,10 +68,7 @@ class RenderEngine:
     
     def set_scene(self: Self, scene: Scene) -> None:
         self.ENGINE.set_scene(scene)
-        
-    def set_mode(self: Self, mode: SampleMode) -> None:
-        self.ENGINE.set_sample_mode(mode)
-    
+
     def queue_function(
         self:        Self, 
         func:        Callable[[], None], 

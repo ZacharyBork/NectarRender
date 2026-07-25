@@ -9,6 +9,8 @@
 #include "random/include/hash.h"
 #include "engine/include/engine/ray.h"
 
+
+
 // ############################################################################
 // SAMPLE GENERATION
 // ############################################################################
@@ -21,22 +23,20 @@ public:
         std::vector<Vector2> pattern = generate_n_rooks(n_samples, seed);
 
         if (d_pattern) cudaFree(d_pattern);
-        cudaMalloc(&d_pattern, n_samples * sizeof(Vector2));
-        cudaMemcpy(
-            d_pattern, pattern.data(), 
-            n_samples * sizeof(Vector2), 
-            cudaMemcpyHostToDevice
-        );
+        CUDAMemory::allocate<Vector2>(d_pattern, n_samples);
+        CUDAMemory::copy<Vector2>(d_pattern, pattern.data(), n_samples);
 
         cached_n    = n_samples;
         cached_seed = seed;
     }
 
     __host__ Vector2* pattern() const { return d_pattern; }
+    __host__ bool has_pattern() const { return d_pattern != nullptr; }
 
     ~SampleGenerator() { if (d_pattern) cudaFree(d_pattern); }
 
 private:
+
     Vector2* d_pattern   = nullptr;
     uint32_t cached_n    = 0;
     uint32_t cached_seed = 0;
@@ -82,6 +82,21 @@ struct CameraParams {
     float defocus_angle;
     float defocus_radius;
 
+    float movement_speed   = 5.0f;
+    float look_sensitivity = 10.0f;
+
+    __host__ CameraParams() 
+      : resolution(Vector2(0.0f)), 
+        position(Vector3(0.0f)),
+        rotation(Vector3(0.0f)),
+        samples_per_pixel(0u), 
+        focal_length(0.0f),
+        focus_distance(0.0f), 
+        aperture(0.0f), 
+        sensor_width(0.0f),
+        shutter_speed(0.0f)
+    { }
+
     __host__ explicit CameraParams(
         Vector2  resolution,
         Vector3  position,
@@ -92,15 +107,15 @@ struct CameraParams {
         float    aperture,
         float    sensor_width,
         float    shutter_speed
-    ) : resolution(resolution),
-        position(position),
-        rotation(rotation),
-        samples_per_pixel(samples_per_pixel),
-        focal_length(focal_length),
-        focus_distance(focus_distance),
-        aperture(aperture),
-        sensor_width(sensor_width),
-        shutter_speed(shutter_speed)
+    ) : resolution        (resolution),
+        position          (position),
+        rotation          (rotation),
+        samples_per_pixel (samples_per_pixel),
+        focal_length      (focal_length),
+        focus_distance    (focus_distance),
+        aperture          (aperture),
+        sensor_width      (sensor_width),
+        shutter_speed     (shutter_speed)
     { build(); }
 
     __host__ __device__ void build() {
@@ -117,15 +132,18 @@ struct CameraParams {
         uvw = Vector3(sensor_width, -sensor_width * aspect_ratio, 0.0f);
     }
 
-    __host__ void update(const CameraParams& other) {        
-        rotation[1] -= other.rotation[1];
-        rotation[0] -= other.rotation[0];
+    __host__ void update(const CameraParams& other) {
+        Vector3 pos = other.position * movement_speed;
+        Vector3 rot = other.rotation * look_sensitivity;
+        
+        rotation[1] -= rot[1];
+        rotation[0] -= rot[0];
         rotation[0]  = fmaxf(-89.0f, fminf(89.0f, rotation[0]));
 
         R = rotation_y(deg2rad(rotation[1])) 
           * rotation_x(deg2rad(rotation[0]));
 
-        position += R * other.position;
+        position += R * pos;
 
         focal_length   = other.focal_length;
         focus_distance = other.focus_distance;
@@ -259,20 +277,21 @@ public:
 
     __host__ Camera(const Camera& other) : Camera(other.p) { }
 
-    __host__ ~Camera() { free_device_pointer(); }
+    __host__ ~Camera() { if (d_cam_ptr) cudaFree(d_cam_ptr); }
 
     Camera& operator=(const Camera&) = delete;
 
     __host__ void __construct(const uint32_t seed) {
+        if (seed_ != seed || !sample_generator.has_pattern()) {
+            sample_generator.build(p.samples_per_pixel, seed);
+        }
         seed_ = seed;
-        free_device_pointer();
-        sample_generator.build(p.samples_per_pixel, seed_);
 
         DeviceCamera d_cam(p, sample_generator.pattern());
         size_t n_bytes = sizeof(d_cam);
         
-        cudaMalloc(&d_cam_ptr, n_bytes);
-        cudaMemcpy(d_cam_ptr, &d_cam, n_bytes, cudaMemcpyHostToDevice);
+        if (!d_cam_ptr) { CUDAMemory::allocate<DeviceCamera>(d_cam_ptr); }
+        CUDAMemory::copy<DeviceCamera>(d_cam_ptr, &d_cam);
     }
 
     __host__ DeviceCamera* device_camera() {
@@ -302,32 +321,26 @@ public:
     
     __host__ CameraParams* parameters_() { return &p; }
     __host__ const CameraParams parameters() const { return p; }
-    
-    __host__ void update(const CameraParams& other) {
-        cudaDeviceSynchronize();
-        p.update(other);
-        __construct(seed_);
-    }
 
     template<typename T>
     __host__ T* make_buffer(size_t channels) {
         T* d_buffer_ptr;
         Vector2 r = resolution();
-        size_t n_bytes = channels * (size_t)r.x() * (size_t)r.y() * sizeof(T);
-        cudaMalloc(&d_buffer_ptr, n_bytes);
+        size_t n_elements = channels * (size_t)r.x() * (size_t)r.y();
+        CUDAMemory::allocate<T>(d_buffer_ptr, n_elements);
         return d_buffer_ptr;
     }
         
 private:
 
     CameraParams p;
-    uint32_t seed_ = 0u;
     SampleGenerator sample_generator;
     DeviceCamera* d_cam_ptr = nullptr;
 
+    uint32_t seed_ = 0u;
+
     __host__ void free_device_pointer() {
-        if (d_cam_ptr) 
-            cudaFree(reinterpret_cast<void*>(d_cam_ptr));
+        if (d_cam_ptr) cudaFree(d_cam_ptr);
         d_cam_ptr = nullptr;
     }
 

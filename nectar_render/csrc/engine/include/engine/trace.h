@@ -11,19 +11,17 @@ struct TraceConfig {
     size_t H = (size_t)512;
     size_t W = (size_t)512;
 
-    uint32_t max_depth = 8u;
-    uint32_t seed      = 54321u;
+    uint32_t seed = 54321u;
 
 };
-
-void reject_outliers(RenderLayers& layers, float threshold);
 
 void trace(
     TraceConfig   cfg, 
     DeviceCamera* cam,
     SceneGraph*   scene,
     AOVs*         aovs,
-    uint32_t      sample_idx
+    uint32_t      sample_idx,
+    uint32_t      ray_depth
 );
 
 void hit_test_ray(

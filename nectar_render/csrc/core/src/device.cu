@@ -16,7 +16,7 @@ __global__ void device_build_kernel(T* d_obj, Args... args) {
 template<typename T, typename... Args>
 T* device_build(Args... args) {
     T* d_ptr;
-    cudaMalloc(&d_ptr, sizeof(T));
+    CUDAMemory::allocate<T>(d_ptr);
     device_build_kernel<<<1, 1>>>(d_ptr, args...);
     cudaDeviceSynchronize();
     return d_ptr;
@@ -51,15 +51,6 @@ template ObjectLight* device_build<ObjectLight>(
 template Perlin* device_build<Perlin>(
     Vector3* rv, int* perm_x, int* perm_y, int* perm_z
 );
-
-// TEXTURES ===================================================================
-
-// template ConstantTexture* device_build<ConstantTexture>(Color);
-// template CheckerTexture*  device_build<CheckerTexture>(Color, Color, float);
-// template NoiseTexture*    device_build<NoiseTexture>(Perlin*, float, int);
-// template ImageTexture*    device_build<ImageTexture>(
-//     uint8_t*, size_t, size_t, size_t
-// );
 
 // MATERIALS ================================================================== 
 

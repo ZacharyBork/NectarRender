@@ -5,7 +5,7 @@ from __future__ import annotations
 import _pathtracer.core.vector
 import typing
 from . import texture
-__all__: list[str] = ['Dielectric', 'Emissive', 'Isotropic', 'Lambertian', 'Material', 'MaterialCore', 'MaterialType', 'PBR', 'texture']
+__all__: list[str] = ['Dielectric', 'Emissive', 'Isotropic', 'Lambertian', 'Material', 'MaterialCore', 'MaterialType', 'PBR', 'TextureType', 'texture']
 class Dielectric(MaterialCore):
     pass
 class Emissive(MaterialCore):
@@ -24,7 +24,7 @@ class Material:
         ...
     @staticmethod
     @typing.overload
-    def emissive(texture: texture.Texture = ..., brightness: typing.SupportsFloat | typing.SupportsIndex = 35.0) -> Material:
+    def emissive(*args, **kwargs) -> Material:
         ...
     @staticmethod
     @typing.overload
@@ -32,18 +32,18 @@ class Material:
         ...
     @staticmethod
     @typing.overload
-    def isotropic(texture: texture.Texture = ...) -> Material:
+    def isotropic(*args, **kwargs) -> Material:
         ...
     @staticmethod
     @typing.overload
-    def lambertian(albedo: _pathtracer.core.vector.Color = ...) -> Material:
+    def lambertian(color: _pathtracer.core.vector.Color = ...) -> Material:
         ...
     @staticmethod
     @typing.overload
-    def lambertian(texture: texture.Texture = ...) -> Material:
+    def lambertian(*args, **kwargs) -> Material:
         ...
     @staticmethod
-    def pbr(albedo: texture.Texture = ..., roughness: texture.Texture = ..., metallic: texture.Texture = ..., emission: texture.Texture = ..., normal: texture.Texture = ...) -> Material:
+    def pbr(*args, **kwargs) -> Material:
         ...
     def __init__(self) -> None:
         ...
@@ -107,3 +107,44 @@ class MaterialType:
         ...
 class PBR(MaterialCore):
     pass
+class TextureType:
+    """
+    Members:
+    
+      CONSTANT
+    
+      IMAGE
+    """
+    CONSTANT: typing.ClassVar[TextureType]  # value = <TextureType.CONSTANT: 0>
+    IMAGE: typing.ClassVar[TextureType]  # value = <TextureType.IMAGE: 1>
+    __members__: typing.ClassVar[dict[str, TextureType]]  # value = {'CONSTANT': <TextureType.CONSTANT: 0>, 'IMAGE': <TextureType.IMAGE: 1>}
+    def __eq__(self, other: typing.Any) -> bool:
+        ...
+    def __getstate__(self) -> int:
+        ...
+    def __hash__(self) -> int:
+        ...
+    def __index__(self) -> int:
+        ...
+    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __int__(self) -> int:
+        ...
+    def __ne__(self, other: typing.Any) -> bool:
+        ...
+    @typing.overload
+    def __repr__(self) -> str:
+        ...
+    @typing.overload
+    def __repr__(self) -> str:
+        ...
+    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __str__(self) -> str:
+        ...
+    @property
+    def name(self) -> str:
+        ...
+    @property
+    def value(self) -> int:
+        ...
