@@ -6,7 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 
 from PySide6        import QtWidgets as W
-from PySide6.QtCore import Qt, Slot, QPointF, QTimer, QElapsedTimer
+from PySide6.QtCore import Qt, QObject, Slot, QPointF, QTimer, QElapsedTimer
 from PySide6.QtGui  import (
     QKeyEvent, QMouseEvent, QImage, QPixmap, QResizeEvent
 )
@@ -45,6 +45,21 @@ class FrameBuffer:
                 self.data, self.W, self.H, self.strides, QImage.Format_RGB888
             ).copy()
         )
+        
+class EngineStateDisplay(W.QFrame):
+    def __init__(self: Self, parent: QObject | None = None) -> None:
+        super().__init__(parent=parent)
+        self.setLayout(W.QHBoxLayout())
+        self.layout().setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label = W.QLabel('Engine state: Idle')
+        self.layout().addWidget(self.label)
+        
+        TimeKeeper.hertz[10].timeout.connect(self._check_engine_state)
+        
+        
+    def _check_engine_state(self: Self) -> None:
+        state = Bridge.state_as_string()
+        self.label.setText(f'Engine state: {state}')
     
 ###############################################################################
 # VIEWPORT WIDGET
@@ -63,6 +78,9 @@ class ViewportWidget(W.QLabel):
         self.gnomon = GnomonWidget(self)
         self.gnomon.move(0, self.size().height() - self.gnomon.size().height())
         
+        self.engine_state = EngineStateDisplay(self)
+        # self.engine_state.move(0, self.size().height() - self.gnomon.size().height())
+        
         self.buffer: FrameBuffer = None
         self.camera_controller = CameraController(
             settings.findChild(W.QGroupBox, 'camera_settings')
@@ -74,9 +92,7 @@ class ViewportWidget(W.QLabel):
                 
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._held_keys: set[Qt.Key] = set()
-        
-        
-        
+
         TimeKeeper.hertz[30].timeout.connect(self.update_render)
         
 #### KEYPRESS UTILITIES #######################################################

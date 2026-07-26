@@ -4,6 +4,7 @@ from pathlib import Path
 
 from PySide6 import QtWidgets as W
 from PySide6.QtCore    import QFile, QObject, Slot
+from PySide6.QtGui     import QAction
 from PySide6.QtUiTools import QUiLoader
 
 from nectar_render import Camera, EnginePollResponse
@@ -13,7 +14,9 @@ from nectar_render.gui.bridge  import Bridge
 from nectar_render.gui.widgets import (
     ViewportWidget, ColorCorrection, ProgressBar, Profiler
 )
+
 from nectar_render.scenes.cornell_box import CornellBox
+from nectar_render.python.cuda import cudaDeviceSynchronize
 
 ###############################################################################
 # INTERFACE CLASS
@@ -46,6 +49,7 @@ class Interface(QObject):
         Bridge.set_scene(self.scene)
         Bridge.signals.frame_finished.connect(self._on_frame_finished)
         Bridge.signals.render_finished.connect(self._on_render_finished)
+        Bridge.signals.shutdown.connect(self._on_shutdown)
         Bridge.ENGINE.poll_updates = self._engine_poll
         
         TimeKeeper.set_owner(self)
@@ -63,6 +67,11 @@ class Interface(QObject):
             self.viewport.gnomon.update_rotation()
         
         return response
+    
+    def _on_shutdown(self: Self) -> None:
+        cudaDeviceSynchronize();
+        Bridge.thread.stop()
+        sys.exit()
                 
 #### ENGINE HOOKS #############################################################
     
@@ -208,7 +217,20 @@ class Interface(QObject):
         
     def _build_profiler(self: Self) -> None:
         tab = self.find(W.QWidget, 'profiler_tab')
-        self.profiler = Profiler(tab)        
+        self.profiler = Profiler(tab)    
+        
+    def _init_menu_bar(self: Self) -> None:
+        bar = self.find(W.QMenuBar)
+        bar.setNativeMenuBar(False)
+        
+        file_menu = bar.addMenu('&File')
+        
+        quit_action = QAction('Quit', self)
+        quit_action.setShortcut('Ctrl+Q')
+        quit_action.setStatusTip('Quit application')
+        quit_action.triggered.connect(lambda : Bridge.request_shutdown())
+        file_menu.addAction(quit_action)
+        
 
 #### ENTRYPOINT ###############################################################
 
@@ -225,6 +247,7 @@ class Interface(QObject):
         self._build_control_bar()
         self._build_profiler()
         self._init_callbacks()
+        self._init_menu_bar()
         
         self.progress_bar = ProgressBar(
             self.find(W.QFrame, 'progress_frame').layout()

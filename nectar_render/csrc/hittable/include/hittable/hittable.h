@@ -85,7 +85,7 @@ public:
         return build_bbox(); 
     }
 
-    __device__ const bool hit_test(
+    __device__ bool hit_test(
         const Ray& ray,
         HitRecord& rec
     ) const {

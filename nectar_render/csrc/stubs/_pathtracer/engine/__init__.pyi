@@ -64,7 +64,7 @@ class RenderEngine:
     on_restarted: collections.abc.Callable[[], None]
     on_shutdown: collections.abc.Callable[[], None]
     on_stopped: collections.abc.Callable[[], None]
-    poll_updates: collections.abc.Callable[[EnginePollResponse], None]
+    poll_updates: collections.abc.Callable[[], EnginePollResponse]
     def __init__(self, camera: camera.Camera, ray_depth: typing.SupportsInt | typing.SupportsIndex = 8, seed: typing.SupportsInt | typing.SupportsIndex = 54321) -> None:
         ...
     def camera(self) -> camera.Camera:

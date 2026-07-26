@@ -57,7 +57,6 @@ public:
     /* STATE CONTROL */
 
     void disable() { 
-        enabled.store(false, std::memory_order_relaxed);
         teardown_pending.store(true, std::memory_order_relaxed);
     }
 
@@ -127,6 +126,7 @@ private:
         stream->remove_overlay();
         scene = nullptr; stream = nullptr; rec = HitRecord();
         teardown_pending.store(false, std::memory_order_relaxed);
+        enabled.store(false, std::memory_order_relaxed);
     }
     
 };

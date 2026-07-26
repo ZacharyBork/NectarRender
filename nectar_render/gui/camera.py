@@ -37,8 +37,8 @@ class CameraUpdateInfo:
         
     def should_update(self: Self) -> bool:
         return (
-            any(self.delta_p) != 0.0
-         or any(self.delta_r) != 0.0
+            any([i != 0.0 for i in self.delta_p])
+         or any([i != 0.0 for i in self.delta_r])
          or not self == self.prev
         )
     
@@ -84,6 +84,11 @@ class CameraController:
 #### KEYPRESS UTILITIES #######################################################
 
     def key_press(self: Self, event: QKeyEvent) -> None:
+        if event.key() not in [
+            Qt.Key.Key_W, Qt.Key.Key_S, Qt.Key.Key_A, 
+            Qt.Key.Key_D, Qt.Key.Key_Q, Qt.Key.Key_E
+        ]: return
+        Bridge.start_if_idle()
         self._held_keys.add(event.key())
 
     def key_release(self: Self, event: QKeyEvent) -> None:
@@ -96,9 +101,9 @@ class CameraController:
 #### MOUSE UTILITIES ##########################################################
 
     def mouse_press(self, event: QMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.RightButton:
-            self._looking = True
-            self._curr_mouse_pos = self._prev_mouse_pos = event.position()
+        Bridge.start_if_idle()
+        self._looking = True
+        self._curr_mouse_pos = self._prev_mouse_pos = event.position()
 
     def mouse_move(self, event: QMouseEvent) -> None:
         if self._looking: self._curr_mouse_pos = event.position()
@@ -140,10 +145,8 @@ class CameraController:
         
     def poll_updates(self: Self) -> bool:
         self._parse_camera_settings()
-        
         if not self._cam_data.should_update(): return False
-        Bridge.start_if_stopped()
-                
+            
         params = Bridge.camera.parameters()
         self._camera_params = CameraParams(
             params.resolution,

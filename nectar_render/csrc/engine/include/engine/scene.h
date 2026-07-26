@@ -133,7 +133,6 @@ public:
 
         build_device_lights();
 
-        size_t n_bytes = sizeof(h_graph);
         CUDAMemory::allocate<SceneGraph>(graph);
         CUDAMemory::copy<SceneGraph>(graph, &h_graph);
 

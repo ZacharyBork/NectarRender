@@ -6,9 +6,8 @@ import collections.abc
 import typing
 from . import matrix
 from . import random
-from . import utils
 from . import vector
-__all__: list[str] = ['Transform', 'matrix', 'random', 'utils', 'vector']
+__all__: list[str] = ['Transform', 'matrix', 'random', 'vector']
 class Transform:
     def R(self) -> matrix.Matrix3:
         ...

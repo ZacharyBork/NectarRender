@@ -8,7 +8,7 @@
 // PACKAGE INCLUDES ===========================================================
 
 #include "core/constants.h"
-#include "core/device.h"
+#include "core/cuda.h"
 #include "core/interval.h"
 #include "core/matrix.h"
 #include "core/noise.h"

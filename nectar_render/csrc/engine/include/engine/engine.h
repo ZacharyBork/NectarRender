@@ -93,7 +93,10 @@ public:
     void request_start()    { start_requested.store(true, relaxed);    }
     void request_stop()     { stop_requested.store(true, relaxed);     }
     void request_restart()  { restart_requested.store(true, relaxed);  }
-    void request_shutdown() { shutdown_requested.store(true, relaxed); }
+    void request_shutdown() { 
+        shutdown_requested.store(true, relaxed); 
+        if (is_rendering()) request_stop();
+    }
 
     /* RENDER MODE */
 
@@ -118,6 +121,7 @@ public:
 
     void render() {
         for (uint32_t s = sample_idx; s < n_samples(); s++) {
+            scene_interface.update(cam.device_camera());
             if (poll_gui_updates()) return;
 
             if (stop_requested.exchange(false, relaxed)) {
@@ -131,9 +135,8 @@ public:
                 return;
             }
 
-            sample(sample_idx);
+            sample(sample_idx); sample_idx++;
             with_gil_scoped_acquire(on_frame_finished, sample_idx);
-            sample_idx++;
         }
     }
 
@@ -219,7 +222,6 @@ private:
                 cudaDeviceSynchronize();
                 if (response.should_update_camera) {
                     cam.parameters_()->update(response.camera_params);
-                    scene_interface.update(cam.device_camera());
                     render_mode.store(RenderMode::INTERACTIVE, relaxed);
                 }
 

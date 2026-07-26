@@ -92,7 +92,7 @@ void RenderEngine::screen_space_ray(float u, float v) {
 // PRIVATE
 // ============================================================================
 
-__host__ void RenderEngine::set_state(ES s) {
+__host__ void RenderEngine::set_state(EngineState s) {
     state.store(s, relaxed);
 }
 
@@ -120,5 +120,6 @@ void RenderEngine::sample(uint32_t sample_index) {
 
     aovs.accumulate(sample_aovs, sample_index);
     sample_aovs.clear();
+    cudaDeviceSynchronize();
 }
 

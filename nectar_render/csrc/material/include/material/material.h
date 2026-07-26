@@ -425,8 +425,6 @@ public:
         }
     }
 
-    
-
     // LAMBERTIAN =============================================================
 
     __host__ static Material lambertian(std::shared_ptr<Texture> texture) {

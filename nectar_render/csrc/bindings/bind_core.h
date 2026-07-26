@@ -13,15 +13,6 @@ void register_core(py::module_& m) {
     auto m_core = m.def_submodule("core", "Core module.");
 
 // ############################################################################
-// UTILS
-// ############################################################################
-
-    auto m_utils = m_core.def_submodule("utils", "Core utility submodule.");
-
-    m_utils.def("destroy_cublas_handle", &destroy_cublas_handle, 
-        "Destroys cuBLAS handle. Registered atexit for Python module.");
-    
-// ############################################################################
 // RNG
 // ############################################################################
 
