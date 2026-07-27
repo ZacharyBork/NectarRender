@@ -40,8 +40,23 @@ void RenderEngine::queue_function(
         std::lock_guard<std::mutex> lock(function_queue_mutex); 
         function_queue.push_back(func); 
     }
-    if (rebuild_bvh)
-        bvh_build_pending.store(true, relaxed);
+    if (rebuild_bvh) bvh_build_pending.store(true, relaxed);
+    if (immediate)   request_restart();
+}
+
+__host__ void RenderEngine::process_function_queue() {
+    std::vector<std::function<void()>> to_run;
+    { 
+        std::lock_guard<std::mutex> lock(function_queue_mutex); 
+        to_run.swap(function_queue); 
+    }
+    if (to_run.empty()) return;
+
+    {
+        py::gil_scoped_acquire acquire;
+        for (auto& func : to_run) func();
+        to_run.clear();
+    }
 }
 
 // ============================================================================
@@ -94,21 +109,6 @@ void RenderEngine::screen_space_ray(float u, float v) {
 
 __host__ void RenderEngine::set_state(EngineState s) {
     state.store(s, relaxed);
-}
-
-__host__ void RenderEngine::process_function_queue() {
-    std::vector<std::function<void()>> to_run;
-    { 
-        std::lock_guard<std::mutex> lock(function_queue_mutex); 
-        to_run.swap(function_queue); 
-    }
-    if (to_run.empty()) return;
-
-    {
-        py::gil_scoped_acquire acquire;
-        for (auto& func : to_run) func();
-        to_run.clear();
-    }
 }
 
 void RenderEngine::sample(uint32_t sample_index) {

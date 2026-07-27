@@ -3,9 +3,9 @@ from typing  import Self
 from pathlib import Path
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore import QObject, QTimer
+from PySide6.QtCore import Qt, QObject, QTimer
 
-from nectar_render.gui.widgets import XformController
+from nectar_render.gui.widgets import CollapsibleMenu
 
 class WidgetTester(QObject):    
     def __init__(self: Self) -> None:
@@ -31,9 +31,17 @@ class WidgetTester(QObject):
         self.app = W.QApplication(sys.argv)
         self._set_stylesheet()
 
-        WIDGET = XformController()
-
-
+        WIDGET = CollapsibleMenu(
+            name = 'Test Group'
+        )
+        
+        f = W.QFrame()
+        f.setLayout(W.QVBoxLayout())
+        f.layout().addWidget(W.QPushButton('test1'))
+        f.layout().addWidget(W.QPushButton('test2'))
+        f.layout().addWidget(W.QPushButton('test3'))
+        WIDGET.add_widget(f)
+        
         self.update_timer.start()
         WIDGET.show()
         

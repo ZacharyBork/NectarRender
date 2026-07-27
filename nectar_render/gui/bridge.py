@@ -154,7 +154,6 @@ class Bridge(metaclass=BridgeMeta):
         immediate:   bool = True
     ) -> None:
         Bridge.ENGINE.queue_function(func, rebuild_bvh, immediate)
-        Bridge.request_restart()
         
     @staticmethod
     def start_if_idle() -> None:

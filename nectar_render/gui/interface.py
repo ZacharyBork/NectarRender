@@ -12,15 +12,80 @@ from nectar_render.gui         import utils
 from nectar_render.gui.utils   import TimeKeeper
 from nectar_render.gui.bridge  import Bridge
 from nectar_render.gui.widgets import (
-    ViewportWidget, ColorCorrection, ProgressBar, Profiler
+    ViewportWidget, ColorCorrection, ProgressBar, Profiler, MenuBar
 )
 
 from nectar_render.scenes.cornell_box import CornellBox
-from nectar_render.python.cuda import cudaDeviceSynchronize
 
 ###############################################################################
 # INTERFACE CLASS
 ###############################################################################
+
+from nectar_render.python import (
+    ObjectLight, Hittable, Vector3, Color, Material, Scene, SkyLight
+)
+asset_root = Path(__file__).parent.parent.parent / 'tmp/assets'
+test_scene = Scene(
+    skylight  = SkyLight(
+        Color(0.4, 0.4, 0.4), Color(0.1, 0.2, 0.4)
+    ),
+    lights    = [
+        ObjectLight(
+            Hittable.QUAD(
+                Vector3(1.0, 1, 0.0),
+                Vector3(0.0, 180.0, -45.0),
+                Vector3(1),
+                Material.LAMBERTIAN(Color.white())
+            ),
+            5.0, Color.white()
+        )
+    ],
+    hittables = [
+        Hittable.QUAD( # Bottom
+            Vector3(0.0, -0.5, 0.0),
+            Vector3(0.0, 0.0, 0.0),
+            Vector3(100.0),
+            Material.LAMBERTIAN(Color.white())
+        ),
+        # Hittable.QUAD( # Top
+        #     Vector3(0.0, 0.5, 0.0),
+        #     Vector3(0.0, 180.0, 0.0),
+        #     Vector3(1.0),
+        #     Material.LAMBERTIAN(Color.white())
+        # ),
+        # Hittable.QUAD( # Right
+        #     Vector3(0.5, 0.0, 0.0),
+        #     Vector3(0.0, 0.0, 90.0),
+        #     Vector3(1.0),
+        #     Material.LAMBERTIAN(Color.red())
+        # ),
+        # Hittable.QUAD( # Left
+        #     Vector3(-0.5, 0.0, 0.0),
+        #     Vector3(0.0, 0.0, -90.0),
+        #     Vector3(1.0),
+        #     Material.LAMBERTIAN(Color.green())
+        # ),
+        # Hittable.QUAD( # Back
+        #     Vector3(0.0, 0.0, -0.5),
+        #     Vector3(-90.0, 0.0, 0.0),
+        #     Vector3(1.0),
+        #     Material.LAMBERTIAN(Color.white())
+        # ),
+        
+        Hittable.MESH.from_obj(
+            asset_root.resolve().as_posix() + '/happy.obj',
+            Vector3(0.0, -0.8, 0.0),
+            Vector3(0.0, 45.0, 0.0),
+            Vector3(6.0, 6.0, 6.0),
+            Material.PBR(
+                albedo    = Color(1.0, 0.0, 0.0),
+                roughness = 0.6,
+                metallic  = 0.3 
+            )
+        )
+        
+    ]
+)
 
 class Interface(QObject):    
     def __init__(self: Self) -> None:
@@ -31,25 +96,21 @@ class Interface(QObject):
         self.profiler:        Profiler = None
         self.color_correction:  ColorCorrection = None
         
-        self.scene = CornellBox.SCENE
+        self.camera = Camera(
+            resolution   = (512, 512),
+            position     = (0.0, 0.0, 2.0),
+            rotation     = (0.0, 0.0, 0.0),
+            num_samples  = 512,
+            focal_length = 3.0
+        )
+        self.scene = test_scene
         self.max_depth: int = 6
         self.seed:      int = 42
 
-        Bridge.init(
-            Camera(
-                resolution   = (512, 512),
-                position     = (0.0, 0.0, 2.0),
-                rotation     = (0.0, 0.0, 0.0),
-                num_samples  = 512,
-                focal_length = 3.0
-            ), 
-            self.max_depth, 
-            self.seed
-        )
+        Bridge.init(self.camera, self.max_depth, self.seed)
         Bridge.set_scene(self.scene)
         Bridge.signals.frame_finished.connect(self._on_frame_finished)
         Bridge.signals.render_finished.connect(self._on_render_finished)
-        Bridge.signals.shutdown.connect(self._on_shutdown)
         Bridge.ENGINE.poll_updates = self._engine_poll
         
         TimeKeeper.set_owner(self)
@@ -67,11 +128,6 @@ class Interface(QObject):
             self.viewport.gnomon.update_rotation()
         
         return response
-    
-    def _on_shutdown(self: Self) -> None:
-        cudaDeviceSynchronize();
-        Bridge.thread.stop()
-        sys.exit()
                 
 #### ENGINE HOOKS #############################################################
     
@@ -220,17 +276,8 @@ class Interface(QObject):
         self.profiler = Profiler(tab)    
         
     def _init_menu_bar(self: Self) -> None:
-        bar = self.find(W.QMenuBar)
-        bar.setNativeMenuBar(False)
-        
-        file_menu = bar.addMenu('&File')
-        
-        quit_action = QAction('Quit', self)
-        quit_action.setShortcut('Ctrl+Q')
-        quit_action.setStatusTip('Quit application')
-        quit_action.triggered.connect(lambda : Bridge.request_shutdown())
-        file_menu.addAction(quit_action)
-        
+        self._menubar = MenuBar(self)
+
 
 #### ENTRYPOINT ###############################################################
 
@@ -240,9 +287,8 @@ class Interface(QObject):
 
         self.mainwidget = self._init_mainwidget()
         self.mainwidget.setWindowTitle('NectarRender')
-        self.mainwidget.menuBar().setNativeMenuBar(False)
         self.find = self.mainwidget.findChild
-        
+
         self._build_viewport()
         self._build_control_bar()
         self._build_profiler()

@@ -102,6 +102,8 @@ class ViewportWidget(W.QLabel):
             if not self.object_info.is_enabled: return
             self.object_info.destroy()
             Bridge.scene_interface.disable()
+            Bridge.stream.remove_overlay()
+            self.readback_stream()
         else: 
             if event.isAutoRepeat(): return
             self.camera_controller.key_press(event)
@@ -187,11 +189,14 @@ class ViewportWidget(W.QLabel):
             Qt.TransformationMode.SmoothTransformation
         )
         self.setPixmap(scaled)
-        
+    
+    def readback_stream(self: Self) -> None:
+        self.update_buffer()
+        self.update_pixmap()   
+    
     def update_render(self: Self) -> None:
         if not Bridge.is_rendering: return
-        self.update_buffer()
-        self.update_pixmap()
+        self.readback_stream()
     
     def save_image(self: Self) -> None:
         if self.buffer is None: return

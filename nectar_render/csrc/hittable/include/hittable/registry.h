@@ -30,12 +30,16 @@ public:
     __host__ void destroy_device_hittables() {
         for (Hittable* obj : d_hittables) { if (obj) cudaFree(obj); }
         if (d_hittables_ptrs) cudaFree(d_hittables_ptrs);
+        if (bvh_nodes) cudaFree(bvh_nodes);
+        
+        d_hittables_ptrs = nullptr;
+        bvh_nodes = nullptr;
         d_hittables.clear();
         map_host_to_device.clear();
     }
 
     __host__ void rebuild() { 
-        if (d_hittables_ptrs) destroy_device_hittables();
+        destroy_device_hittables();
         h_hittables.clear();
         build(); 
     }
@@ -59,6 +63,8 @@ private:
     size_t n_objects   = (size_t)0;
     size_t n_bvh_nodes = (size_t)0;
 
+    BVH<Hittable*> bvh;
+
     std::vector<Hittable*> h_hittables{};
     std::vector<Hittable*> d_hittables{};
     
@@ -66,7 +72,6 @@ private:
     std::unordered_map<Hittable*, Hittable*> map_host_to_device;
 
     __host__ void build_bvh() {
-        BVH<Hittable*> bvh;
         bvh.build(h_hittables, [](Hittable* h){ return h->build_bbox(); });
         h_hittables = std::move(bvh.items);
         n_bvh_nodes = bvh.nodes.size();

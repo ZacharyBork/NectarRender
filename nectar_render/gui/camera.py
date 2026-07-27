@@ -10,6 +10,7 @@ from PySide6.QtGui  import (
 )
 from nectar_render import Vector3, CameraParams
 from nectar_render.gui.bridge  import Bridge
+from nectar_render.gui.widgets.xform_controller import VectorWidget
 
 ###############################################################################
 # UPDATE DATACLASS
@@ -65,17 +66,32 @@ class CameraController:
         super().__init__()
                 
         self.settings = camera_settings
+        f = self.settings.findChild
+        
+        layout: W.QFormLayout = self.settings.layout()
+        
+        self.rotation = VectorWidget()
+        layout.insertRow(0, 'Rotation', self.rotation)
+        
+        self.translation = VectorWidget()
+        layout.insertRow(0, 'Translation', self.translation)
+        
+        
         
         self._looking = False
         self._curr_mouse_pos: QPointF | None = None
         self._prev_mouse_pos: QPointF | None = None
-        
-        self._cam_data = CameraUpdateInfo()
-        self._cam_data.prev = CameraUpdateInfo()
-
         self._held_keys: set[Qt.Key] = set()
         
         self._camera_params: CameraParams | None = None
+        self._cam_data      = CameraUpdateInfo()
+        self._cam_data.prev = CameraUpdateInfo()
+        
+        self.focal_length   = f(W.QDoubleSpinBox, 'focal_length')
+        self.focus_distance = f(W.QDoubleSpinBox, 'focus_distance')
+        self.aperture       = f(W.QDoubleSpinBox, 'aperture')
+        self.sensor_width   = f(W.QDoubleSpinBox, 'sensor_width')
+        self.shutter_speed  = f(W.QDoubleSpinBox, 'shutter_speed')
 
     @property
     def params(self: Self) -> CameraParams | None: 
@@ -133,15 +149,11 @@ class CameraController:
             self._prev_mouse_pos = self._curr_mouse_pos
                 
     def _parse_camera_settings(self: Self) -> None:
-        get_value = lambda name : self.settings.findChild(
-            W.QDoubleSpinBox, name
-        ).value()
-        
-        self._cam_data.focal_length   = get_value('focal_length')
-        self._cam_data.focus_distance = get_value('focus_distance')        
-        self._cam_data.aperture       = get_value('aperture')
-        self._cam_data.sensor_width   = get_value('sensor_width')
-        self._cam_data.shutter_speed  = get_value('shutter_speed')
+        self._cam_data.focal_length   = self.focal_length.value()
+        self._cam_data.focus_distance = self.focus_distance.value()
+        self._cam_data.aperture       = self.aperture.value()
+        self._cam_data.sensor_width   = self.sensor_width.value()
+        self._cam_data.shutter_speed  = self.shutter_speed.value()
         
     def poll_updates(self: Self) -> bool:
         self._parse_camera_settings()
@@ -162,11 +174,4 @@ class CameraController:
         
         self._cam_data.reset()
         return True
-        
-        # Bridge.queue_function(
-        #     lambda : Bridge.camera.update(update_params)
-        # )
-        # self._cam_data.reset()
-            
-
 

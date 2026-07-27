@@ -1,10 +1,7 @@
-import _pathtracer
-
-from typing  import Self
-
+from typing import Self
 from nectar_render.python import (
     RenderEngine, Scene, Camera, Hittable, Vector3, Color, Material,
-    ObjectLight, Texture, SkyLight
+    ObjectLight
 )
 
 class CornellBox(RenderEngine):
@@ -13,34 +10,8 @@ class CornellBox(RenderEngine):
         position     = (0.0, 0.0, 2.0),
         rotation     = (0.0, 0.0, 0.0),
         focal_length = 3.0,
-        num_samples  = 64
+        num_samples  = 256
     )
-    
-    # SCENE = Scene(
-    #     skylight  = SkyLight(),
-    #     lights    = [
-    #         # ObjectLight(
-    #         #     Hittable.SPHERE(
-    #         #         Vector3(1.0, 0.25, 0.0), 0.25
-    #         #     ), 35.0, Color.white()
-    #         # )
-    #     ],
-    #     hittables = [
-    #         Hittable.SPHERE(
-    #             Vector3(0.0, 0.0, 0.0), 0.5,
-    #             Material.PBR(albedo=Color.red())
-    #         ),
-    #         Hittable.SPHERE(
-    #                 Vector3(0.0, -50.5, 0.0), 50.0,
-    #                 Material.PBR(albedo=Color.red())
-                    
-    #             )
-            
-    #     ]
-    # )
-
-
-
     SCENE = Scene(
         skylight  = None,
         lights    = [
@@ -83,40 +54,19 @@ class CornellBox(RenderEngine):
                 Vector3(-90.0, 0.0, 0.0),
                 Vector3(1.0),
                 Material.LAMBERTIAN(Color.white())
+            ),      
+            Hittable.CUBE(
+                Vector3(0.2, -0.35, 0.2), 
+                Vector3(0.0, 35.0, 0.0),
+                Vector3(0.3),
+                Material.LAMBERTIAN(Color.white())
             ),
-            # Hittable.CUBE(
-            #     Vector3(0.2, -0.35, 0.2), 
-            #     Vector3(0.0, 35.0, 0.0),
-            #     Vector3(0.3),
-            #     Material.LAMBERTIAN(Color.white())
-            # ),
-            # Hittable.CUBE(
-            #     Vector3(-0.2, -0.2, -0.1), 
-            #     Vector3(0.0, 35.0, 0.0),
-            #     Vector3(0.3, 0.6, 0.3),
-            #     Material.LAMBERTIAN(Color.white())
-            # )
-            
-            
             Hittable.CUBE(
                 Vector3(-0.2, -0.2, -0.1), 
                 Vector3(0.0, 35.0, 0.0),
                 Vector3(0.3, 0.6, 0.3),
-                # Material.PBR(
-                #     albedo    = Color.red(),
-                #     roughness = 0.2,
-                #     metallic  = 0.5
-                # )
-                Material.PBR(
-                    albedo = Color.red()
-                )
-            ),
-            Hittable.SPHERE(
-                Vector3(0.2, -0.3, 0.2), 0.2,
-                Material.DIELECTRIC(2.52)
+                Material.LAMBERTIAN(Color.white())
             )
-            
-            
         ]
     )
   

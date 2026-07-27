@@ -30,6 +30,7 @@ inline constexpr std::memory_order relaxed = std::memory_order_relaxed;
 
 enum class EngineState{ IDLE, RENDERING }; typedef EngineState ES;
 enum class RenderMode { FULL, INTERACTIVE };
+enum class RenderReturnState{ FINISHED, STOPPED, RESTARTED };
 
 // ============================================================================
 // GUI POLLING
@@ -119,25 +120,22 @@ public:
 
     void set_scene(Scene input_scene);
 
-    void render() {
+    RenderReturnState render() {
         for (uint32_t s = sample_idx; s < n_samples(); s++) {
             scene_interface.update(cam.device_camera());
-            if (poll_gui_updates()) return;
+            poll_gui_updates();
 
-            if (stop_requested.exchange(false, relaxed)) {
-                with_gil_scoped_acquire(on_stopped);
-                return;
-            }
+            if (restart_requested.exchange(false, relaxed))
+                return RenderReturnState::RESTARTED;
 
-            if (restart_requested.exchange(false, relaxed)) {
-                start_requested.store(true, relaxed);
-                with_gil_scoped_acquire(on_restarted);
-                return;
-            }
+            if (stop_requested.exchange(false, relaxed))
+                return RenderReturnState::STOPPED;
 
             sample(sample_idx); sample_idx++;
             with_gil_scoped_acquire(on_frame_finished, sample_idx);
         }
+        
+        return RenderReturnState::FINISHED;
     }
 
     void idle() {
@@ -148,11 +146,24 @@ public:
                 reset(); set_state(ES::RENDERING);
                 with_gil_scoped_acquire(on_render_started);
                 
-                render(); cudaDeviceSynchronize(); 
+                RenderReturnState return_state = render();
+                cudaDeviceSynchronize(); 
                 
-                set_state(ES::IDLE);
-                with_gil_scoped_acquire(on_render_finished);
-                continue;
+                switch (return_state) {
+                    case RenderReturnState::STOPPED:
+                        set_state(ES::IDLE); 
+                        with_gil_scoped_acquire(on_stopped); 
+                        continue;
+                    case RenderReturnState::RESTARTED:
+                        start_requested.store(true, relaxed);
+                        with_gil_scoped_acquire(on_restarted);
+                        continue;
+                    case RenderReturnState::FINISHED:
+                        set_state(ES::IDLE);
+                        with_gil_scoped_acquire(on_render_finished);
+                        continue;
+                }
+                
             }
 
             std::this_thread::sleep_for(poll_interval);
@@ -207,31 +218,27 @@ private:
     void process_function_queue();
     void sample(uint32_t sample_index = 1u);
 
-    bool poll_gui_updates() {
+    void poll_gui_updates() {
         auto now = Time::now();
         bool should_poll = now - last_poll_time >= poll_interval;
-        bool should_reset = false;
         
         if (should_poll) {
             last_poll_time = now;
+            
             EnginePollResponse response;
             { py::gil_scoped_acquire acquire; response = poll_updates(); }
         
             if (response.should_reset()) {
-                
                 cudaDeviceSynchronize();
                 if (response.should_update_camera) {
                     cam.parameters_()->update(response.camera_params);
                     render_mode.store(RenderMode::INTERACTIVE, relaxed);
                 }
-
-                start_requested.store(true, relaxed); 
-                should_reset = true;
+                request_restart();
             }
         } else {
             render_mode.store(RenderMode::FULL, relaxed);
         }
-        return should_reset;
     }
 
     void reset() {
