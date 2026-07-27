@@ -7,9 +7,11 @@
 #include "material/include/material/material.h"
 
 #include "data/include/data.h"
+#include "engine/include/engine/trace.h"
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/scene.h"
 #include "engine/include/engine/light.h"
+#include "engine/include/engine/requests.h"
 
 uint8_t* selection_mask(
     size_t        H, 
@@ -30,31 +32,45 @@ public:
 
     /* CONSTRUCTORS */
 
-    ~SceneInterface() = default;
-    SceneInterface() : rec(HitRecord()) { }
+    ~SceneInterface() = default;    
+    SceneInterface(
+        Camera*         camera, 
+        TransferStream* stream, 
+        EngineRequests* requests
+    ) : camera(camera), stream(stream), requests(requests) { }
 
-    /* CONFIGURATION */
-
-    void configure(
-        Scene*          current_scene,
-        TransferStream* transfer_stream,
-        HitRecord       hit_record
-    ) { 
-        scene  = current_scene; 
-        stream = transfer_stream;
-        rec    = hit_record; 
-        enabled.store(true, std::memory_order_relaxed);
-    }
+    void update_scene(Scene* new_scene) { scene = new_scene; }
 
     /* UPDATE HANDLING */
 
-    void update(DeviceCamera* cam) {
+    void update() {
         if (!is_enabled()) return;
         if (is_pending_teardown()) { teardown(); return; }
-        build_selection_mask(cam);
+        build_selection_mask();
+    }
+
+    /* INTERACTION */
+
+    void screen_space_ray(float u, float v) {
+        requests->restart();
+
+        HitRecord* d_rec;
+        CUDAMemory::allocate<HitRecord>(d_rec);
+        hit_test_ray(u, v, scene->graph, camera->device_camera(), d_rec);
+
+        cudaMemcpy(&rec, d_rec, sizeof(HitRecord), cudaMemcpyDeviceToHost);
+        CUDAMemory::free<HitRecord>(d_rec);
+
+        if (!rec.hit_object) return;
+        if (is_disabled()) enable();
     }
 
     /* STATE CONTROL */
+
+    void enable() {
+        if (is_enabled()) return;
+        enabled.store(true, std::memory_order_relaxed);
+    }
 
     void disable() { 
         teardown_pending.store(true, std::memory_order_relaxed);
@@ -66,10 +82,16 @@ public:
         return teardown_pending.load(std::memory_order_relaxed); 
     }
     
+
+
+
+
     /* PROPERTY ACCESS */
 
     Scene* get_scene() { return scene; }
     HitRecord& get_hit_record() { return rec; }
+
+    
 
     /* TRANSFORM UTILS */
 
@@ -94,10 +116,12 @@ public:
 
 private:
 
-    HitRecord rec;
-    Scene* scene = nullptr;
-    TransferStream* stream = nullptr;
+    Camera*         camera   = nullptr;
+    TransferStream* stream   = nullptr;
+    EngineRequests* requests = nullptr;
+    Scene*          scene    = nullptr;
 
+    HitRecord rec;
     SelectionMaskConfig mask_cfg;
 
     std::atomic<bool> enabled { false };
@@ -114,9 +138,9 @@ private:
         return scene->material_registry.get_material(material_index());
     }
 
-    void build_selection_mask(DeviceCamera* cam) {
+    void build_selection_mask() {
         uint8_t* d_mask_ptr = selection_mask(
-            stream->H, stream->W, cam, scene->graph, 
+            stream->H, stream->W, camera->device_camera(), scene->graph, 
             rec.hit_object, mask_cfg.outline_radius
         );
         stream->overlay(d_mask_ptr, mask_cfg.color);
@@ -124,7 +148,7 @@ private:
 
     void teardown() {
         stream->remove_overlay();
-        scene = nullptr; stream = nullptr; rec = HitRecord();
+        rec = HitRecord();
         teardown_pending.store(false, std::memory_order_relaxed);
         enabled.store(false, std::memory_order_relaxed);
     }

@@ -37,7 +37,7 @@ test_scene = Scene(
                 Vector3(1),
                 Material.LAMBERTIAN(Color.white())
             ),
-            5.0, Color.white()
+            15.0, Color(1.0, 0.4, 0.2)
         )
     ],
     hittables = [
@@ -45,7 +45,11 @@ test_scene = Scene(
             Vector3(0.0, -0.5, 0.0),
             Vector3(0.0, 0.0, 0.0),
             Vector3(100.0),
-            Material.LAMBERTIAN(Color.white())
+            Material.PBR(
+                Color.white(),
+                0.15,
+                0.2
+            )
         ),
         # Hittable.QUAD( # Top
         #     Vector3(0.0, 0.5, 0.0),
@@ -65,12 +69,18 @@ test_scene = Scene(
         #     Vector3(1.0),
         #     Material.LAMBERTIAN(Color.green())
         # ),
-        # Hittable.QUAD( # Back
-        #     Vector3(0.0, 0.0, -0.5),
-        #     Vector3(-90.0, 0.0, 0.0),
-        #     Vector3(1.0),
-        #     Material.LAMBERTIAN(Color.white())
-        # ),
+        Hittable.SPHERE( # Back
+            Vector3(0.5, -0.3, 0.0),
+            0.2, Material.PBR(Color.white(), 0.1, 1.0)
+        ),
+        Hittable.SPHERE( # Back
+            Vector3(0.7, -0.3, 0.5),
+            0.2, Material.PBR(Color.yellow())
+        ),
+        Hittable.SPHERE( # Back
+            Vector3(0.8, -0.3, 1.1),
+            0.2, Material.DIELECTRIC(1.5)
+        ),
         
         Hittable.MESH.from_obj(
             asset_root.resolve().as_posix() + '/happy.obj',
@@ -78,9 +88,9 @@ test_scene = Scene(
             Vector3(0.0, 45.0, 0.0),
             Vector3(6.0, 6.0, 6.0),
             Material.PBR(
-                albedo    = Color(1.0, 0.0, 0.0),
-                roughness = 0.6,
-                metallic  = 0.3 
+                albedo    = Color(1.0, 0.6, 0.15),
+                roughness = 0.4,
+                metallic  = 1.0 
             )
         )
         
@@ -154,7 +164,7 @@ class Interface(QObject):
             else: box.setStyleSheet('padding: -5px;')
 
     def play_button(self: Self) -> None:
-        Bridge.request_start()
+        Bridge.requests.start()
         self.find(W.QPushButton, 'play').setEnabled(False)
         self.find(W.QPushButton, 'pause').setEnabled(True)
         self.find(W.QPushButton, 'stop').setEnabled(True)
@@ -166,26 +176,28 @@ class Interface(QObject):
         self.find(W.QPushButton, 'stop').setEnabled(True)
         
     def stop_button(self: Self) -> None:
-        Bridge.request_stop()
+        Bridge.requests.stop()
         self.find(W.QPushButton, 'play').setEnabled(True)
         self.find(W.QPushButton, 'pause').setEnabled(False)
         self.find(W.QPushButton, 'stop').setEnabled(False)
         
     def refresh(self: Self) -> None:
         if not Bridge.is_rendering: return
-        Bridge.request_restart()
+        Bridge.requests.restart()
 
     def set_n_samples(self: Self) -> None:
-        value = self.find(W.QSpinBox, 'n_samples').value()
-        Bridge.queue_function(
-            lambda : Bridge.ENGINE.set_n_samples(value)
-        )
+        pass
+        # value = self.find(W.QSpinBox, 'n_samples').value()
+        # Bridge.queue_function(
+        #     lambda : Bridge.ENGINE.set_n_samples(value)
+        # )
 
     def set_max_depth(self: Self) -> None:
-        value = self.find(W.QSpinBox, 'max_depth').value()
-        Bridge.queue_function(
-            lambda : Bridge.ENGINE.set_max_depth(value)
-        )
+        pass
+        # value = self.find(W.QSpinBox, 'max_depth').value()
+        # Bridge.queue_function(
+            # lambda : Bridge.ENGINE.set_max_depth(value)
+        # )
             
     def _select_render_pass(self: Self, index: int) -> None:
         # TODO: Implement render pass switching

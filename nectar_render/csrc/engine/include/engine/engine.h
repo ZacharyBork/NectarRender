@@ -15,6 +15,7 @@
 #include "scene.h"
 #include "camera.h"
 #include "trace.h"
+#include "requests.h"
 
 // ============================================================================
 // GLOBALS
@@ -69,35 +70,32 @@ public:
 
     /* CONSTRUCTION */
 
-    ~RenderEngine() { current_scene.teardown(); }
-
     RenderEngine(
         const Camera& camera,
         uint32_t ray_depth = 8u,
         uint32_t seed      = 54321u
     );
 
+    ~RenderEngine() { current_scene.teardown(); }
+
+    RenderEngine(const RenderEngine&) = delete;
+    RenderEngine& operator=(const RenderEngine&) = delete;
+    RenderEngine(RenderEngine&&) = delete;
+    RenderEngine& operator=(RenderEngine&&) = delete;
+
     /* PROPERTY ACCESS */
 
-    Scene*          scene()  { return &current_scene; }
-    Camera*         camera() { return &cam; }
-    RenderLayers*   layers() { return &aovs; }
-    TransferStream* stream() { return &transfer_stream; }
+    Scene*          scene()    { return &current_scene;   }
+    Camera*         camera()   { return &cam;             }
+    RenderLayers*   layers()   { return &aovs;            }
+    TransferStream* stream()   { return &transfer_stream; }
+    EngineRequests* requests() { return &req;             }
 
     /* ENGINE STATE */
 
     EngineState get_state() const { return state.load(relaxed); }
-
     bool is_rendering() const { return get_state()==ES::RENDERING; }
     bool is_idle()      const { return get_state()==ES::IDLE;      }
-
-    void request_start()    { start_requested.store(true, relaxed);    }
-    void request_stop()     { stop_requested.store(true, relaxed);     }
-    void request_restart()  { restart_requested.store(true, relaxed);  }
-    void request_shutdown() { 
-        shutdown_requested.store(true, relaxed); 
-        if (is_rendering()) request_stop();
-    }
 
     /* RENDER MODE */
 
@@ -108,82 +106,22 @@ public:
         return get_render_mode() == RenderMode::INTERACTIVE; 
     }
 
-    /* FUNCTION QUEUE */
+    /* ENGINE STATES */
 
-    void queue_function(
-        std::function<void()> func, 
-        bool rebuild_bvh = false, 
-        bool immediate = true
-    );
+    RenderReturnState render();
 
-    /* RENDERING */
-
-    void set_scene(Scene input_scene);
-
-    RenderReturnState render() {
-        for (uint32_t s = sample_idx; s < n_samples(); s++) {
-            scene_interface.update(cam.device_camera());
-            poll_gui_updates();
-
-            if (restart_requested.exchange(false, relaxed))
-                return RenderReturnState::RESTARTED;
-
-            if (stop_requested.exchange(false, relaxed))
-                return RenderReturnState::STOPPED;
-
-            sample(sample_idx); sample_idx++;
-            with_gil_scoped_acquire(on_frame_finished, sample_idx);
-        }
-        
-        return RenderReturnState::FINISHED;
-    }
-
-    void idle() {
-        set_state(EngineState::IDLE);
-        while (!shutdown_requested.load(relaxed)) {
-
-            if (start_requested.exchange(false, relaxed)) {                
-                reset(); set_state(ES::RENDERING);
-                with_gil_scoped_acquire(on_render_started);
-                
-                RenderReturnState return_state = render();
-                cudaDeviceSynchronize(); 
-                
-                switch (return_state) {
-                    case RenderReturnState::STOPPED:
-                        set_state(ES::IDLE); 
-                        with_gil_scoped_acquire(on_stopped); 
-                        continue;
-                    case RenderReturnState::RESTARTED:
-                        start_requested.store(true, relaxed);
-                        with_gil_scoped_acquire(on_restarted);
-                        continue;
-                    case RenderReturnState::FINISHED:
-                        set_state(ES::IDLE);
-                        with_gil_scoped_acquire(on_render_finished);
-                        continue;
-                }
-                
-            }
-
-            std::this_thread::sleep_for(poll_interval);
-        }
-
-        with_gil_scoped_acquire(on_shutdown);
-    }
+    void idle();
 
     /* UTILITIES */
+
+    void set_scene(Scene input_scene);
+    SceneInterface& get_scene_interface();
 
     const uint32_t n_samples() const;
     void set_n_samples(uint32_t n);
 
     const uint32_t max_depth() const;
     void set_max_depth(uint32_t value);
-
-    /* SCENE INTERFACE UTILS */
-
-    SceneInterface& get_scene_interface();
-    void screen_space_ray(float u, float v);
 
 private:
 
@@ -198,67 +136,16 @@ private:
     TransferStream transfer_stream;
     SceneInterface scene_interface;
 
-    std::atomic<bool> start_requested    { false };
-    std::atomic<bool> stop_requested     { false };
-    std::atomic<bool> restart_requested  { false };
-    std::atomic<bool> shutdown_requested { false };
-    std::atomic<bool> bvh_build_pending  { false };
-
+    EngineRequests req;
     std::atomic<EngineState> state       { EngineState::IDLE };
     std::atomic<RenderMode>  render_mode { RenderMode::FULL  };
 
     Time::time_point last_poll_time{};
     static constexpr auto poll_interval = std::chrono::milliseconds(16);
 
-    std::mutex function_queue_mutex;
-    std::vector<std::function<void()>> function_queue{};
-
-
     void set_state(EngineState s);
-    void process_function_queue();
     void sample(uint32_t sample_index = 1u);
-
-    void poll_gui_updates() {
-        auto now = Time::now();
-        bool should_poll = now - last_poll_time >= poll_interval;
-        
-        if (should_poll) {
-            last_poll_time = now;
-            
-            EnginePollResponse response;
-            { py::gil_scoped_acquire acquire; response = poll_updates(); }
-        
-            if (response.should_reset()) {
-                cudaDeviceSynchronize();
-                if (response.should_update_camera) {
-                    cam.parameters_()->update(response.camera_params);
-                    render_mode.store(RenderMode::INTERACTIVE, relaxed);
-                }
-                request_restart();
-            }
-        } else {
-            render_mode.store(RenderMode::FULL, relaxed);
-        }
-    }
-
-    void reset() {
-        process_function_queue();
-
-        cam.__construct(seed);
-        
-        config.H = (size_t)cam.resolution()[0];
-        config.W = (size_t)cam.resolution()[1];
-        config.seed = seed;
-
-        sample_idx = 1u;
-        aovs.clear();
-
-        if (bvh_build_pending.load(relaxed)) {
-            bvh_build_pending.store(false, relaxed);
-            scene()->build();
-        }
-
-        with_gil_scoped_acquire(on_reset);
-    }
+    void poll_gui_updates();
+    void reset();
 
 };

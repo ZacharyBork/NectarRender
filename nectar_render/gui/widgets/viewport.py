@@ -79,7 +79,6 @@ class ViewportWidget(W.QLabel):
         self.gnomon.move(0, self.size().height() - self.gnomon.size().height())
         
         self.engine_state = EngineStateDisplay(self)
-        # self.engine_state.move(0, self.size().height() - self.gnomon.size().height())
         
         self.buffer: FrameBuffer = None
         self.camera_controller = CameraController(
@@ -102,7 +101,6 @@ class ViewportWidget(W.QLabel):
             if not self.object_info.is_enabled: return
             self.object_info.destroy()
             Bridge.scene_interface.disable()
-            Bridge.stream.remove_overlay()
             self.readback_stream()
         else: 
             if event.isAutoRepeat(): return
@@ -119,7 +117,7 @@ class ViewportWidget(W.QLabel):
         click_pos: tuple[float, float]
     ) -> None:
         if self.object_info.is_enabled: self.object_info.destroy()
-        Bridge.screen_space_ray(*click_pos)
+        Bridge.scene_interface.screen_space_ray(*click_pos)
         self.object_info.build()
       
 #### MOUSE UTILITIES ##########################################################
@@ -158,6 +156,7 @@ class ViewportWidget(W.QLabel):
             click_pos = self._normalize_click_pos(event.position())
             if click_pos is not None:
                 self._handle_scene_interaction(click_pos)
+                self.readback_stream()
         elif event.button() == Qt.MouseButton.RightButton:
             self.camera_controller.mouse_press(event)
         

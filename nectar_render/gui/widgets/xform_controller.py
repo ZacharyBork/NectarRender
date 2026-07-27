@@ -130,8 +130,8 @@ class XformController(W.QGroupBox):
             self.rotation.as_vector3(),
             self.scale.as_vector3()
         )
-        Bridge.queue_function(
-            lambda : Bridge.scene_interface.set_transform(xform), 
-            rebuild_bvh=True
-        )
+        # Bridge.queue_function(
+        #     lambda : Bridge.scene_interface.set_transform(xform), 
+        #     rebuild_bvh=True
+        # )
 

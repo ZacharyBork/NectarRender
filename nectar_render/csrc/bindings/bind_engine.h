@@ -3,6 +3,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "engine/include/engine/requests.h"
 #include "engine/include/engine/engine.h"
 #include "engine/include/engine/camera.h"
 #include "core/include/core/transform.h"
@@ -187,6 +188,13 @@ void register_engine(py::module_& m) {
         )
         .def_readwrite("camera_params", &EnginePollResponse::camera_params);
 
+    py::class_<EngineRequests>(m_engine, "EngineRequests")
+        .def("start",       &EngineRequests::start)
+        .def("stop",        &EngineRequests::stop)
+        .def("restart",     &EngineRequests::restart)
+        .def("shutdown",    &EngineRequests::shutdown)
+        .def("rebuild_bvh", &EngineRequests::rebuild_bvh);
+
     py::class_<RenderEngine>(m_engine, "RenderEngine")
         .def(py::init([](
             Camera&  camera,
@@ -198,19 +206,6 @@ void register_engine(py::module_& m) {
             py::arg("camera"),
             py::arg("ray_depth") = 8u,
             py::arg("seed")      = 54321u
-        )
-
-        .def("queue_function", ([](
-            RenderEngine& self, 
-            std::function<void()> func,
-            bool rebuild_bvh,
-            bool immediate
-        ) {
-            self.queue_function(func, rebuild_bvh, immediate);
-        }),
-            py::arg("func"),
-            py::arg("rebuild_bvh") = false,
-            py::arg("immediate")   = true
         )
 
         .def("set_scene", [](
@@ -239,16 +234,12 @@ void register_engine(py::module_& m) {
         .def_readwrite("on_shutdown",        &RenderEngine::on_shutdown)
         .def_readwrite("poll_updates",       &RenderEngine::poll_updates)
 
-        .def("camera", &RenderEngine::camera, return_policy::reference)
-        .def("layers", &RenderEngine::layers, return_policy::reference)
-        .def("scene",  &RenderEngine::scene,  return_policy::reference)
-        .def("stream", &RenderEngine::stream, return_policy::reference)
+        .def("camera",   &RenderEngine::camera,   return_policy::reference)
+        .def("layers",   &RenderEngine::layers,   return_policy::reference)
+        .def("scene",    &RenderEngine::scene,    return_policy::reference)
+        .def("stream",   &RenderEngine::stream,   return_policy::reference)
+        .def("requests", &RenderEngine::requests, return_policy::reference)
 
-        .def("request_start",    &RenderEngine::request_start)
-        .def("request_stop",     &RenderEngine::request_stop)
-        .def("request_restart",  &RenderEngine::request_restart)
-        .def("request_shutdown", &RenderEngine::request_shutdown)
-        
         .def("get_state",        &RenderEngine::get_state)
         .def("is_idle",          &RenderEngine::is_idle)
         .def("is_rendering",     &RenderEngine::is_rendering)
@@ -258,7 +249,6 @@ void register_engine(py::module_& m) {
         .def("max_depth",        &RenderEngine::max_depth)
         .def("set_max_depth",    &RenderEngine::set_max_depth)
 
-        .def("screen_space_ray",    &RenderEngine::screen_space_ray)
         .def("get_scene_interface", &RenderEngine::get_scene_interface, 
              return_policy::reference);
 

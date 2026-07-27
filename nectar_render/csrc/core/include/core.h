@@ -9,6 +9,7 @@
 
 #include "core/constants.h"
 #include "core/cuda.h"
+#include "core/time.h"
 #include "core/interval.h"
 #include "core/matrix.h"
 #include "core/noise.h"

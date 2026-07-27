@@ -69,14 +69,6 @@ class RenderEngine:
     def set_scene(self: Self, scene: Scene) -> None:
         self.ENGINE.set_scene(scene)
 
-    def queue_function(
-        self:        Self, 
-        func:        Callable[[], None], 
-        rebuild_bvh: bool = False,
-        immediate:   bool = True
-    ) -> None:
-        self.ENGINE.queue_function(func, rebuild_bvh, immediate)
-        
     ### RENDERING ###
         
     def render(self: Self) -> Self:

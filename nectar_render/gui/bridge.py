@@ -96,6 +96,10 @@ class BridgeMeta(type):
     @property
     def signals(self: Self) -> SignalInterface: 
         return BridgeMeta._signals
+    
+    @property
+    def requests(self: Self) -> root.EngineRequests: 
+        return BridgeMeta.ENGINE.requests()
 
     @property
     def scene_interface(self: Self) -> SceneInterface:
@@ -139,26 +143,12 @@ class Bridge(metaclass=BridgeMeta):
         seed:      int | None = None
     ) -> None:
         BridgeMeta.init(camera, ray_depth, seed)
-        Bridge.set_scene        = Bridge.ENGINE.set_scene
-        Bridge.request_start    = Bridge.ENGINE.request_start
-        Bridge.request_stop     = Bridge.ENGINE.request_stop
-        Bridge.request_restart  = Bridge.ENGINE.request_restart
-        Bridge.request_shutdown = Bridge.ENGINE.request_shutdown
-        Bridge.screen_space_ray = Bridge.ENGINE.screen_space_ray
-        
-        
-    @staticmethod
-    def queue_function(
-        func:        Callable[[], None], 
-        rebuild_bvh: bool = False,
-        immediate:   bool = True
-    ) -> None:
-        Bridge.ENGINE.queue_function(func, rebuild_bvh, immediate)
+        Bridge.set_scene        = Bridge.ENGINE.set_scene   
         
     @staticmethod
     def start_if_idle() -> None:
         if not Bridge.is_idle: return
-        Bridge.request_start()
+        Bridge.requests.start()
         
     @staticmethod
     def update_stream_config() -> None:

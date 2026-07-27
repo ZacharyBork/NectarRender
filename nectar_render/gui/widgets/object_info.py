@@ -44,9 +44,9 @@ class MaterialSettings(W.QGroupBox):
         
     def update_material(self: Self) -> None:
         mat = self.pbr_settings.get_material()
-        Bridge.queue_function(
-            lambda : Bridge.scene_interface.update_material(mat)
-        )
+        # Bridge.queue_function(
+        #     lambda : Bridge.scene_interface.update_material(mat)
+        # )
 
 
 class ObjectInfo(QObject):
@@ -69,7 +69,7 @@ class ObjectInfo(QObject):
         self.root.addWidget(close_btn)
                 
         self.root.addWidget(XformController())
-        self.root.addWidget(MaterialSettings())
+        # self.root.addWidget(MaterialSettings())
         self.is_enabled = True
         
     def destroy(self: Self) -> None:

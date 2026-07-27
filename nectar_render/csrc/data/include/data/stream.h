@@ -108,7 +108,6 @@ public:
     uintptr_t readback() {
         process_stream(data->view(), image_buffer, stream_config);
         
-        
         if (overlay_mask != nullptr) {
             if (should_disable_overlay.load(std::memory_order_relaxed)) {
                 cudaDeviceSynchronize();
