@@ -4,9 +4,11 @@ Camera submodule.
 from __future__ import annotations
 import _pathtracer.core.matrix
 import _pathtracer.core.vector
+import collections.abc
 import typing
 __all__: list[str] = ['Camera', 'CameraParams']
 class Camera:
+    on_updated: collections.abc.Callable[[CameraParams], None]
     def __init__(self, params: CameraParams) -> None:
         ...
     def parameters(self) -> CameraParams:

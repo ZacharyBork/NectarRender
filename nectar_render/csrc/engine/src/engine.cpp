@@ -15,7 +15,7 @@ RenderEngine::RenderEngine(
     seed(seed),
     aovs(RenderLayers(cam.resolution())),
     sample_aovs(RenderLayers(&aovs)),
-    scene_interface(SceneInterface(&cam, &transfer_stream, &req))
+    scene_interface(SceneInterface(&cam, &transfer_stream, &requests_))
 { 
     reset();
     transfer_stream.link(aovs.get_layer(LayerType::BEAUTY));
@@ -31,10 +31,10 @@ RenderReturnState RenderEngine::render() {
         scene_interface.update();
         poll_gui_updates();
 
-        if (req.restart_pending())
+        if (requests_.restart_pending())
             return RenderReturnState::RESTARTED;
 
-        if (req.stop_pending())
+        if (requests_.stop_pending())
             return RenderReturnState::STOPPED;
 
         sample(sample_idx); sample_idx++;
@@ -46,12 +46,13 @@ RenderReturnState RenderEngine::render() {
 
 void RenderEngine::idle() {
     set_state(EngineState::IDLE);
-    while (!req.shutdown_pending()) {
+    while (!requests_.shutdown_pending()) {
 
-        if (req.start_pending()) {                
+        if (requests_.start_pending()) {                
             reset(); set_state(ES::RENDERING);
             with_gil_scoped_acquire(on_render_started);
             
+            transfer_stream.unfreeze();
             RenderReturnState return_state = render();
             cudaDeviceSynchronize(); 
             
@@ -61,7 +62,7 @@ void RenderEngine::idle() {
                     with_gil_scoped_acquire(on_stopped); 
                     continue;
                 case RenderReturnState::RESTARTED:
-                    req.start();
+                    requests_.start();
                     with_gil_scoped_acquire(on_restarted);
                     continue;
                 case RenderReturnState::FINISHED:
@@ -145,10 +146,10 @@ void RenderEngine::poll_gui_updates() {
         if (response.should_reset()) {
             cudaDeviceSynchronize();
             if (response.should_update_camera) {
-                cam.parameters_()->update(response.camera_params);
+                cam.update(response.camera_params);
                 render_mode.store(RenderMode::INTERACTIVE, relaxed);
             }
-            req.restart();
+            requests_.restart();
         }
     } else {
         render_mode.store(RenderMode::FULL, relaxed);
@@ -156,6 +157,7 @@ void RenderEngine::poll_gui_updates() {
 }
 
 void RenderEngine::reset() {
+    transfer_stream.freeze();
     cam.__construct(seed);
     
     config.H = (size_t)cam.resolution()[0];
@@ -165,8 +167,8 @@ void RenderEngine::reset() {
     sample_idx = 1u;
     aovs.clear();
 
-    if (req.bvh_build_pending()) {
-        scene()->build();
+    if (requests_.bvh_build_pending()) {
+        scene()->rebuild_hittables_registry();
         cudaDeviceSynchronize();
     }
 

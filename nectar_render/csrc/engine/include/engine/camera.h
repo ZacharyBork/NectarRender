@@ -6,10 +6,11 @@
 #include <algorithm>
 
 #include "core/include/core.h"
+#include "host/include/host/utils.h"
 #include "random/include/hash.h"
 #include "engine/include/engine/ray.h"
 
-
+#include <pybind11/functional.h>
 
 // ############################################################################
 // SAMPLE GENERATION
@@ -273,6 +274,8 @@ private:
 class Camera {
 public:
 
+    std::function<void(CameraParams)> on_updated = hook_no_op<CameraParams>;
+
     __host__ explicit Camera(CameraParams p) : p(p) { }
 
     __host__ Camera(const Camera& other) : Camera(other.p) { }
@@ -287,11 +290,14 @@ public:
         }
         seed_ = seed;
 
-        DeviceCamera d_cam(p, sample_generator.pattern());
-        size_t n_bytes = sizeof(d_cam);
-        
+        DeviceCamera d_cam(p, sample_generator.pattern());        
         if (!d_cam_ptr) { CUDAMemory::allocate<DeviceCamera>(d_cam_ptr); }
         CUDAMemory::copy<DeviceCamera>(d_cam_ptr, &d_cam);
+    }
+
+    __host__ void update(CameraParams params) {
+        p.update(params);
+        with_gil_scoped_acquire(on_updated, p);
     }
 
     __host__ DeviceCamera* device_camera() {

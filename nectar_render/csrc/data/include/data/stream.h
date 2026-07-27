@@ -5,7 +5,7 @@
 #include "core/include/core.h"
 #include "data_object.h"
 
-enum class StreamState { ACTIVE, INACTIVE };
+enum class StreamState { ACTIVE, INACTIVE, FROZEN };
 enum class TonemapMethod{ REINHARD, REINHARD_EXTENDED, ACES };
 struct StreamConfig {
     bool linear_to_gamma = true;
@@ -45,11 +45,12 @@ public:
 
     bool is_active()   const { return get_state()==StreamState::ACTIVE;   }
     bool is_inactive() const { return get_state()==StreamState::INACTIVE; }
+    bool is_frozen()   const { return get_state()==StreamState::FROZEN;   }
 
     /* LINKING */
 
     void link(DataObject* obj) {
-        if (is_active()) { destroy(); }
+        destroy();
         C = obj->C; H = obj->H; W = obj->W;
         data = obj;
     }
@@ -59,8 +60,17 @@ public:
 
     /* STREAM CONTROL */
 
+    void freeze() { 
+        if (is_active()) {
+            cudaStreamSynchronize(transfer_stream);
+            set_state(StreamState::FROZEN); 
+        }
+        
+    }
+    void unfreeze() { if (is_frozen()) set_state(StreamState::ACTIVE); }
+
     void start() {
-        if (is_active()) destroy();
+        if (!is_inactive()) destroy();
 
         CUDAMemory::allocate_host(stream_buffer, n_elements());
         CUDAMemory::allocate(image_buffer, n_bytes());
@@ -106,20 +116,9 @@ public:
     }
 
     uintptr_t readback() {
+        if (is_frozen()) return buffer_ptr();
         process_stream(data->view(), image_buffer, stream_config);
-        
-        if (overlay_mask != nullptr) {
-            if (should_disable_overlay.load(std::memory_order_relaxed)) {
-                cudaDeviceSynchronize();
-                cudaFree(overlay_mask); 
-                overlay_mask = nullptr;
-                should_disable_overlay.store(false, std::memory_order_relaxed);
-            } else {
-                composite_overlay(
-                    image_buffer, overlay_mask, overlay_color, C, H, W
-                );
-            }
-        }
+        handle_overlay();
 
         cudaMemcpyAsync(
             stream_buffer, image_buffer, n_bytes(),
@@ -157,6 +156,17 @@ private:
 
     void set_state(StreamState new_state) {
         state.store(new_state, std::memory_order_relaxed);
+    }
+
+    void handle_overlay() {
+        if (!overlay_mask) return;
+        bool disable = should_disable_overlay.exchange(
+            false, std::memory_order_relaxed
+        );
+        if (disable) { cudaFree(overlay_mask); overlay_mask = nullptr;} 
+        else composite_overlay(
+            image_buffer, overlay_mask, overlay_color, C, H, W
+        );
     }
 
 };

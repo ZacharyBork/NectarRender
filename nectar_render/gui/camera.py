@@ -92,11 +92,19 @@ class CameraController:
         self.aperture       = f(W.QDoubleSpinBox, 'aperture')
         self.sensor_width   = f(W.QDoubleSpinBox, 'sensor_width')
         self.shutter_speed  = f(W.QDoubleSpinBox, 'shutter_speed')
+        
+        Bridge.camera.on_updated = self._on_camera_updated
 
     @property
     def params(self: Self) -> CameraParams | None: 
         return self._camera_params
-                
+
+#### HOOKS ####################################################################
+
+    def _on_camera_updated(self: Self, params: CameraParams) -> None:
+        self.translation.set_from_vector(params.position)
+        self.rotation.set_from_vector(params.rotation)
+
 #### KEYPRESS UTILITIES #######################################################
 
     def key_press(self: Self, event: QKeyEvent) -> None:

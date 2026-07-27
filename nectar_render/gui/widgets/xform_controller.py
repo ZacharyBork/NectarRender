@@ -93,6 +93,9 @@ class VectorWidget(W.QWidget):
     
     def as_color(self: Self) -> Color:
         return Color(self.x, self.y, self.z)
+    
+    def set_from_vector(self: Self, v: Vector3) -> None:
+        self.x = v.x(); self.y = v.y(); self.z = v.z()
         
 class XformController(W.QGroupBox):
     def __init__(self: Self) -> None:
@@ -130,6 +133,8 @@ class XformController(W.QGroupBox):
             self.rotation.as_vector3(),
             self.scale.as_vector3()
         )
+        Bridge.scene_interface.set_transform(xform)
+        
         # Bridge.queue_function(
         #     lambda : Bridge.scene_interface.set_transform(xform), 
         #     rebuild_bvh=True

@@ -89,7 +89,7 @@ public:
     Camera*         camera()   { return &cam;             }
     RenderLayers*   layers()   { return &aovs;            }
     TransferStream* stream()   { return &transfer_stream; }
-    EngineRequests* requests() { return &req;             }
+    EngineRequests* requests() { return &requests_;       }
 
     /* ENGINE STATE */
 
@@ -136,7 +136,7 @@ private:
     TransferStream transfer_stream;
     SceneInterface scene_interface;
 
-    EngineRequests req;
+    EngineRequests requests_;
     std::atomic<EngineState> state       { EngineState::IDLE };
     std::atomic<RenderMode>  render_mode { RenderMode::FULL  };
 

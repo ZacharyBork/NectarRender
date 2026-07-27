@@ -27,6 +27,8 @@ struct SelectionMaskConfig {
     size_t outline_radius = (size_t)3;
 };
 
+enum class ToolState { SELECT, TRANSFORM };
+
 class SceneInterface {
 public:
 
@@ -51,9 +53,7 @@ public:
 
     /* INTERACTION */
 
-    void screen_space_ray(float u, float v) {
-        requests->restart();
-
+    void query_scene(float u, float v) {
         HitRecord* d_rec;
         CUDAMemory::allocate<HitRecord>(d_rec);
         hit_test_ray(u, v, scene->graph, camera->device_camera(), d_rec);
@@ -91,7 +91,7 @@ public:
     Scene* get_scene() { return scene; }
     HitRecord& get_hit_record() { return rec; }
 
-    
+
 
     /* TRANSFORM UTILS */
 
@@ -101,6 +101,7 @@ public:
 
     void set_transform(const Transform& xform) {
         hit_object()->xform = xform;
+        requests->restart(true);
     }
 
     /* MATERIAL UTILS */
@@ -123,6 +124,7 @@ private:
 
     HitRecord rec;
     SelectionMaskConfig mask_cfg;
+    ToolState tool_state = ToolState::SELECT;
 
     std::atomic<bool> enabled { false };
     std::atomic<bool> teardown_pending { false };

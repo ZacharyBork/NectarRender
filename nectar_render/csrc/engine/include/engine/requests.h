@@ -7,10 +7,12 @@ public:
 
     void start()       { start_.store(true, relaxed);       }
     void stop()        { stop_.store(true, relaxed);        }
-    void restart()     { restart_.store(true, relaxed);     }
     void shutdown()    { shutdown_.store(true, relaxed);    }
     void rebuild_bvh() { rebuild_bvh_.store(true, relaxed); }
-
+    void restart(const bool build_bvh = false) { 
+        if (build_bvh) rebuild_bvh_.store(true, relaxed);
+        restart_.store(true, relaxed);
+    }
 
     bool start_pending()     { return start_.exchange(false, relaxed);       }
     bool stop_pending()      { return stop_.exchange(false, relaxed);        }

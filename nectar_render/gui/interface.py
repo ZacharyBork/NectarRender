@@ -110,7 +110,7 @@ class Interface(QObject):
             resolution   = (512, 512),
             position     = (0.0, 0.0, 2.0),
             rotation     = (0.0, 0.0, 0.0),
-            num_samples  = 512,
+            num_samples  = 2048,
             focal_length = 3.0
         )
         self.scene = test_scene

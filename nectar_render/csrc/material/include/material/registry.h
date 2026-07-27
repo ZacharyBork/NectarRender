@@ -43,7 +43,12 @@ public:
     __host__ void destroy_device_materials() {
         for (Material& m : h_materials) { m.teardown(); }
         if (d_material_ptrs) cudaFree(d_material_ptrs);
+
+        d_material_ptrs = nullptr;
         d_materials.clear();
+        h_materials.clear();
+        h_materials.push_back(make_default_material());
+        d_materials.push_back(h_materials.back().build());
     }
 
 private:

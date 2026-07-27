@@ -84,7 +84,7 @@ class ViewportWidget(W.QLabel):
         self.camera_controller = CameraController(
             settings.findChild(W.QGroupBox, 'camera_settings')
         )
-                
+                        
         self.object_info = ObjectInfo(self.settings)
         self.object_info.close_signal.connect(self.object_info.destroy)
         self.scene_interface: SceneInterface | None = None
@@ -117,7 +117,7 @@ class ViewportWidget(W.QLabel):
         click_pos: tuple[float, float]
     ) -> None:
         if self.object_info.is_enabled: self.object_info.destroy()
-        Bridge.scene_interface.screen_space_ray(*click_pos)
+        Bridge.scene_interface.query_scene(*click_pos)
         self.object_info.build()
       
 #### MOUSE UTILITIES ##########################################################

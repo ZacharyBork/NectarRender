@@ -70,6 +70,7 @@ void register_engine(py::module_& m) {
         }),
             py::arg("params")
         )
+        .def_readwrite("on_updated", &Camera::on_updated)
         .def("parameters", &Camera::parameters, return_policy::copy);
 
 // ############################################################################

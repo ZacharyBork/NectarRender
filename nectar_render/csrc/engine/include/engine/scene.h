@@ -111,7 +111,6 @@ public:
         hittables_registry.destroy_device_hittables();
         material_registry.destroy_device_materials();
 
-        cudaFree(h_graph.bvh_nodes);
         cudaFree(h_graph.lights);
 
         graph   = nullptr;
@@ -135,8 +134,17 @@ public:
 
         CUDAMemory::allocate<SceneGraph>(graph);
         CUDAMemory::copy<SceneGraph>(graph, &h_graph);
+    }
 
-        host_to_device.clear();
+    __host__ void rebuild_hittables_registry() {
+        hittables_registry.destroy_device_hittables();
+
+        hittables_registry.build();
+        h_graph.objects = hittables_registry.device_hittables();
+        h_graph.bvh_nodes = hittables_registry.bvh_nodes;
+
+        CUDAMemory::allocate<SceneGraph>(graph);
+        CUDAMemory::copy<SceneGraph>(graph, &h_graph);
     }
 
     __host__ Hittable* object_at_index(const uint32_t index) {
@@ -144,8 +152,6 @@ public:
     }
 
 private:
-
-    std::unordered_map<Hittable*, Hittable*> host_to_device;
 
     __host__ void build_device_lights() {
         std::vector<Light*> d_light_ptrs(lights.size());

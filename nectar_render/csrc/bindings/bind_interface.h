@@ -19,7 +19,7 @@ void register_interface(py::module_& m) {
         },
             py::arg("mat")
         )
-        .def("screen_space_ray", &SceneInterface::screen_space_ray)
+        .def("query_scene",      &SceneInterface::query_scene)
         .def("enable",           &SceneInterface::enable)
         .def("disable",          &SceneInterface::disable)
         .def("is_enabled",       &SceneInterface::is_enabled)
