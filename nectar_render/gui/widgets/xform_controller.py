@@ -15,7 +15,7 @@ class VectorWidget(W.QWidget):
     ) -> None:
         super().__init__()
         self.values = values
-        self.locked = False
+        self._locked = False
         
         layout = W.QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -77,15 +77,21 @@ class VectorWidget(W.QWidget):
     def z(self: Self) -> float: return self._axes['z'].value()
     @z.setter
     def z(self: Self, value: float) -> None: self._axes['z'].setValue(value)
+    @property
+    def is_locked(self: Self) -> bool: return self._locked
     
     def _reset(self: Self) -> None:
         self.x, self.y, self.z = self.values
         
     def _toggle_lock(self: Self) -> None:
-        self.locked = not self.locked
+        self._locked = not self._locked
         for widget in list(self._axes.values()) + [self.reset]:
-            widget.setDisabled(self.locked)
-        icon = 'lock' if self.locked else 'lock_open'
+            widget.setDisabled(self._locked)
+        icon = 'lock' if self._locked else 'lock_open'
+        self.lock.setStyleSheet(
+            'background-color: #ff5e3a;' if self._locked else
+            'background-color: #1f2128;'
+        )
         utils.set_button_icon(self.lock, icon, (16, 16))
         
     def as_vector3(self: Self) -> Vector3:

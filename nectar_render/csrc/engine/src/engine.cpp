@@ -169,7 +169,6 @@ void RenderEngine::reset() {
 
     if (requests_.bvh_build_pending()) {
         scene()->rebuild_hittables_registry();
-        cudaDeviceSynchronize();
     }
 
     with_gil_scoped_acquire(on_reset);

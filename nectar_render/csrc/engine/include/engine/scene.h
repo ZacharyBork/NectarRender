@@ -143,12 +143,10 @@ public:
         h_graph.objects = hittables_registry.device_hittables();
         h_graph.bvh_nodes = hittables_registry.bvh_nodes;
 
+        build_device_lights();
+
         CUDAMemory::allocate<SceneGraph>(graph);
         CUDAMemory::copy<SceneGraph>(graph, &h_graph);
-    }
-
-    __host__ Hittable* object_at_index(const uint32_t index) {
-        return hittables_registry.get_object(index);
     }
 
 private:

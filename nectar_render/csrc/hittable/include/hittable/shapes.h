@@ -15,15 +15,11 @@ public:
         radius(radius + FMIN) 
     { }
 
-    __device__ Sphere(
-        Transform& xform, 
-        Transform& delta,  
-        float      rad, 
-        size_t     material_index
-    ) : Hittable(xform, delta, material_index), radius(rad) {}
+    __device__ Sphere(HittableBaseData data, float rad) 
+        : Hittable(data), radius(rad) { }
 
     __host__ Hittable* build() const override {
-        return device_build<Sphere>(xform, delta, radius, material_index);
+        return to_device<Sphere>(radius);
     }
 
     __host__ const AABB build_bbox() const override {
@@ -136,11 +132,9 @@ public:
     ) : Hittable(position, rotation, scale, std::move(material)) { }
 
     __device__ Cube(
-        Transform& xform, 
-        Transform& delta, 
-        Hittable** faces,
-        size_t     material_index
-    ) : Hittable(xform, delta, material_index) { 
+        HittableBaseData data, 
+        Hittable** faces
+    ) : Hittable(data) { 
         for (int i = 0; i < 6; i++) prims[i] = faces[i];
     }
 
@@ -151,36 +145,42 @@ public:
             Vector3(0.0f, 0.0f, 0.5f), 
             Vector3(90.0f, 0.0f, 0.0f), 
             Vector3(1.0f),
+            object_index, 
             material_index
         );
         d_faces[1] = device_build<Quad>( // Back
             Vector3(0.0f, 0.0f, -0.5f), 
             Vector3(-90.0f, 0.0f, 0.0f), 
             Vector3(1.0f),
+            object_index, 
             material_index
         );
         d_faces[2] = device_build<Quad>( // Right
             Vector3(0.5f, 0.0f, 0.0f), 
             Vector3(0.0f, 0.0f, -90.0f), 
             Vector3(1.0f),
+            object_index, 
             material_index
         );
         d_faces[3] = device_build<Quad>( // Left
             Vector3(-0.5f, 0.0f, 0.0f), 
             Vector3(0.0f, 0.0f, 90.0f),
             Vector3(1.0f),
+            object_index, 
             material_index
         );
         d_faces[4] = device_build<Quad>( // Top
             Vector3(0.0f, 0.5f, 0.0f), 
             Vector3(0.0f, 0.0f, 0.0f), 
             Vector3(1.0f),
+            object_index,
             material_index
         );
         d_faces[5] = device_build<Quad>( // Bottom
             Vector3(0.0f, -0.5f, 0.0f), 
             Vector3(180.0f, 0.0f, 0.0f), 
             Vector3(1.0f),
+            object_index, 
             material_index
         );
 
@@ -188,7 +188,7 @@ public:
         size_t n_bytes = 6 * sizeof(Hittable*);
         cudaMalloc(&d_face_ptrs, n_bytes);
         cudaMemcpy(d_face_ptrs, d_faces, n_bytes, cudaMemcpyHostToDevice);
-        return device_build<Cube>(xform, delta, d_face_ptrs, material_index);
+        return to_device<Cube>(d_face_ptrs);
     }
 
     __host__ const AABB build_bbox() const override {

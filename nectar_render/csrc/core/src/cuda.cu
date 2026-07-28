@@ -24,27 +24,22 @@ T* device_build(Args... args) {
 
 // HITTABLES ==================================================================
 
-template Quad* device_build<Quad>(Transform, Transform, size_t);
-template Quad* device_build<Quad>(Vector3, Vector3, Vector3, size_t);
-
-template Sphere* device_build<Sphere>(Transform, Transform, float, size_t);
-template Cube*   device_build<Cube>(
-    Transform, Transform, Hittable**, size_t
-);
+template Quad*   device_build<Quad>(HittableBaseData);
+template Quad*   device_build<Quad>(Vector3, Vector3, Vector3, size_t, size_t);
+template Sphere* device_build<Sphere>(HittableBaseData, float);
+template Cube*   device_build<Cube>(HittableBaseData, Hittable**);
 
 template ConstantMedium* device_build<ConstantMedium>(
-    Transform, Transform, Hittable*, float, size_t
+    HittableBaseData, Hittable*, float
 );
 
 template Mesh* device_build<Mesh>(
-    Transform, Transform, size_t, MeshVertex*, BVHNode*, TriangleRef*
+    HittableBaseData, MeshVertex*, BVHNode*, TriangleRef*
 );
 
 // LIGHTS =====================================================================
 
-template ObjectLight* device_build<ObjectLight>(
-    Transform, Transform, Hittable*, size_t
-);
+template ObjectLight* device_build<ObjectLight>(HittableBaseData, Hittable*);
 
 // NOISE ======================================================================
 

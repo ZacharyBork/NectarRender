@@ -27,11 +27,7 @@ public:
         Material material
     ) : Hittable(position, rotation, scale, std::move(material)) { }
 
-    __device__ Quad(
-        Transform& xform, 
-        Transform& delta, 
-        size_t     material_index
-    ) : Hittable(xform, delta, material_index) { 
+    __device__ Quad(HittableBaseData data) : Hittable(data) { 
         u = Vector3(1.0f, 0.0f, 0.0f);
         v = Vector3(0.0f, 0.0f, -1.0f);
 
@@ -45,10 +41,12 @@ public:
         Vector3& position,
         Vector3& rotation,
         Vector3& scale, 
+        size_t   obj_idx,
         size_t   mat_idx
     ) { 
         xform = Transform(position, rotation, scale);
-        material_index = mat_idx; 
+        material_index = mat_idx;
+        object_index = obj_idx; 
 
         u = Vector3(1.0f, 0.0f, 0.0f);
         v = Vector3(0.0f, 0.0f, -1.0f);
@@ -59,9 +57,7 @@ public:
         area = n.length();
     }
 
-    __host__ Hittable* build() const override {
-        return device_build<Quad>(xform, delta, material_index);
-    }
+    __host__ Hittable* build() const override { return to_device<Quad>(); }
 
     __host__ const AABB build_bbox() const override {
         return AABB::oriented(Vector3(0.5f), xform).buffer();

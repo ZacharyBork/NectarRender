@@ -35,20 +35,16 @@ public:
     { bbox = bound_obj.build_bbox(); }
 
     __device__ ConstantMedium(
-        Transform& xform,
-        Transform& delta,
+        HittableBaseData data,
         Hittable*  boundary_ptr, 
-        float      neg_inv_density_,
-        size_t     material_index
-    ) : Hittable(xform, delta, material_index), 
+        float      neg_inv_density_
+    ) : Hittable(data), 
         boundary(boundary_ptr), 
         neg_inv_density(neg_inv_density_) 
     { }
 
     __host__ Hittable* build() const override {
-        return device_build<ConstantMedium>(
-            xform, delta, boundary, neg_inv_density, material_index
-        );
+        return to_device<ConstantMedium>(boundary, neg_inv_density);
     }
 
     __host__ const AABB build_bbox() const override { return bbox; }

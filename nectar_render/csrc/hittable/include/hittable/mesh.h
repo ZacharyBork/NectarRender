@@ -178,13 +178,11 @@ public:
     }
 
     __device__ Mesh(
-        Transform&    xform, 
-        Transform&    delta, 
-        size_t        material_index,
+        HittableBaseData data,
         MeshVertex*   d_vertices,
         BVHNode*      d_tri_nodes,
         TriangleRef*  d_triangles
-    ) : Hittable(xform, delta, material_index),
+    ) : Hittable(data),
         vertices_ptr(d_vertices),
         tri_nodes(d_tri_nodes),
         triangles_ptr(d_triangles)
@@ -252,9 +250,7 @@ public:
             cudaMemcpyHostToDevice
         );
 
-        return device_build<Mesh>(
-            xform, delta, material_index, d_verts, d_nodes, d_tris
-        );
+        return to_device<Mesh>(d_verts, d_nodes, d_tris);
     }
 
     __host__ const AABB build_bbox() const override {

@@ -20,6 +20,15 @@ struct HitTestResult { bool hit; HitRecord& rec; };
 
 struct MatRegistryView;
 
+struct HittableBaseData {
+    // Encapsulates the base data passed to the device build function 
+    // of every hittable type.
+    Transform xform;
+    Transform delta;
+    size_t    object_index;
+    size_t    material_index;
+};
+
 class Hittable {
 public:
 
@@ -71,11 +80,12 @@ public:
         Material material
     ) : xform(xform), delta(delta), material(std::move(material)) { }
 
-    __device__ Hittable(
-        Transform& xform, 
-        Transform& delta, 
-        size_t material_index
-    ) : xform(xform), delta(delta), material_index(material_index) { }
+    __device__ Hittable(HittableBaseData data) 
+      : xform          (data.xform), 
+        delta          (data.delta), 
+        object_index   (data.object_index), 
+        material_index (data.material_index) 
+    { }
 
     __host__ virtual Hittable* build() const = 0;
     __host__ virtual const AABB build_bbox() const = 0;
@@ -129,6 +139,15 @@ public:
 
     __host__ void update_xform(Transform& xform);
     __host__ void update_material(Material* mat);
+
+    template<typename T, typename... Args>
+    __host__ Hittable* to_device(Args... args) const {
+        return device_build<T>(base_data(), args...);
+    }
+
+    __host__ HittableBaseData base_data() const {
+        return HittableBaseData{ xform, delta, object_index, material_index };
+    }
     
 };
 

@@ -49,13 +49,17 @@ public:
 
     __host__ Hittable** device_hittables()    { return d_hittables_ptrs; }
     __host__ std::vector<Hittable*> objects() { return h_hittables; }
+    
     __host__ Hittable* get_object(size_t index) {
         if (index >= object_count())
             throw std::runtime_error(
                 "HittablesRegistry::get_object(): index " + 
                 std::to_string(index) + " out of range"
             );
-        return h_hittables[index];
+        Hittable* found;
+        for (Hittable* obj : h_hittables)
+            if (obj->object_index == index) found = obj;
+        return found;
     }
 
 private:

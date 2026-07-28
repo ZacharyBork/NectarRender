@@ -6,7 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 
 from PySide6        import QtWidgets as W
-from PySide6.QtCore import Qt, QObject, Slot, QPointF, QTimer, QElapsedTimer
+from PySide6.QtCore import Qt, QObject, QSize, QPointF, QTimer, QElapsedTimer
 from PySide6.QtGui  import (
     QKeyEvent, QMouseEvent, QImage, QPixmap, QResizeEvent
 )
@@ -45,21 +45,44 @@ class FrameBuffer:
                 self.data, self.W, self.H, self.strides, QImage.Format_RGB888
             ).copy()
         )
-        
-class EngineStateDisplay(W.QFrame):
-    def __init__(self: Self, parent: QObject | None = None) -> None:
+
+class ViewportOverlay(W.QWidget):
+    def __init__(self: Self, parent: "ViewportWidget") -> None:
         super().__init__(parent=parent)
-        self.setLayout(W.QHBoxLayout())
-        self.layout().setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.label = W.QLabel('Engine state: Idle')
-        self.layout().addWidget(self.label)
+        self.set_size(parent.size())
+        self.setLayout(W.QVBoxLayout())
+        self.layout().setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.layout().setContentsMargins(3, 3, 3, 3)
         
-        TimeKeeper.hertz[10].timeout.connect(self._check_engine_state)
+        self.engine_state = W.QLabel('Idle   ')
+        self.engine_state.setStyleSheet(
+            'background-color: rgba(70, 70, 70, 70);'
+            'padding: 5px;'
+            'border-radius: 5px;'
+        )
+        self.state_ticker = 0
+        frame = W.QFrame()
+        frame.setSizePolicy(
+            W.QSizePolicy.Policy.Maximum,
+            W.QSizePolicy.Policy.Maximum
+        )
+        frame.setLayout(W.QHBoxLayout())
+        frame.layout().setAlignment(Qt.AlignmentFlag.AlignLeft)
+        frame.layout().addWidget(self.engine_state)
         
+        
+        TimeKeeper.seconds[1].timeout.connect(self._check_engine_state)
+        
+        self.layout().addWidget(frame)
+        
+    def set_size(self: Self, size: QSize) -> None:
+        self.setFixedSize(size)
         
     def _check_engine_state(self: Self) -> None:
         state = Bridge.state_as_string()
-        self.label.setText(f'Engine state: {state}')
+        self.state_ticker = (self.state_ticker + 1) % 4
+        text = f'{state}' + '.' * self.state_ticker
+        self.engine_state.setText(text.ljust(len(state)+4))
     
 ###############################################################################
 # VIEWPORT WIDGET
@@ -75,10 +98,10 @@ class ViewportWidget(W.QLabel):
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.settings = settings
         
+        self.overlay = ViewportOverlay(self)
+        
         self.gnomon = GnomonWidget(self)
         self.gnomon.move(0, self.size().height() - self.gnomon.size().height())
-        
-        self.engine_state = EngineStateDisplay(self)
         
         self.buffer: FrameBuffer = None
         self.camera_controller = CameraController(
@@ -173,6 +196,7 @@ class ViewportWidget(W.QLabel):
         super().resizeEvent(event)
         self.update_pixmap()
         self.gnomon.move(0, self.size().height() - self.gnomon.size().height())
+        self.overlay.set_size(self.size())
     
     def update_buffer(self: Self) -> None:
         self.buffer = FrameBuffer(Bridge.readback_stream())

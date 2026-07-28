@@ -27,10 +27,20 @@ class MenuBar:
             file_menu, 'Quit', self._quit_application, 
             'Quit application', 'Ctrl+Q'
         )
+        
+        # EDIT MENU
+                
+        edit_menu = self.bar.addMenu('&File')
+
 
         # SCENE MENU
         
         scene_menu = self.bar.addMenu('&Scene')
+        self.add_action(
+            scene_menu, 'Reload', self.reload_scene, 'Reload current scene'
+        )
+        
+        utils_menu = self.bar.addMenu('&Scene')
         self.add_action(
             scene_menu, 'Reload', self.reload_scene, 'Reload current scene'
         )
@@ -62,7 +72,7 @@ class MenuBar:
 
         if reply == W.QMessageBox.Yes:
             Bridge.signals.shutdown.connect(self._on_quit)
-            Bridge.request_shutdown()
+            Bridge.requests.shutdown()
         
     @Slot()
     def _on_quit(self: Self) -> None:
@@ -74,7 +84,7 @@ class MenuBar:
             
     def reload_scene(self: Self) -> None:
         Bridge.signals.shutdown.connect(self._reload_scene)
-        Bridge.request_shutdown()
+        Bridge.requests.shutdown()
             
     @Slot()
     def _reload_scene(self: Self) -> None:

@@ -139,22 +139,24 @@ class CameraController:
     
     def update_transforms(self: Self, delta_time: float) -> None:
         dT = delta_time
-        if self.is_held(Qt.Key.Key_W): self._cam_data.delta_p[2] -= 1.0 * dT
-        if self.is_held(Qt.Key.Key_S): self._cam_data.delta_p[2] += 1.0 * dT
-        if self.is_held(Qt.Key.Key_A): self._cam_data.delta_p[0] -= 1.0 * dT
-        if self.is_held(Qt.Key.Key_D): self._cam_data.delta_p[0] += 1.0 * dT
-        if self.is_held(Qt.Key.Key_Q): self._cam_data.delta_p[1] -= 1.0 * dT
-        if self.is_held(Qt.Key.Key_E): self._cam_data.delta_p[1] += 1.0 * dT
+        if not self.translation.is_locked:
+            if self.is_held(Qt.Key.Key_W): self._cam_data.delta_p[2] -= 1.0 * dT
+            if self.is_held(Qt.Key.Key_S): self._cam_data.delta_p[2] += 1.0 * dT
+            if self.is_held(Qt.Key.Key_A): self._cam_data.delta_p[0] -= 1.0 * dT
+            if self.is_held(Qt.Key.Key_D): self._cam_data.delta_p[0] += 1.0 * dT
+            if self.is_held(Qt.Key.Key_Q): self._cam_data.delta_p[1] -= 1.0 * dT
+            if self.is_held(Qt.Key.Key_E): self._cam_data.delta_p[1] += 1.0 * dT
         
-        if self._looking and self._curr_mouse_pos is not None:
-            if self._prev_mouse_pos is not None:
-                self._cam_data.delta_r[1] += (
-                    self._curr_mouse_pos.x() - self._prev_mouse_pos.x()
-                ) * dT
-                self._cam_data.delta_r[0] += (
-                    self._curr_mouse_pos.y() - self._prev_mouse_pos.y()
-                ) * dT
-            self._prev_mouse_pos = self._curr_mouse_pos
+        if not self.rotation.is_locked:
+            if self._looking and self._curr_mouse_pos is not None:
+                if self._prev_mouse_pos is not None:
+                    self._cam_data.delta_r[1] += (
+                        self._curr_mouse_pos.x() - self._prev_mouse_pos.x()
+                    ) * dT
+                    self._cam_data.delta_r[0] += (
+                        self._curr_mouse_pos.y() - self._prev_mouse_pos.y()
+                    ) * dT
+                self._prev_mouse_pos = self._curr_mouse_pos
                 
     def _parse_camera_settings(self: Self) -> None:
         self._cam_data.focal_length   = self.focal_length.value()

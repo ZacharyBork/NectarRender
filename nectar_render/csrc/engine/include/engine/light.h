@@ -61,16 +61,12 @@ public:
     { bbox = obj.build_bbox(); }
 
     __device__ ObjectLight(
-        Transform& xform,
-        Transform& delta,
-        Hittable*  boundary_ptr,
-        size_t     material_index
-    ) : Light(xform, delta, material_index), boundary(boundary_ptr) { }
+        HittableBaseData data,
+        Hittable*  boundary_ptr
+    ) : Light(data), boundary(boundary_ptr) { }
 
     __host__ Hittable* build() const override {
-        return device_build<ObjectLight>(
-            xform, delta, boundary, material_index
-        );
+        return to_device<ObjectLight>(boundary);
     }
 
     __host__ const AABB build_bbox() const override { return bbox; }
