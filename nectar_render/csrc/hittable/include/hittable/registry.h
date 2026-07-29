@@ -38,12 +38,6 @@ public:
         map_host_to_device.clear();
     }
 
-    __host__ void rebuild() { 
-        destroy_device_hittables();
-        h_hittables.clear();
-        build(); 
-    }
-
     __host__ size_t object_count()   { return n_objects; }
     __host__ size_t bvh_node_count() { return n_bvh_nodes; }
 
@@ -64,10 +58,10 @@ public:
 
 private:
 
+    BVH<Hittable*> bvh;
+
     size_t n_objects   = (size_t)0;
     size_t n_bvh_nodes = (size_t)0;
-
-    BVH<Hittable*> bvh;
 
     std::vector<Hittable*> h_hittables{};
     std::vector<Hittable*> d_hittables{};
@@ -76,18 +70,14 @@ private:
     std::unordered_map<Hittable*, Hittable*> map_host_to_device;
 
     __host__ void build_bvh() {
+        
         bvh.build(h_hittables, [](Hittable* h){ return h->bounding_box(); });
         h_hittables = std::move(bvh.items);
         n_bvh_nodes = bvh.nodes.size();
 
+        if (bvh_nodes) cudaFree(bvh_nodes); 
         CUDAMemory::allocate<BVHNode>(bvh_nodes, n_bvh_nodes);
         CUDAMemory::copy<BVHNode>(bvh_nodes, bvh.nodes.data(), n_bvh_nodes);
-    }
-
-    __host__ void register_hittable(Hittable* obj) {
-        obj->set_object_index(h_hittables.size());
-        h_hittables.push_back(obj);
-        d_hittables.push_back(obj->build());
     }
 
     __host__ void build_device_hittables() {

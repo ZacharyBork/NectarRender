@@ -12,8 +12,8 @@ public:
         return device_build<Sphere>(radius);
     }
 
-    __host__ const AABB build_bbox(const Transform& xform) const {
-        return AABB::simple(Vector3(radius), xform);
+    __host__ const AABB build_bbox() const {
+        return AABB(Vector3(-radius), Vector3(radius));
     }
 
     __device__ const Vector2 get_uvs(const Vector3& p) const {
@@ -135,8 +135,8 @@ public:
         return device_build<Cube>(d_face_ptrs);
     }
 
-    __host__ const AABB build_bbox(const Transform& xform) const {
-        return AABB::oriented(Vector3(0.5f), xform).buffer();
+    __host__ const AABB build_bbox() const {
+        return AABB(Vector3(-0.5f), Vector3(0.5f));
     }
 
     __device__ NOINLINE bool hit(

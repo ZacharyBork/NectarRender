@@ -145,7 +145,7 @@ public:
 
         obj.xform = Transform(position, rotation, scale);
         obj.mat   = std::move(material);
-        obj.bbox  = obj.h_quad.build_bbox(obj.xform);
+        obj.bbox  = obj.h_quad.build_bbox();
         return obj;
     }
 
@@ -163,7 +163,7 @@ public:
 
         obj.xform = Transform(position, rotation, scale);
         obj.mat   = std::move(material);
-        obj.bbox  = obj.h_cube.build_bbox(obj.xform);
+        obj.bbox  = obj.h_cube.build_bbox();
         return obj;
     }
 
@@ -180,7 +180,7 @@ public:
         
         obj.xform = Transform(position);
         obj.mat   = std::move(material);
-        obj.bbox  = obj.h_sphere.build_bbox(obj.xform);
+        obj.bbox  = obj.h_sphere.build_bbox();
         return obj;
     }
 
@@ -200,7 +200,7 @@ public:
 
         obj.xform = Transform(position, rotation, scale);
         obj.mat   = std::move(material);
-        obj.bbox  = obj.h_mesh.build_bbox(obj.xform);
+        obj.bbox  = obj.h_mesh.build_bbox();
         return obj;
     }
 
@@ -218,8 +218,9 @@ public:
 
         obj.xform = bound_obj.xform;
         obj.delta = bound_obj.delta;
-        obj.mat   = std::move(Material::isotropic(texture));
         obj.bbox  = bound_obj.bbox;
+        obj.mat   = std::move(Material::isotropic(texture));
+        obj.is_volumetric_ = true;
         return obj;
     }
 
@@ -247,8 +248,9 @@ public:
 
         obj.xform = bound_obj.xform;
         obj.delta = bound_obj.delta;
-        obj.mat   = std::move(Material::emissive(texture, brightness));
         obj.bbox  = bound_obj.bbox;
+        obj.mat   = std::move(Material::emissive(texture, brightness));
+        obj.is_light_ = true;
         return obj;
     }
 
@@ -274,9 +276,12 @@ public:
     __host__ void teardown() { if (core_ptr()) cudaFree(core_ptr()); }
 
     __host__ HittableType hittable_type() const { return type;           }
-    __host__ const AABB bounding_box()    const { return bbox;           }
     __host__ bool is_light()              const { return is_light_;      }
     __host__ bool is_volumetric()         const { return is_volumetric_; }
+
+    __host__ const AABB bounding_box() const { 
+        return bbox.transformed(xform);
+    }
 
     // MATERIAL UTILS =========================================================
 

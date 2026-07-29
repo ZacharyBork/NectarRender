@@ -13,10 +13,10 @@
 #include "engine/include/engine/light.h"
 
 struct SceneGraph {
-    BVHNode*   bvh_nodes;
-    Hittable** objects;
-    Hittable** lights;
-    Material** materials;
+    BVHNode*   __restrict__ bvh_nodes;
+    Hittable** __restrict__ objects;
+    Hittable** __restrict__ lights;
+    Material** __restrict__ materials;
     
     SkyLight skylight;
 
@@ -136,6 +136,7 @@ public:
         CUDAMemory::copy<SceneGraph>(graph, &h_graph);
     }
 
+
     __host__ void rebuild_hittables_registry() {
         hittables_registry.destroy_device_hittables();
 
@@ -145,23 +146,28 @@ public:
 
         build_device_lights();
 
-        CUDAMemory::allocate<SceneGraph>(graph);
+        if (!graph) CUDAMemory::allocate<SceneGraph>(graph);
         CUDAMemory::copy<SceneGraph>(graph, &h_graph);
     }
 
 private:
 
     __host__ void build_device_lights() {
+        if (h_graph.lights) cudaFree(h_graph.lights);
+
         std::vector<Hittable*> d_light_ptrs(lights.size());
         for (size_t i = 0; i < lights.size(); i++) {
             d_light_ptrs[i] = hittables_registry.host_to_device(lights[i]);
         }
 
+        Hittable** d_lights;
         size_t n_bytes = lights.size() * sizeof(Hittable*);
-        CUDAMemory::allocate<Hittable*>(h_graph.lights, lights.size());
+        CUDAMemory::allocate<Hittable*>(d_lights, lights.size());
         CUDAMemory::copy<Hittable*>(
-            h_graph.lights, d_light_ptrs.data(), lights.size()
+            d_lights, d_light_ptrs.data(), lights.size()
         );
+
+        h_graph.lights = d_lights;
     }
 
 };

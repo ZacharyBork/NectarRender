@@ -215,7 +215,7 @@ public:
         return device_build<Mesh>(d_verts, d_nodes, d_tris);
     }
 
-    __host__ const AABB build_bbox(const Transform& xform) const {
+    __host__ const AABB build_bbox() const {
         const auto& vertices = host_data->vertices;
         if (vertices.empty()) return AABB();
 
@@ -233,28 +233,7 @@ public:
             );
         }
 
-        Vector3 corners[8] = {
-            Vector3(mn.x(), mn.y(), mn.z()), Vector3(mx.x(), mn.y(), mn.z()),
-            Vector3(mn.x(), mx.y(), mn.z()), Vector3(mx.x(), mx.y(), mn.z()),
-            Vector3(mn.x(), mn.y(), mx.z()), Vector3(mx.x(), mn.y(), mx.z()),
-            Vector3(mn.x(), mx.y(), mx.z()), Vector3(mx.x(), mx.y(), mx.z()),
-        };
-
-        Vector3 wmn(FMAX, FMAX, FMAX), wmx(-FMAX, -FMAX, -FMAX);
-        for (const Vector3& c : corners) {
-            Vector3 world = xform.R() * (c * xform.scale()) + xform.p();
-            wmn = Vector3(
-                fminf(wmn.x(), world.x()), 
-                fminf(wmn.y(), world.y()), 
-                fminf(wmn.z(), world.z())
-            );
-            wmx = Vector3(
-                fmaxf(wmx.x(), world.x()), 
-                fmaxf(wmx.y(), world.y()), 
-                fmaxf(wmx.z(), world.z())
-            );
-        }
-        return AABB(wmn, wmx).buffer();
+        return AABB(mn, mx);
     }
 
     __device__ NOINLINE bool hit(

@@ -17,8 +17,8 @@ public:
 
     __host__ Quad* build() const { return device_build<Quad>(); }
 
-    __host__ const AABB build_bbox(const Transform& xform) const {
-        return AABB::oriented(Vector3(0.5f), xform).buffer();
+    __host__ const AABB build_bbox() const {
+        return AABB(Vector3(-0.5f), Vector3(0.5f));
     }
 
     __device__ NOINLINE bool hit(

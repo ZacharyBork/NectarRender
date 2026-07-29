@@ -70,6 +70,31 @@ public:
         return AABB(mn, mx);
     }
 
+    __host__ __device__ AABB transformed(const Transform& xform) const {
+        Vector3 corners[8] = {
+            Vector3(x.min, y.min, z.min), Vector3(x.max, y.min, z.min),
+            Vector3(x.min, y.max, z.min), Vector3(x.max, y.max, z.min),
+            Vector3(x.min, y.min, z.max), Vector3(x.max, y.min, z.max),
+            Vector3(x.min, y.max, z.max), Vector3(x.max, y.max, z.max),
+        };
+
+        Vector3 mn(FMAX, FMAX, FMAX), mx(-FMAX, -FMAX, -FMAX);
+        for (const Vector3& c : corners) {
+            Vector3 world = xform.R() * (c * xform.scale()) + xform.p();
+            mn = Vector3(
+                fminf(mn.x(), world.x()), 
+                fminf(mn.y(), world.y()), 
+                fminf(mn.z(), world.z())
+            );
+            mx = Vector3(
+                fmaxf(mx.x(), world.x()), 
+                fmaxf(mx.y(), world.y()), 
+                fmaxf(mx.z(), world.z())
+            );
+        }
+        return AABB(mn, mx).buffer();
+    }
+
     __host__ __device__ AABB& buffer(const float epsilon = EPS) {
         if (x.max - x.min < epsilon) x = x.expand(epsilon);
         if (y.max - y.min < epsilon) y = y.expand(epsilon);
