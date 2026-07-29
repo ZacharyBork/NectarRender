@@ -1,10 +1,7 @@
 #pragma once
 
 #include "tiny_obj_loader.h"
-
-#include "core/include/core.h"
 #include "hittable/include/bvh/node.h"
-#include "hittable/include/hittable/hittable.h"
 
 // ============================================================================
 // OBJ LOADING
@@ -39,7 +36,7 @@ struct VertexKeyHash {
     }
 };
 
-inline MeshLoadResult load_obj(const std::string& path) {
+inline MeshLoadResult parse_obj_file(const std::string& path) {
     tinyobj::ObjReaderConfig config;
     config.triangulate = true;
 
@@ -147,61 +144,26 @@ inline MeshLoadResult load_obj(const std::string& path) {
 // MESH CLASS
 // ============================================================================
 
-class Mesh : public Hittable {
+class Mesh {
 public:
 
-    __host__ Mesh() : Hittable(Vector3(0.0f), Vector3(0.0f), Vector3(1.0f)) {
-        host_data = new HostData();
-    }
-
-    __host__ Mesh(
-        const Vector3& position,
-        const Vector3& rotation,
-        const Vector3& scale
-    ) : Hittable(position, rotation, scale) {
-        host_data = new HostData();
-    }
-
-    __host__ Mesh(Material material) 
-        : Mesh(
-            Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), std::move(material)
-        ) 
-    { }
-
-    __host__ Mesh(
-        const Vector3&  position,
-        const Vector3&  rotation,
-        const Vector3&  scale, 
-        Material material
-    ) : Hittable(position, rotation, scale, std::move(material)) {
-        host_data = new HostData();
-    }
+    __host__ Mesh() { host_data = new HostData(); }
 
     __device__ Mesh(
-        HittableBaseData data,
         MeshVertex*   d_vertices,
         BVHNode*      d_tri_nodes,
         TriangleRef*  d_triangles
-    ) : Hittable(data),
-        vertices_ptr(d_vertices),
+    ) : vertices_ptr(d_vertices),
         tri_nodes(d_tri_nodes),
         triangles_ptr(d_triangles)
     { } 
 
-    __host__ static Mesh from_obj(
-        const std::string& path,
-        const Vector3&  position, 
-        const Vector3& rotation, 
-        const Vector3& scale,
-        Material material
-    ) {
-        Mesh mesh(position, rotation, scale, std::move(material));
-        MeshLoadResult loaded = load_obj(path);
-        mesh.set_geometry(
+    __host__ void load_obj(const std::string& path) {
+        MeshLoadResult loaded = parse_obj_file(path);
+        set_geometry(
             std::move(loaded.vertices), 
             std::move(loaded.triangles)
         );
-        return mesh;
     }
 
     __host__ void set_geometry(
@@ -212,7 +174,7 @@ public:
         host_data->triangles = std::move(tris);
     }
 
-    __host__ Hittable* build() const override {
+    __host__ Mesh* build() const {
         auto& vertices  = host_data->vertices;
         auto& triangles = host_data->triangles;
 
@@ -250,10 +212,10 @@ public:
             cudaMemcpyHostToDevice
         );
 
-        return to_device<Mesh>(d_verts, d_nodes, d_tris);
+        return device_build<Mesh>(d_verts, d_nodes, d_tris);
     }
 
-    __host__ const AABB build_bbox() const override {
+    __host__ const AABB build_bbox(const Transform& xform) const {
         const auto& vertices = host_data->vertices;
         if (vertices.empty()) return AABB();
 
@@ -295,11 +257,12 @@ public:
         return AABB(wmn, wmx).buffer();
     }
 
-    __device__ bool hit(
+    __device__ NOINLINE bool hit(
         const Ray& ray, 
         Interval   ray_t,
-        HitRecord& rec
-    ) const override {
+        HitRecord& rec,
+        const Transform& xform
+    ) const {
         uint32_t stack[TRI_STACK_SIZE];
         uint32_t stack_ptr = 0u;
         stack[stack_ptr++] = 0u;
@@ -340,13 +303,15 @@ public:
 
     __device__ float pdf_value(
         const Vector3& origin, 
-        const Vector3& direction
-    ) const override { return 0.0f; }
+        const Vector3& direction,
+        const Transform& xform
+    ) const { return 0.0f; }
 
     __device__ Vector3 random(
         const Vector3& origin, 
-        Generator& gen
-    ) const override { return Vector3(0.0f, 0.0f, 0.0f); }
+        Generator& gen,
+        const Transform& xform
+    ) const { return Vector3(0.0f, 0.0f, 0.0f); }
 
 private:
 

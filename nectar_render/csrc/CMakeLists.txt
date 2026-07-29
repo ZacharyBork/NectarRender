@@ -55,7 +55,6 @@ pybind11_add_module(_pathtracer bindings/bindings.cpp ${CXX_SOURCES})
 ##############################################################################
 
 set_target_properties(nectar_cuda PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
     CUDA_RESOLVE_DEVICE_SYMBOLS ON
     CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES}
     POSITION_INDEPENDENT_CODE ON

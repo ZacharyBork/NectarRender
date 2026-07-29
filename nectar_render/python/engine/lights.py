@@ -3,6 +3,4 @@ root = _pathtracer.engine.lights
 
 from typing import TypeAlias
 
-Light:       TypeAlias = root.Light
-SkyLight:    TypeAlias = root.SkyLight
-ObjectLight: TypeAlias = root.ObjectLight
+SkyLight: TypeAlias = root.SkyLight

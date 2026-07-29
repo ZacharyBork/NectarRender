@@ -96,11 +96,11 @@ public:
     /* TRANSFORM UTILS */
 
     Transform get_transform() { 
-        return hit_object()->xform; 
+        return hit_object()->get_transform(); 
     }
 
     void set_transform(const Transform& xform) {
-        hit_object()->xform = xform;
+        hit_object()->set_transform(xform);
         requests->restart(true);
     }
 

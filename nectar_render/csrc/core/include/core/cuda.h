@@ -31,6 +31,7 @@ public:
                 + std::to_string(n_bytes) + " bytes of device memory:\n"
             );
             std::cerr << e << cudaGetErrorString(err) << std::endl;
+            std::abort();
         }
     }
 
@@ -44,6 +45,7 @@ public:
                 + std::to_string(n_bytes) + " bytes of host memory:\n"
             );
             std::cerr << e << cudaGetErrorString(err) << std::endl;
+            std::abort();
         }
     }
     
@@ -72,6 +74,7 @@ public:
                 + std::to_string(dest_ptr) + ":\n"
             );
             std::cerr << e << cudaGetErrorString(err) << std::endl;
+            std::abort();
         }
     }
 
@@ -91,6 +94,7 @@ public:
                             "to free device pointer at address [" 
                             + std::to_string(int_ptr) + "]:\n";
             std::cerr << e << cudaGetErrorString(err) << std::endl;
+            std::abort();
         }
     }
 
@@ -110,6 +114,7 @@ public:
                             "to free host pointer at address [" 
                             + std::to_string(int_ptr) + "]:\n";
             std::cerr << e << cudaGetErrorString(err) << std::endl;
+            std::abort();
         }
     }
 
@@ -124,7 +129,14 @@ struct ProcessIndex {
     __device__ ProcessIndex(int x, int y, int z) : x(x), y(y), z(z) { }
 };
 
-__device__ ProcessIndex get_process_index();
-
+#ifdef __CUDACC__
+__device__ inline ProcessIndex get_process_index() {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    return ProcessIndex(x, y, blockIdx.z);
+}
+#else // Needed for GCC symbol resolution.
+inline ProcessIndex get_process_index() { return ProcessIndex(0, 0, 0); }
+#endif
 
 

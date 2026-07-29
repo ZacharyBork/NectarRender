@@ -1,65 +1,28 @@
 #pragma once
 
-#include "hittable/include/hittable/hittable.h"
-#include "material/include/material/material.h"
-#include "material/include/material/texture.h"
 #include "random/include/hash.h"
 
-class ConstantMedium : public Hittable {
+class Hittable;
+
+class ConstantMedium {
 public:
 
-    __host__ ConstantMedium(
-        Hittable& bound_obj,
-        float density,
-        std::shared_ptr<Texture> texture
-    ) : Hittable(
-            bound_obj.xform, 
-            bound_obj.delta, 
-            Material::isotropic(texture)
-        ),
-        boundary(bound_obj.build()),
-        neg_inv_density(-1.0f / density)
-    { bbox = bound_obj.build_bbox(); }
+    __host__ __device__ ConstantMedium(float density) 
+        : neg_inv_density(-1.0f / (density + FMIN)) { }
 
-    __host__ ConstantMedium(
-        Hittable& bound_obj,
-        float density,
-        const Color& albedo
-    ) : Hittable(
-            bound_obj.xform, 
-            bound_obj.delta, 
-            Material::isotropic(albedo)
-        ),
-        boundary(bound_obj.build()),
-        neg_inv_density(-1.0f / density)
-    { bbox = bound_obj.build_bbox(); }
-
-    __device__ ConstantMedium(
-        HittableBaseData data,
-        Hittable*  boundary_ptr, 
-        float      neg_inv_density_
-    ) : Hittable(data), 
-        boundary(boundary_ptr), 
-        neg_inv_density(neg_inv_density_) 
-    { }
-
-    __host__ Hittable* build() const override {
-        return to_device<ConstantMedium>(boundary, neg_inv_density);
-    }
-
-    __host__ const AABB build_bbox() const override { return bbox; }
-
-    __device__ bool hit(
+    template<typename T>
+    __device__ NOINLINE  bool hit(
         const Ray& ray, 
         Interval   ray_t,
-        HitRecord& rec
-    ) const override {
+        HitRecord& rec,
+        T*  wrapped_object
+    ) const {
         HitRecord rec1, rec2;
 
-        if (!boundary->hit(ray, Interval(-FMAX, FMAX), rec1))
+        if (!wrapped_object->hit(ray, Interval(-FMAX, FMAX), rec1))
             return false;
 
-        if (!boundary->hit(ray, Interval(rec1.t + EPS, FMAX), rec2))
+        if (!wrapped_object->hit(ray, Interval(rec1.t + EPS, FMAX), rec2))
             return false;
 
         if (rec1.t < ray_t.min) rec1.t = ray_t.min;
@@ -83,8 +46,7 @@ public:
 
 private:
 
-    Hittable* boundary;
-    float     neg_inv_density;
+    float neg_inv_density;
 
 };
 

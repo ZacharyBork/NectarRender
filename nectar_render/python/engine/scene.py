@@ -5,13 +5,13 @@ from typing import Self
 from collections.abc import Sequence
 
 from nectar_render.python.hittable      import Hittable
-from nectar_render.python.engine.lights import Light, SkyLight
+from nectar_render.python.engine.lights import SkyLight
 
 class Scene(root.Scene):
     def __init__(
         self:      Self, 
         hittables: Sequence[Hittable], 
-        lights:    Sequence[Light] = [],
+        lights:    Sequence[Hittable] = [],
         skylight:  SkyLight | None = None
     ) -> None:
         if len(hittables) == 0:

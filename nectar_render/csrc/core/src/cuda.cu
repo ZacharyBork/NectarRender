@@ -24,22 +24,20 @@ T* device_build(Args... args) {
 
 // HITTABLES ==================================================================
 
-template Quad*   device_build<Quad>(HittableBaseData);
-template Quad*   device_build<Quad>(Vector3, Vector3, Vector3, size_t, size_t);
-template Sphere* device_build<Sphere>(HittableBaseData, float);
-template Cube*   device_build<Cube>(HittableBaseData, Hittable**);
+template Quad*   device_build<Quad>();
+// template Quad*   device_build<Quad>(Vector3, Vector3, Vector3, size_t, size_t);
+template Sphere* device_build<Sphere>(float);
+template Cube*   device_build<Cube>(Quad**);
+template ConstantMedium* device_build<ConstantMedium>(float);
+template Mesh* device_build<Mesh>(MeshVertex*, BVHNode*, TriangleRef*);
 
-template ConstantMedium* device_build<ConstantMedium>(
-    HittableBaseData, Hittable*, float
-);
-
-template Mesh* device_build<Mesh>(
-    HittableBaseData, MeshVertex*, BVHNode*, TriangleRef*
+template Hittable* device_build<Hittable>(
+    HittableType, Transform, Transform, size_t, size_t, Hittable*, void*
 );
 
 // LIGHTS =====================================================================
 
-template ObjectLight* device_build<ObjectLight>(HittableBaseData, Hittable*);
+template ObjectLight* device_build<ObjectLight>();
 
 // NOISE ======================================================================
 
@@ -85,15 +83,5 @@ template void run_fill_memory<uint32_t>(uint32_t*, uint32_t, size_t);
 template void run_fill_memory<Vector2>(Vector2*, Vector2, size_t);
 template void run_fill_memory<Vector3>(Vector3*, Vector3, size_t);
 template void run_fill_memory<Color>(Color*, Color, size_t);
-
-// ############################################################################
-// CUDA PROCESS UTILS
-// ############################################################################
-
-__device__ ProcessIndex get_process_index() {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    return ProcessIndex(x, y, blockIdx.z);
-}
 
 

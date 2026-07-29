@@ -1,7 +1,5 @@
 #include "engine/include/engine/engine.h"
 
-
-
 // ============================================================================
 // CONSTRUCTORS
 // ============================================================================
@@ -17,6 +15,7 @@ RenderEngine::RenderEngine(
     sample_aovs(RenderLayers(&aovs)),
     scene_interface(SceneInterface(&cam, &transfer_stream, &requests_))
 { 
+    cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE_LIMIT);
     reset();
     transfer_stream.link(aovs.get_layer(LayerType::BEAUTY));
     transfer_stream.start();

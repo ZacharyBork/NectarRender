@@ -1,28 +1,18 @@
 #pragma once
 
+#include "primitives.h"
 #include "core/include/core/onb.h"
-#include "hittable/include/hittable/hittable.h"
-#include "hittable/include/hittable/primitives.h"
 
-class Sphere : public Hittable {
+class Sphere {
 public:
     
-    __host__ Sphere(
-        const Vector3& position, 
-        float radius,
-        Material material
-    ) : Hittable(position, std::move(material)), 
-        radius(radius + FMIN) 
-    { }
+    __host__ __device__ Sphere(float radius) : radius(radius + FMIN) { }
 
-    __device__ Sphere(HittableBaseData data, float rad) 
-        : Hittable(data), radius(rad) { }
-
-    __host__ Hittable* build() const override {
-        return to_device<Sphere>(radius);
+    __host__ Sphere* build() const {
+        return device_build<Sphere>(radius);
     }
 
-    __host__ const AABB build_bbox() const override {
+    __host__ const AABB build_bbox(const Transform& xform) const {
         return AABB::simple(Vector3(radius), xform);
     }
 
@@ -32,11 +22,12 @@ public:
         return Vector2(phi / PI2, theta / PI);
     };
 
-    __device__ bool hit(
+    __device__ NOINLINE bool hit(
         const Ray& ray, 
         Interval   ray_t,
-        HitRecord& rec
-    ) const override {
+        HitRecord& rec,
+        const Transform& xform
+    ) const {
         Vector3 oc = -ray.origin();
 
         float a = ray.direction().length_squared();
@@ -66,13 +57,15 @@ public:
         return true;
     }
 
-    __device__ float pdf_value(
+    __device__ float NOINLINE pdf_value(
         const Vector3& origin, 
-        const Vector3& direction
-    ) const override {
+        const Vector3& direction,
+        const Transform& xform
+    ) const {
         HitRecord rec;
-        if (!this->hit(Ray(origin, direction), Interval(EPS, FMAX), rec))
-            return 0.0f;
+        if (!this->hit(
+            Ray(origin, direction), Interval(EPS, FMAX), rec, xform)
+        ) return 0.0f;
 
         float rad_sq = radius * radius;
         float dist_squared = (xform.p() - origin).length_squared();
@@ -82,10 +75,11 @@ public:
         return 1.0f / solid_angle;
     }
 
-    __device__ Vector3 random(
+    __device__ Vector3 NOINLINE random(
         const Vector3& origin, 
-        Generator& gen
-    ) const override {
+        Generator& gen,
+        const Transform& xform
+    ) const {
         Vector3 direction = xform.p() - origin;
         auto distance_squared = direction.length_squared();
         ONB uvw(direction);
@@ -115,102 +109,54 @@ private:
 
 };
 
-class Cube : public Hittable {
+class Cube {
 public:
-    
-    __host__ Cube(Material material) 
-        : Cube(
-            Vector3(0.0f), Vector3(0.0f), Vector3(1.0f), std::move(material)
-        ) 
-    { }
 
-    __host__ Cube(
-        const Vector3&  position,
-        const Vector3&  rotation,
-        const Vector3&  scale, 
-        Material material
-    ) : Hittable(position, rotation, scale, std::move(material)) { }
+    __host__ Cube() { }
 
-    __device__ Cube(
-        HittableBaseData data, 
-        Hittable** faces
-    ) : Hittable(data) { 
+    __device__ Cube(Quad** faces) { 
         for (int i = 0; i < 6; i++) prims[i] = faces[i];
     }
 
-    __host__ Hittable* build() const override {
-        Hittable* d_faces[6];
+    __host__ Cube* build() const {
+        Quad* d_faces[6];
 
-        d_faces[0] = device_build<Quad>( // Front
-            Vector3(0.0f, 0.0f, 0.5f), 
-            Vector3(90.0f, 0.0f, 0.0f), 
-            Vector3(1.0f),
-            object_index, 
-            material_index
-        );
-        d_faces[1] = device_build<Quad>( // Back
-            Vector3(0.0f, 0.0f, -0.5f), 
-            Vector3(-90.0f, 0.0f, 0.0f), 
-            Vector3(1.0f),
-            object_index, 
-            material_index
-        );
-        d_faces[2] = device_build<Quad>( // Right
-            Vector3(0.5f, 0.0f, 0.0f), 
-            Vector3(0.0f, 0.0f, -90.0f), 
-            Vector3(1.0f),
-            object_index, 
-            material_index
-        );
-        d_faces[3] = device_build<Quad>( // Left
-            Vector3(-0.5f, 0.0f, 0.0f), 
-            Vector3(0.0f, 0.0f, 90.0f),
-            Vector3(1.0f),
-            object_index, 
-            material_index
-        );
-        d_faces[4] = device_build<Quad>( // Top
-            Vector3(0.0f, 0.5f, 0.0f), 
-            Vector3(0.0f, 0.0f, 0.0f), 
-            Vector3(1.0f),
-            object_index,
-            material_index
-        );
-        d_faces[5] = device_build<Quad>( // Bottom
-            Vector3(0.0f, -0.5f, 0.0f), 
-            Vector3(180.0f, 0.0f, 0.0f), 
-            Vector3(1.0f),
-            object_index, 
-            material_index
-        );
+        d_faces[0] = device_build<Quad>(); // Front
+        d_faces[1] = device_build<Quad>(); // Back
+        d_faces[2] = device_build<Quad>(); // Right
+        d_faces[3] = device_build<Quad>(); // Left
+        d_faces[4] = device_build<Quad>(); // Top
+        d_faces[5] = device_build<Quad>(); // Bottom
 
-        Hittable** d_face_ptrs;
-        size_t n_bytes = 6 * sizeof(Hittable*);
+        Quad** d_face_ptrs;
+        size_t n_bytes = 6 * sizeof(Quad*);
         cudaMalloc(&d_face_ptrs, n_bytes);
         cudaMemcpy(d_face_ptrs, d_faces, n_bytes, cudaMemcpyHostToDevice);
-        return to_device<Cube>(d_face_ptrs);
+        return device_build<Cube>(d_face_ptrs);
     }
 
-    __host__ const AABB build_bbox() const override {
+    __host__ const AABB build_bbox(const Transform& xform) const {
         return AABB::oriented(Vector3(0.5f), xform).buffer();
     }
 
-    __device__ bool hit(
+    __device__ NOINLINE bool hit(
         const Ray& ray, 
         Interval   ray_t,
-        HitRecord& rec
-    ) const override { 
+        HitRecord& rec,
+        const Transform& xform
+    ) const { 
 
         bool hit_anything = false;
         int  hit_face = -1;
         Ray  hit_face_ray;
 
         for (int i = 0; i < 6; i++) {
-            Hittable* current = prims[i];
-            Ray r = ray.to_object_space(current->xform);
+            Quad* current = prims[i];
+            Transform curr_xform = face_xforms[i];
+            Ray r = ray.to_object_space(curr_xform);
 
             HitRecord face_rec;
-            if (current->hit(r, ray_t, face_rec)) {
+            if (current->hit(r, ray_t, face_rec, curr_xform)) {
                 hit_anything = true;
                 hit_face     = i;
                 hit_face_ray = r;
@@ -220,15 +166,61 @@ public:
         }
 
         if (hit_anything) {
-            rec.to_world_space(prims[hit_face]->xform, hit_face_ray, ray);
+            rec.to_world_space(face_xforms[hit_face], hit_face_ray, ray);
         }
 
         return hit_anything;
     }
 
+    __device__ float pdf_value(
+        const Vector3& origin, 
+        const Vector3& direction,
+        const Transform& xform
+    ) const { return 0.0f; }
+
+    __device__ Vector3 random(
+        const Vector3& origin, 
+        Generator& gen,
+        const Transform& xform
+    ) const { return Vector3(1.0f, 0.0f, 0.0f); }
+
 
 private:
 
-    Hittable* prims[6];
+    Quad* prims[6];
+
+    Transform face_xforms[6] = {
+        Transform( // Front
+            Vector3(0.0f, 0.0f, 0.5f), 
+            Vector3(90.0f, 0.0f, 0.0f), 
+            Vector3(1.0f)
+        ),
+        Transform( // Back
+            Vector3(0.0f, 0.0f, -0.5f), 
+            Vector3(-90.0f, 0.0f, 0.0f), 
+            Vector3(1.0f)
+        ),
+        Transform( // Right
+            Vector3(0.5f, 0.0f, 0.0f), 
+            Vector3(0.0f, 0.0f, -90.0f), 
+            Vector3(1.0f)
+        ),
+        Transform( // Left
+            Vector3(-0.5f, 0.0f, 0.0f), 
+            Vector3(0.0f, 0.0f, 90.0f),
+            Vector3(1.0f)
+        ),
+        Transform( // Top
+            Vector3(0.0f, 0.5f, 0.0f), 
+            Vector3(0.0f, 0.0f, 0.0f), 
+            Vector3(1.0f)
+        ),
+        Transform( // Bottom
+            Vector3(0.0f, -0.5f, 0.0f), 
+            Vector3(180.0f, 0.0f, 0.0f), 
+            Vector3(1.0f)
+        )
+    };
+
 };
 

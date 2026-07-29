@@ -92,32 +92,6 @@ void register_engine(py::module_& m) {
         )
         .def("black", &SkyLight::black);
 
-    py::class_<Light, Hittable>(m_lights, "Light");
-
-    py::class_<ObjectLight, Light>(m_lights, "ObjectLight")
-        .def(py::init([](
-            Hittable& obj,
-            float brightness,
-            const Color& albedo
-        ) {
-            return ObjectLight(obj, brightness, albedo);
-        }),
-            py::arg("obj"),
-            py::arg("brightness") = 35.0f,
-            py::arg("albedo") = Color(1.0f, 1.0f, 1.0f)
-        )
-        .def(py::init([](
-            Hittable& obj,
-            float brightness,
-            std::shared_ptr<Texture> texture
-        ) {
-            return ObjectLight(obj, brightness, texture);
-        }),
-            py::arg("obj"),
-            py::arg("brightness") = 35.0f,
-            py::arg("texture") = Texture::from_color(Color::white())
-        );
-
 // ############################################################################
 // SCENE
 // ############################################################################
@@ -133,10 +107,10 @@ void register_engine(py::module_& m) {
             for (auto& item : hittables)
                 obj_ptrs.push_back(item.cast<Hittable*>());
 
-            std::vector<Light*> light_ptrs;
+            std::vector<Hittable*> light_ptrs;
             light_ptrs.reserve(lights.size());
             for (auto& item : lights)
-                light_ptrs.push_back(item.cast<Light*>());
+                light_ptrs.push_back(item.cast<Hittable*>());
 
             return Scene(obj_ptrs, light_ptrs, skylight);
         }),

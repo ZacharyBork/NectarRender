@@ -13,8 +13,8 @@
 // HASHING UTILITIES
 // ############################################################################
 
-__device__ inline constexpr float HASH_SCALAR = 1.0f / (float)0xFFFFFFFF;
-__device__ __constant__ inline uint32_t HASH_CONSTANTS[64] = {
+__device__ static constexpr float HASH_SCALAR = 1.0f / (float)0xFFFFFFFF;
+__device__ static uint32_t HASH_CONSTANTS[64] = {
     0x9E3779B9u, 0x85EBCA6Bu, 0xC2B2AE35u, 0x27D4EB2Fu, 
     0x165667B1u, 0x68D2A5B5u, 0xBF58476Du, 0x94D049BBu, 
     0xA3B195B5u, 0x1B873593u, 0xCC9E2D51u, 0x6C62272Eu, 

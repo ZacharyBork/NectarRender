@@ -14,7 +14,7 @@ __device__ Color trace_shadow_rays(
     Color shadow_atten = Color::white();
 
     for (int i = 0; i < n_shadow_rays; i++) {
-        Light* light = scene->lights[gen.random_int(0, scene->n_lights)];
+        Hittable* light = scene->lights[gen.random_int(0, scene->n_lights)];
 
         Vector3 to_light  = light->random(rec.p, gen);
         float   dist      = to_light.length();

@@ -58,8 +58,8 @@ private:
     Material** d_material_ptrs = nullptr;
 
     __host__ void register_material(Hittable* obj) {
-        if (obj->material.material_type() == MaterialType::Null) {
-            obj->material_index = (size_t)0;
+        if (obj->get_material().material_type() == MaterialType::Null) {
+            obj->set_material_index((size_t)0);
             return;
         }
 
@@ -69,8 +69,8 @@ private:
                 "additional materials."
             );
 
-        obj->material_index = h_materials.size();
-        h_materials.push_back(std::move(obj->material));
+        obj->set_material_index(h_materials.size());
+        h_materials.push_back(std::move(obj->get_material()));
         d_materials.push_back(h_materials.back().build());
     }
 

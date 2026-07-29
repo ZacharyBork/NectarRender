@@ -15,7 +15,7 @@
 struct SceneGraph {
     BVHNode*   bvh_nodes;
     Hittable** objects;
-    Light**    lights;
+    Hittable** lights;
     Material** materials;
     
     SkyLight skylight;
@@ -48,9 +48,9 @@ struct SceneGraph {
                         hit_anything = true;
 
                         rec = tmp_rec;
-                        rec.object_index = node.object;
-                        rec.material_index = current->material_index;
-                        rec.mat = materials[current->material_index];
+                        rec.object_index = current->get_object_index();
+                        rec.material_index = current->get_material_index();
+                        rec.mat = materials[current->get_material_index()];
                         ray_t.max = tmp_rec.t;
                     }
                 }
@@ -75,7 +75,7 @@ public:
     SceneGraph* graph = nullptr;
     SceneGraph h_graph{};
 
-    std::vector<Light*> lights;
+    std::vector<Hittable*> lights;
     SkyLight skylight;
 
     HittablesRegistry hittables_registry;
@@ -88,18 +88,18 @@ public:
     __host__ Scene& operator=(Scene&&) noexcept = default;
 
     __host__ Scene() 
-      : lights(std::vector<Light*>{}),
+      : lights(std::vector<Hittable*>{}),
         skylight(SkyLight())
     { }
 
     __host__ Scene(
         std::vector<Hittable*> hittables,
-        std::vector<Light*>    lights,
+        std::vector<Hittable*> lights,
         SkyLight&              skylight
     ) : lights(std::move(lights)),
         skylight(skylight)
     { 
-        for (Light* light : this->lights) hittables.push_back(light);
+        for (Hittable* light : this->lights) hittables.push_back(light);
         hittables_registry = HittablesRegistry(hittables);
         build(); 
     }
@@ -152,18 +152,14 @@ public:
 private:
 
     __host__ void build_device_lights() {
-        std::vector<Light*> d_light_ptrs(lights.size());
+        std::vector<Hittable*> d_light_ptrs(lights.size());
         for (size_t i = 0; i < lights.size(); i++) {
-            d_light_ptrs[i] = static_cast<Light*>(
-                hittables_registry.host_to_device(
-                    static_cast<Hittable*>(lights[i])
-                )
-            );
+            d_light_ptrs[i] = hittables_registry.host_to_device(lights[i]);
         }
 
         size_t n_bytes = lights.size() * sizeof(Hittable*);
-        CUDAMemory::allocate<Light*>(h_graph.lights, lights.size());
-        CUDAMemory::copy<Light*>(
+        CUDAMemory::allocate<Hittable*>(h_graph.lights, lights.size());
+        CUDAMemory::copy<Hittable*>(
             h_graph.lights, d_light_ptrs.data(), lights.size()
         );
     }

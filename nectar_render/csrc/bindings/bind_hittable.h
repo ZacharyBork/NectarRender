@@ -11,8 +11,6 @@ void register_hittable(py::module_& m) {
     
     auto m_hittable = m.def_submodule("hittable", "Hittable module.");
 
-    py::class_<Hittable>(m_hittable, "Hittable");
-
     py::class_<HitRecord>(m_hittable, "HitRecord")
         .def(py::init<>())
         .def("d_object_ptr",          &HitRecord::d_object_ptr)
@@ -26,101 +24,228 @@ void register_hittable(py::module_& m) {
         .def_readonly("front_face",   &HitRecord::front_face)
         .def_readonly("mat",          &HitRecord::mat);
 
-    /* POLYGONAL */
+    py::class_<Quad>          (m_hittable, "Quad");
+    py::class_<Sphere>        (m_hittable, "Sphere");
+    py::class_<Cube>          (m_hittable, "Cube");
+    py::class_<Mesh>          (m_hittable, "Mesh");
+    py::class_<ObjectLight>   (m_hittable, "ObjectLight");
+    py::class_<ConstantMedium>(m_hittable, "ConstantMedium");
+    
+    py::class_<Hittable>(m_hittable, "Hittable")
+        .def(py::init<>())
+        
 
-    py::class_<Sphere, Hittable>(m_hittable, "Sphere")
-        .def(py::init([](
-            const Vector3 center, 
-            float radius, 
+        .def_static("quad", [](
+            Vector3 position, 
+            Vector3 rotation, 
+            Vector3 scale,
             std::unique_ptr<Material> material
         ) {
-            return Sphere(center, radius, std::move(*material));
-        }),
-            py::arg("center")   = Vector3(0.0f, 0.0f, 0.0f),
+            return Hittable::quad(
+                position, rotation, scale, std::move(*material)
+            );
+        },
+            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("scale")    = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("material") = make_default_material()
+        )
+
+
+        .def_static("cube", [](
+            Vector3 position, 
+            Vector3 rotation, 
+            Vector3 scale,
+            std::unique_ptr<Material> material
+        ) {
+            return Hittable::cube(
+                position, rotation, scale, std::move(*material)
+            );
+        },
+            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("scale")    = Vector3(0.0f, 0.0f, 0.0f),
+            py::arg("material") = make_default_material()
+        )
+
+
+        .def_static("sphere", [](
+            Vector3 position, 
+            float radius,
+            std::unique_ptr<Material> material
+        ) {
+            return Hittable::sphere(
+                position, radius, std::move(*material)
+            );
+        },
+            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("radius")   = 1.0f,
             py::arg("material") = make_default_material()
         )
-        .def("set_motion_vector", &Hittable::set_motion_vector);
 
-    py::class_<Quad, Hittable>(m_hittable, "Quad")
-        .def(py::init([](
-            const Vector3 position, 
-            const Vector3 rotation, 
-            const Vector3 scale, 
+        
+        .def_static("mesh", [](
+            std::string& path,
+            Vector3 position, 
+            Vector3 rotation, 
+            Vector3 scale,
             std::unique_ptr<Material> material
         ) {
-            return Quad(position, rotation, scale, std::move(*material));
-        }),
-            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
-            py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
-            py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
-            py::arg("material") = make_default_material()
-        )
-        .def("set_motion_vector", &Hittable::set_motion_vector);
-
-    py::class_<Cube, Hittable>(m_hittable, "Cube")
-        .def(py::init([](
-            const Vector3 position, 
-            const Vector3 rotation, 
-            const Vector3 scale, 
-            std::unique_ptr<Material> material
-        ) {
-            return Cube(position, rotation, scale, std::move(*material));
-        }),
-            py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
-            py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
-            py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
-            py::arg("material") = make_default_material()
-        )
-        .def("set_motion_vector", &Hittable::set_motion_vector);
-
-    /* VOLUMETRIC */
-
-    py::class_<ConstantMedium, Hittable>(m_hittable, "ConstantMedium")
-        .def(py::init([](
-            Hittable& boundary,
-            float     density,
-            const Color& albedo
-        ) {
-            return ConstantMedium(boundary, density, albedo);
-        }),
-            py::arg("boundary"),
-            py::arg("density") = 1.0f,
-            py::arg("albedo")  = Color(1.0f, 1.0f, 1.0f)
-        )
-        .def(py::init([](
-            Hittable& boundary,
-            float     density,
-            std::shared_ptr<Texture> texture
-        ) {
-            return ConstantMedium(boundary, density, texture);
-        }),
-            py::arg("boundary"),
-            py::arg("density")  = 1.0f,
-            py::arg("texture")  = Texture::from_color(Color(1.0f, 1.0f, 1.0f))
-        )
-        .def("set_motion_vector", &Hittable::set_motion_vector);
-
-    /* MESH */
-
-    py::class_<Mesh, Hittable>(m_hittable, "Mesh")
-        .def_static("from_obj", [](
-            const std::string& path,
-            const Vector3 position,
-            const Vector3 rotation,
-            const Vector3 scale,
-            std::unique_ptr<Material> material
-        ) {
-            return Mesh::from_obj(
+            return Hittable::mesh(
                 path, position, rotation, scale, std::move(*material)
             );
         },
             py::arg("path"),
             py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
-            py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
+            py::arg("scale")    = Vector3(0.0f, 0.0f, 0.0f),
             py::arg("material") = make_default_material()
+        )
+
+
+        .def_static("constant_medium", [](
+            Hittable& bound_obj,
+            float density,
+            std::shared_ptr<Texture> texture
+        ){ 
+            return Hittable::constant_medium(bound_obj, density, texture);
+        },
+            py::arg("bound_obj"),
+            py::arg("density") = 1.0f,
+            py::arg("texture") = Texture::from_color(Color(1.0f, 1.0f, 1.0f))
+        )
+
+        .def_static("constant_medium", [](
+            Hittable& bound_obj,
+            float density,
+            const Color& albedo
+        ){ 
+            return Hittable::constant_medium(bound_obj, density, albedo);
+        },
+            py::arg("bound_obj"),
+            py::arg("density") = 1.0f,
+            py::arg("albedo")  = Color(1.0f, 1.0f, 1.0f)
+        )
+
+        .def_static("object_light", [](
+            Hittable& bound_obj,
+            float brightness,
+            std::shared_ptr<Texture> texture
+        ){ 
+            return Hittable::object_light(bound_obj, brightness, texture);
+        },
+            py::arg("bound_obj"),
+            py::arg("brightness") = 1.0f,
+            py::arg("texture") = Texture::from_color(Color(1.0f, 1.0f, 1.0f))
+        )
+
+        .def_static("object_light", [](
+            Hittable& bound_obj,
+            float brightness,
+            const Color& albedo
+        ){ 
+            return Hittable::object_light(bound_obj, brightness, albedo);
+        },
+            py::arg("bound_obj"),
+            py::arg("brightness") = 1.0f,
+            py::arg("albedo") = Color(1.0f, 1.0f, 1.0f)
         );
+
+    // /* POLYGONAL */
+
+    // py::class_<Sphere, Hittable>(m_hittable, "Sphere")
+    //     .def(py::init([](
+    //         const Vector3 center, 
+    //         float radius, 
+    //         std::unique_ptr<Material> material
+    //     ) {
+    //         return Sphere(center, radius, std::move(*material));
+    //     }),
+    //         py::arg("center")   = Vector3(0.0f, 0.0f, 0.0f),
+    //         py::arg("radius")   = 1.0f,
+    //         py::arg("material") = make_default_material()
+    //     )
+    //     .def("set_motion_vector", &Hittable::set_motion_vector);
+
+    // py::class_<Quad, Hittable>(m_hittable, "Quad")
+    //     .def(py::init([](
+    //         const Vector3 position, 
+    //         const Vector3 rotation, 
+    //         const Vector3 scale, 
+    //         std::unique_ptr<Material> material
+    //     ) {
+    //         return Quad(position, rotation, scale, std::move(*material));
+    //     }),
+    //         py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
+    //         py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
+    //         py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
+    //         py::arg("material") = make_default_material()
+    //     )
+    //     .def("set_motion_vector", &Hittable::set_motion_vector);
+
+    // py::class_<Cube, Hittable>(m_hittable, "Cube")
+    //     .def(py::init([](
+    //         const Vector3 position, 
+    //         const Vector3 rotation, 
+    //         const Vector3 scale, 
+    //         std::unique_ptr<Material> material
+    //     ) {
+    //         return Cube(position, rotation, scale, std::move(*material));
+    //     }),
+    //         py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
+    //         py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
+    //         py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
+    //         py::arg("material") = make_default_material()
+    //     )
+    //     .def("set_motion_vector", &Hittable::set_motion_vector);
+
+    // /* VOLUMETRIC */
+
+    // py::class_<ConstantMedium, Hittable>(m_hittable, "ConstantMedium")
+    //     .def(py::init([](
+    //         Hittable& boundary,
+    //         float     density,
+    //         const Color& albedo
+    //     ) {
+    //         return ConstantMedium(boundary, density, albedo);
+    //     }),
+    //         py::arg("boundary"),
+    //         py::arg("density") = 1.0f,
+    //         py::arg("albedo")  = Color(1.0f, 1.0f, 1.0f)
+    //     )
+    //     .def(py::init([](
+    //         Hittable& boundary,
+    //         float     density,
+    //         std::shared_ptr<Texture> texture
+    //     ) {
+    //         return ConstantMedium(boundary, density, texture);
+    //     }),
+    //         py::arg("boundary"),
+    //         py::arg("density")  = 1.0f,
+    //         py::arg("texture")  = Texture::from_color(Color(1.0f, 1.0f, 1.0f))
+    //     )
+    //     .def("set_motion_vector", &Hittable::set_motion_vector);
+
+    // /* MESH */
+
+    // py::class_<Mesh, Hittable>(m_hittable, "Mesh")
+    //     .def_static("from_obj", [](
+    //         const std::string& path,
+    //         const Vector3 position,
+    //         const Vector3 rotation,
+    //         const Vector3 scale,
+    //         std::unique_ptr<Material> material
+    //     ) {
+    //         return Mesh::from_obj(
+    //             path, position, rotation, scale, std::move(*material)
+    //         );
+    //     },
+    //         py::arg("path"),
+    //         py::arg("position") = Vector3(0.0f, 0.0f, 0.0f),
+    //         py::arg("rotation") = Vector3(0.0f, 0.0f, 0.0f),
+    //         py::arg("scale")    = Vector3(1.0f, 1.0f, 1.0f),
+    //         py::arg("material") = make_default_material()
+    //     );
 
 }
 

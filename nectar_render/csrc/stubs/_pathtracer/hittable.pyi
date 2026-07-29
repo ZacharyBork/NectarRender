@@ -5,22 +5,11 @@ from __future__ import annotations
 import _pathtracer.core.vector
 import _pathtracer.material
 import typing
-__all__: list[str] = ['ConstantMedium', 'Cube', 'HitRecord', 'Hittable', 'Mesh', 'Quad', 'Sphere']
-class ConstantMedium(Hittable):
-    @staticmethod
-    @typing.overload
-    def __init__(*args, **kwargs) -> None:
-        ...
-    @typing.overload
-    def __init__(self, boundary: Hittable, density: typing.SupportsFloat | typing.SupportsIndex = 1.0, albedo: _pathtracer.core.vector.Color = ...) -> None:
-        ...
-    def set_motion_vector(self, arg0: _pathtracer.core.vector.Vector3) -> None:
-        ...
-class Cube(Hittable):
-    def __init__(self, position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ..., material: _pathtracer.material.Material = ...) -> None:
-        ...
-    def set_motion_vector(self, arg0: _pathtracer.core.vector.Vector3) -> None:
-        ...
+__all__: list[str] = ['ConstantMedium', 'Cube', 'HitRecord', 'Hittable', 'Mesh', 'ObjectLight', 'Quad', 'Sphere']
+class ConstantMedium:
+    pass
+class Cube:
+    pass
 class HitRecord:
     def __init__(self) -> None:
         ...
@@ -54,18 +43,41 @@ class HitRecord:
     def uv(self) -> _pathtracer.core.vector.Vector2:
         ...
 class Hittable:
-    pass
-class Mesh(Hittable):
     @staticmethod
-    def from_obj(path: str, position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ..., material: _pathtracer.material.Material = ...) -> Mesh:
+    @typing.overload
+    def constant_medium(*args, **kwargs) -> Hittable:
         ...
-class Quad(Hittable):
-    def __init__(self, position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ..., material: _pathtracer.material.Material = ...) -> None:
+    @staticmethod
+    @typing.overload
+    def constant_medium(bound_obj: Hittable, density: typing.SupportsFloat | typing.SupportsIndex = 1.0, albedo: _pathtracer.core.vector.Color = ...) -> Hittable:
         ...
-    def set_motion_vector(self, arg0: _pathtracer.core.vector.Vector3) -> None:
+    @staticmethod
+    def cube(position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ..., material: _pathtracer.material.Material = ...) -> Hittable:
         ...
-class Sphere(Hittable):
-    def __init__(self, center: _pathtracer.core.vector.Vector3 = ..., radius: typing.SupportsFloat | typing.SupportsIndex = 1.0, material: _pathtracer.material.Material = ...) -> None:
+    @staticmethod
+    def mesh(path: str, position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ..., material: _pathtracer.material.Material = ...) -> Hittable:
         ...
-    def set_motion_vector(self, arg0: _pathtracer.core.vector.Vector3) -> None:
+    @staticmethod
+    @typing.overload
+    def object_light(*args, **kwargs) -> Hittable:
         ...
+    @staticmethod
+    @typing.overload
+    def object_light(bound_obj: Hittable, brightness: typing.SupportsFloat | typing.SupportsIndex = 1.0, albedo: _pathtracer.core.vector.Color = ...) -> Hittable:
+        ...
+    @staticmethod
+    def quad(position: _pathtracer.core.vector.Vector3 = ..., rotation: _pathtracer.core.vector.Vector3 = ..., scale: _pathtracer.core.vector.Vector3 = ..., material: _pathtracer.material.Material = ...) -> Hittable:
+        ...
+    @staticmethod
+    def sphere(position: _pathtracer.core.vector.Vector3 = ..., radius: typing.SupportsFloat | typing.SupportsIndex = 1.0, material: _pathtracer.material.Material = ...) -> Hittable:
+        ...
+    def __init__(self) -> None:
+        ...
+class Mesh:
+    pass
+class ObjectLight:
+    pass
+class Quad:
+    pass
+class Sphere:
+    pass

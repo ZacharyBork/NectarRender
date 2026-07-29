@@ -22,7 +22,7 @@ from nectar_render.scenes.cornell_box import CornellBox
 ###############################################################################
 
 from nectar_render.python import (
-    ObjectLight, Hittable, Vector3, Color, Material, Scene, SkyLight
+    Hittable, Vector3, Color, Material, Scene, SkyLight
 )
 asset_root = Path(__file__).parent.parent.parent / 'tmp/assets'
 test_scene = Scene(
@@ -30,7 +30,7 @@ test_scene = Scene(
         Color(0.4, 0.4, 0.4), Color(0.1, 0.2, 0.4)
     ),
     lights    = [
-        ObjectLight(
+        Hittable.OBJECT_LIGHT(
             Hittable.QUAD(
                 Vector3(1.0, 1, 0.0),
                 Vector3(0.0, 180.0, -45.0),
@@ -82,7 +82,7 @@ test_scene = Scene(
             0.2, Material.DIELECTRIC(1.5)
         ),
         
-        Hittable.MESH.from_obj(
+        Hittable.MESH(
             asset_root.resolve().as_posix() + '/happy.obj',
             Vector3(0.0, -0.8, 0.0),
             Vector3(0.0, 45.0, 0.0),

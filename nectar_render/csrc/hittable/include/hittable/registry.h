@@ -58,7 +58,7 @@ public:
             );
         Hittable* found;
         for (Hittable* obj : h_hittables)
-            if (obj->object_index == index) found = obj;
+            if (obj->get_object_index() == index) { found = obj; break; }
         return found;
     }
 
@@ -76,7 +76,7 @@ private:
     std::unordered_map<Hittable*, Hittable*> map_host_to_device;
 
     __host__ void build_bvh() {
-        bvh.build(h_hittables, [](Hittable* h){ return h->build_bbox(); });
+        bvh.build(h_hittables, [](Hittable* h){ return h->bounding_box(); });
         h_hittables = std::move(bvh.items);
         n_bvh_nodes = bvh.nodes.size();
 
@@ -85,7 +85,7 @@ private:
     }
 
     __host__ void register_hittable(Hittable* obj) {
-        obj->object_index = h_hittables.size();
+        obj->set_object_index(h_hittables.size());
         h_hittables.push_back(obj);
         d_hittables.push_back(obj->build());
     }
@@ -98,7 +98,7 @@ private:
         map_host_to_device.clear();
 
         for (size_t i = 0; i < n_objects; i++) {
-            h_hittables[i]->object_index = i;
+            h_hittables[i]->set_object_index(i);
             Hittable* d_ptr = h_hittables[i]->build();
             d_hittables.push_back(d_ptr);
             map_host_to_device[h_hittables[i]] = d_ptr;

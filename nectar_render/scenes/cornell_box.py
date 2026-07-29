@@ -1,7 +1,6 @@
 from typing import Self
 from nectar_render.python import (
-    RenderEngine, Scene, Camera, Hittable, Vector3, Color, Material,
-    ObjectLight
+    RenderEngine, Scene, Camera, Hittable, Vector3, Color, Material
 )
 
 class CornellBox(RenderEngine):
@@ -15,7 +14,7 @@ class CornellBox(RenderEngine):
     SCENE = Scene(
         skylight  = None,
         lights    = [
-            ObjectLight(
+            Hittable.OBJECT_LIGHT(
                 Hittable.QUAD(
                     Vector3(0.0, 0.499, 0.0),
                     Vector3(0.0, 180.0, 0.0),
