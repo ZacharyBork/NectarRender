@@ -68,6 +68,7 @@ void register_core(py::module_& m) {
                               + std::to_string(v.y()) + ", " 
                               + std::to_string(v.z()) + ")";
         })
+        .def("length",   &Vector3::length)
         .def("as_array", &Vector3::as_array)
         .def("x", &Vector3::x)
         .def("y", &Vector3::y)

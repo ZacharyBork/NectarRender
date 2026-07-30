@@ -18,7 +18,7 @@ uint8_t* selection_mask(
     size_t        W,
     DeviceCamera* cam,
     SceneGraph*   scene,
-    Hittable*     selected_object,
+    size_t        selected_object_index,
     int           outline_radius
 );
 
@@ -130,10 +130,10 @@ private:
     std::atomic<bool> teardown_pending { false };
 
     size_t material_index() { return rec.material_index; }
-    uint32_t object_index() { return rec.object_index; }
+    size_t object_index()   { return rec.object_index;   }
 
     Hittable* hit_object() {
-        return scene->hittables_registry.get_object(object_index());
+        return scene->hittables_registry.get_object_host(object_index());
     }
 
     Material& host_material() {
@@ -143,7 +143,7 @@ private:
     void build_selection_mask() {
         uint8_t* d_mask_ptr = selection_mask(
             stream->H, stream->W, camera->device_camera(), scene->graph, 
-            rec.hit_object, mask_cfg.outline_radius
+            object_index(), mask_cfg.outline_radius
         );
         stream->overlay(d_mask_ptr, mask_cfg.color);
     }

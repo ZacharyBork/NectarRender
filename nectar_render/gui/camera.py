@@ -10,7 +10,7 @@ from PySide6.QtGui  import (
 )
 from nectar_render import Vector3, CameraParams
 from nectar_render.gui.bridge  import Bridge
-from nectar_render.gui.widgets.xform_controller import VectorWidget
+from nectar_render.gui.widgets.vector import VectorWidget
 
 ###############################################################################
 # UPDATE DATACLASS

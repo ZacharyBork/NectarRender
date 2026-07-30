@@ -23,7 +23,7 @@ public:
 
         std::vector<Vector2> pattern = generate_n_rooks(n_samples, seed);
 
-        if (d_pattern) cudaFree(d_pattern);
+        if (d_pattern) CUDAMemory::free(d_pattern);
         CUDAMemory::allocate<Vector2>(d_pattern, n_samples);
         CUDAMemory::copy<Vector2>(d_pattern, pattern.data(), n_samples);
 
@@ -34,7 +34,7 @@ public:
     __host__ Vector2* pattern() const { return d_pattern; }
     __host__ bool has_pattern() const { return d_pattern != nullptr; }
 
-    ~SampleGenerator() { if (d_pattern) cudaFree(d_pattern); }
+    ~SampleGenerator() { if (d_pattern) CUDAMemory::free(d_pattern); }
 
 private:
 
@@ -280,7 +280,7 @@ public:
 
     __host__ Camera(const Camera& other) : Camera(other.p) { }
 
-    __host__ ~Camera() { if (d_cam_ptr) cudaFree(d_cam_ptr); }
+    __host__ ~Camera() { if (d_cam_ptr) CUDAMemory::free(d_cam_ptr); }
 
     Camera& operator=(const Camera&) = delete;
 
@@ -322,6 +322,25 @@ public:
         return Ray(p.position, direction);
     }
 
+    __host__ std::optional<Vector2> project_to_screen(
+        const Vector3& world_point
+    ) const {
+        Vector3 local = p.R.T() * (world_point - p.position);
+        if (local.z() >= 0.0f) return std::nullopt;
+
+        float scale = -p.focal_length / local.z();
+        float lu = local.x() * scale;
+        float lv = local.y() * scale;
+
+        float rx = p.resolution.x();
+        float ry = p.resolution.y();
+
+        float px = lu * (rx / p.uvw.x()) + (rx - 1.0f) * 0.5f;
+        float py = lv * (ry / p.uvw.y()) + (ry - 1.0f) * 0.5f;
+
+        return Vector2(px / rx, py / ry);
+    }
+
     __host__ const Vector2 resolution() const { return p.resolution; }
     __host__ uint32_t n_samples() const { return p.samples_per_pixel; }
     
@@ -346,7 +365,7 @@ private:
     uint32_t seed_ = 0u;
 
     __host__ void free_device_pointer() {
-        if (d_cam_ptr) cudaFree(d_cam_ptr);
+        if (d_cam_ptr) CUDAMemory::free(d_cam_ptr);
         d_cam_ptr = nullptr;
     }
 

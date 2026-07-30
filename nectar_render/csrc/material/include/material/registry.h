@@ -42,7 +42,7 @@ public:
 
     __host__ void destroy_device_materials() {
         for (Material& m : h_materials) { m.teardown(); }
-        if (d_material_ptrs) cudaFree(d_material_ptrs);
+        if (d_material_ptrs) CUDAMemory::free(d_material_ptrs);
 
         d_material_ptrs = nullptr;
         d_materials.clear();

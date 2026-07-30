@@ -79,7 +79,7 @@ public:
     }
 
     template<typename T>
-    __host__ static void free(T*& d_ptr) {
+    __host__ static void free(T* d_ptr) {
         if (!d_ptr) {
             uintptr_t int_ptr = reinterpret_cast<uintptr_t>(d_ptr);
             std::string w = "Warning: Encountered attempt to free invalid "
@@ -99,7 +99,7 @@ public:
     }
 
     template<typename T>
-    __host__ static void free_host(T*& h_ptr) {
+    __host__ static void free_host(T* h_ptr) {
         if (!h_ptr) {
             uintptr_t int_ptr = reinterpret_cast<uintptr_t>(h_ptr);
             std::string w = "Warning: Encountered attempt to free invalid "

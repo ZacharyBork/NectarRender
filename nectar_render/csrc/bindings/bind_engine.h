@@ -71,7 +71,10 @@ void register_engine(py::module_& m) {
             py::arg("params")
         )
         .def_readwrite("on_updated", &Camera::on_updated)
-        .def("parameters", &Camera::parameters, return_policy::copy);
+        .def("parameters", &Camera::parameters, return_policy::copy)
+        .def("project_to_screen", &Camera::project_to_screen, 
+            py::arg("world_point")
+        );
 
 // ############################################################################
 // LIGHTS

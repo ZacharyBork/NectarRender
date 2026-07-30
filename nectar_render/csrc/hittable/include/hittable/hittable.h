@@ -273,7 +273,7 @@ public:
         );
     }
 
-    __host__ void teardown() { if (core_ptr()) cudaFree(core_ptr()); }
+    __host__ void teardown() { if (core_ptr()) CUDAMemory::free(core_ptr()); }
 
     __host__ HittableType hittable_type() const { return type;           }
     __host__ bool is_light()              const { return is_light_;      }
@@ -312,7 +312,7 @@ public:
     __device__ bool hit_test(const Ray& ray, HitRecord& rec) const {
         Ray r = ray.to_object_space(xform);
         bool hit_obj = hit(r, Interval(EPS, FMAX), rec);
-        if (hit_obj) rec.hit_object = self_ref;
+        // if (hit_obj) rec.hit_object = self_ref;
         rec.to_world_space(xform, r, ray, true);
 
         return hit_obj;

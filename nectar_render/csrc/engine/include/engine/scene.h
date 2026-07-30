@@ -48,7 +48,8 @@ struct SceneGraph {
                         hit_anything = true;
 
                         rec = tmp_rec;
-                        rec.object_index = current->get_object_index();
+                        rec.hit_object     = current;
+                        rec.object_index   = current->get_object_index();
                         rec.material_index = current->get_material_index();
                         rec.mat = materials[current->get_material_index()];
                         ray_t.max = tmp_rec.t;
@@ -106,12 +107,12 @@ public:
 
     __host__ void teardown() {
         if (!graph) return;
-        cudaFree(graph); 
+        CUDAMemory::free(graph); 
 
         hittables_registry.destroy_device_hittables();
         material_registry.destroy_device_materials();
 
-        cudaFree(h_graph.lights);
+        CUDAMemory::free(h_graph.lights);
 
         graph   = nullptr;
         h_graph = SceneGraph();
@@ -153,7 +154,7 @@ public:
 private:
 
     __host__ void build_device_lights() {
-        if (h_graph.lights) cudaFree(h_graph.lights);
+        if (h_graph.lights) CUDAMemory::free(h_graph.lights);
 
         std::vector<Hittable*> d_light_ptrs(lights.size());
         for (size_t i = 0; i < lights.size(); i++) {

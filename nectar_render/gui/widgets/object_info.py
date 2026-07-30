@@ -6,9 +6,8 @@ from PySide6.QtCore import Qt, QObject, Slot, Signal
 from nectar_render import SceneInterface, Color, Material as M
 from nectar_render.gui.bridge import Bridge
 from nectar_render.gui.widgets.materials import MatSettingsPBR
-from nectar_render.gui.widgets.xform_controller import (
-    XformController, VectorWidget
-)
+from nectar_render.gui.widgets.vector import VectorWidget
+from nectar_render.gui.widgets.xform_controller import XformController
 
 class MaterialSettings(W.QGroupBox):
     def __init__(self: Self) -> None:

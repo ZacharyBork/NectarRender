@@ -8,10 +8,17 @@ class HittablesRegistry {
 public:
 
     BVHNode* bvh_nodes = nullptr;
+    std::unordered_map<size_t, Hittable*> index_to_object;
 
     __host__ HittablesRegistry() { } 
     __host__ HittablesRegistry(std::vector<Hittable*> hittables) 
-        : h_hittables(std::move(hittables)) { }
+        : h_hittables(std::move(hittables)) 
+    { 
+        for (size_t i = 0; i < h_hittables.size(); i++) {
+            h_hittables[i]->set_object_index(i);
+            index_to_object.emplace(i, h_hittables[i]);
+        }
+    }
 
     __host__ void build() {
         build_bvh();
@@ -28,9 +35,9 @@ public:
     }
 
     __host__ void destroy_device_hittables() {
-        for (Hittable* obj : d_hittables) { if (obj) cudaFree(obj); }
-        if (d_hittables_ptrs) cudaFree(d_hittables_ptrs);
-        if (bvh_nodes) cudaFree(bvh_nodes);
+        for (Hittable* obj : d_hittables) { if (obj) CUDAMemory::free(obj); }
+        if (d_hittables_ptrs) CUDAMemory::free(d_hittables_ptrs);
+        if (bvh_nodes) CUDAMemory::free(bvh_nodes);
         
         d_hittables_ptrs = nullptr;
         bvh_nodes = nullptr;
@@ -43,17 +50,12 @@ public:
 
     __host__ Hittable** device_hittables()    { return d_hittables_ptrs; }
     __host__ std::vector<Hittable*> objects() { return h_hittables; }
-    
-    __host__ Hittable* get_object(size_t index) {
-        if (index >= object_count())
-            throw std::runtime_error(
-                "HittablesRegistry::get_object(): index " + 
-                std::to_string(index) + " out of range"
-            );
-        Hittable* found;
-        for (Hittable* obj : h_hittables)
-            if (obj->get_object_index() == index) { found = obj; break; }
-        return found;
+
+    __host__ Hittable* get_object_host(size_t index) {
+        auto it = index_to_object.find(index);
+        if (it == index_to_object.end())
+            throw std::runtime_error("Object index not valid.");
+        return it->second;
     }
 
 private:
@@ -75,7 +77,7 @@ private:
         h_hittables = std::move(bvh.items);
         n_bvh_nodes = bvh.nodes.size();
 
-        if (bvh_nodes) cudaFree(bvh_nodes); 
+        if (bvh_nodes) CUDAMemory::free(bvh_nodes); 
         CUDAMemory::allocate<BVHNode>(bvh_nodes, n_bvh_nodes);
         CUDAMemory::copy<BVHNode>(bvh_nodes, bvh.nodes.data(), n_bvh_nodes);
     }
@@ -88,7 +90,6 @@ private:
         map_host_to_device.clear();
 
         for (size_t i = 0; i < n_objects; i++) {
-            h_hittables[i]->set_object_index(i);
             Hittable* d_ptr = h_hittables[i]->build();
             d_hittables.push_back(d_ptr);
             map_host_to_device[h_hittables[i]] = d_ptr;

@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from nectar_render.gui.widgets import ViewportWidget
+
 import _pathtracer
 root = _pathtracer.engine
 
@@ -90,47 +95,47 @@ class BridgeMeta(type):
         setattr(BridgeMeta, '_signals', SignalInterface(BridgeMeta.ENGINE))
 
     @property
-    def thread(self: Self) -> ThreadWorker: 
+    def thread(cls: type[Self]) -> ThreadWorker: 
         return BridgeMeta._thread
     
     @property
-    def signals(self: Self) -> SignalInterface: 
+    def signals(cls: type[Self]) -> SignalInterface: 
         return BridgeMeta._signals
     
     @property
-    def requests(self: Self) -> root.EngineRequests: 
+    def requests(cls: type[Self]) -> root.EngineRequests: 
         return BridgeMeta.ENGINE.requests()
 
     @property
-    def scene_interface(self: Self) -> SceneInterface:
+    def scene_interface(cls: type[Self]) -> SceneInterface:
         return BridgeMeta.ENGINE.get_scene_interface()
     
     @property
-    def stream(self: Self) -> TransferStream:
+    def stream(cls: type[Self]) -> TransferStream:
         return BridgeMeta.ENGINE.stream()
     
     @property
-    def stream_config(self: Self) -> StreamConfig:
+    def stream_config(cls: type[Self]) -> StreamConfig:
         return BridgeMeta._stream_config
     
     @property
-    def state(self: Self) -> root.EngineState: 
+    def state(cls: type[Self]) -> root.EngineState: 
         return BridgeMeta.ENGINE.get_state()
     
     @property
-    def is_idle(self: Self) -> bool: 
+    def is_idle(cls: type[Self]) -> bool: 
         return BridgeMeta.ENGINE.is_idle()
     
     @property
-    def is_rendering(self: Self) -> bool: 
+    def is_rendering(cls: type[Self]) -> bool: 
         return BridgeMeta.ENGINE.is_rendering()
     
     @property
-    def n_samples(self: Self) -> int:
+    def n_samples(cls: type[Self]) -> int:
         return BridgeMeta.ENGINE.n_samples()
     
     @property
-    def camera(self: Self) -> Camera: 
+    def camera(cls: type[Self]) -> Camera: 
         return BridgeMeta.ENGINE.camera()
 
 
@@ -143,7 +148,7 @@ class Bridge(metaclass=BridgeMeta):
         seed:      int | None = None
     ) -> None:
         BridgeMeta.init(camera, ray_depth, seed)
-        Bridge.set_scene        = Bridge.ENGINE.set_scene   
+        Bridge.set_scene = Bridge.ENGINE.set_scene   
         
     @staticmethod
     def start_if_idle() -> None:

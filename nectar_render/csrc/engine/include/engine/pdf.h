@@ -105,10 +105,16 @@ __device__ inline float ggx_distribution(float n_dot_h, float alpha) {
 
 __device__ inline float smith_ggx_g1(float n_dot_x, float alpha) {
     float a2 = alpha * alpha;
-    return 2.0f * n_dot_x / (n_dot_x + sqrtf(a2 + (1.0f - a2) * n_dot_x * n_dot_x));
+    return 2.0f * n_dot_x / (
+        n_dot_x + sqrtf(a2 + (1.0f - a2) * n_dot_x * n_dot_x)
+    );
 }
 
-__device__ inline float smith_ggx_geometry(float n_dot_l, float n_dot_v, float alpha) {
+__device__ inline float smith_ggx_geometry(
+    float n_dot_l, 
+    float n_dot_v, 
+    float alpha
+) {
     return smith_ggx_g1(n_dot_l, alpha) * smith_ggx_g1(n_dot_v, alpha);
 }
 
@@ -127,12 +133,16 @@ public:
     { }
 
     __device__ float value(const Vector3& direction) const {
-        float diffuse_pdf = fmaxf(0.0f, dot(normalize(direction), uvw.w()) / PI);
+        float diffuse_pdf = fmaxf(
+            0.0f, dot(normalize(direction), uvw.w()) / PI
+        );
 
         Vector3 h = normalize(view_dir + direction);
         float n_dot_h = fmaxf(dot(uvw.w(), h), 0.0f);
         float v_dot_h = fmaxf(dot(view_dir, h), 1e-4f);
-        float specular_pdf = (ggx_distribution(n_dot_h, alpha) * n_dot_h) / (4.0f * v_dot_h);
+        float specular_pdf = (
+            ggx_distribution(n_dot_h, alpha) * n_dot_h
+        ) / (4.0f * v_dot_h);
 
         return (1.0f - spec_prob) * diffuse_pdf + spec_prob * specular_pdf;
     }
@@ -140,10 +150,16 @@ public:
     __device__ Vector3 generate(Generator& gen) const {
         if (gen.random_float() < spec_prob) {
             float u1 = gen.random_float(), u2 = gen.random_float();
-            float cos_theta = sqrtf((1.0f - u1) / (1.0f + (alpha * alpha - 1.0f) * u1));
+            float cos_theta = sqrtf(
+                (1.0f - u1) / (1.0f + (alpha * alpha - 1.0f) * u1)
+            );
             float sin_theta = sqrtf(fmaxf(0.0f, 1.0f - cos_theta * cos_theta));
             float phi = PI2 * u2;
-            Vector3 h = uvw.transform(Vector3(sin_theta * cosf(phi), sin_theta * sinf(phi), cos_theta));
+            Vector3 h = uvw.transform(Vector3(
+                sin_theta * cosf(phi), 
+                sin_theta * sinf(phi), 
+                cos_theta
+            ));
             return normalize(2.0f * dot(view_dir, h) * h - view_dir);
         }
         return uvw.transform(random_cosine_direction(gen));

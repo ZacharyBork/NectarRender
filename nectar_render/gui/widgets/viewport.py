@@ -11,12 +11,13 @@ from PySide6.QtGui  import (
     QKeyEvent, QMouseEvent, QImage, QPixmap, QResizeEvent
 )
 
-from nectar_render import Vector3, SceneInterface, CameraParams
+from nectar_render import Vector2, Vector3, SceneInterface, CameraParams
 from nectar_render.gui.widgets.object_info import ObjectInfo
 from nectar_render.gui.widgets.gnomon import GnomonWidget
-from nectar_render.gui.bridge import Bridge
-from nectar_render.gui.camera import CameraController
-from nectar_render.gui.utils  import TimeKeeper
+from nectar_render.gui.bridge   import Bridge
+from nectar_render.gui.registry import WidgetRegistry
+from nectar_render.gui.camera   import CameraController
+from nectar_render.gui.utils    import TimeKeeper
 
 ###############################################################################
 # UTILITIES
@@ -95,11 +96,11 @@ class ViewportWidget(W.QLabel):
         settings: W.QTabWidget
     ) -> None:
         super().__init__()
+        WidgetRegistry.register_viewport(self)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.settings = settings
         
         self.overlay = ViewportOverlay(self)
-        
         self.gnomon = GnomonWidget(self)
         self.gnomon.move(0, self.size().height() - self.gnomon.size().height())
         
@@ -176,6 +177,10 @@ class ViewportWidget(W.QLabel):
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
+            gnomon = WidgetRegistry.transform_gnomon
+            if gnomon is not None and gnomon.try_begin_drag(event.position()):
+                return
+
             click_pos = self._normalize_click_pos(event.position())
             if click_pos is not None:
                 self._handle_scene_interaction(click_pos)
@@ -184,9 +189,19 @@ class ViewportWidget(W.QLabel):
             self.camera_controller.mouse_press(event)
         
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        gnomon = WidgetRegistry.transform_gnomon
+        if gnomon is not None and gnomon.is_dragging:
+            gnomon.continue_drag(event.position())
+            return
+        if gnomon is not None:
+            gnomon.update_hover(event.position())
         self.camera_controller.mouse_move(event)
     
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        gnomon = WidgetRegistry.transform_gnomon
+        if gnomon is not None and gnomon.is_dragging:
+            gnomon.end_drag()
+            return
         if event.button() == Qt.MouseButton.RightButton:
             self.camera_controller.mouse_release(event)
 

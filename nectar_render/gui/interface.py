@@ -8,9 +8,10 @@ from PySide6.QtGui     import QAction
 from PySide6.QtUiTools import QUiLoader
 
 from nectar_render import Camera, EnginePollResponse
-from nectar_render.gui         import utils
-from nectar_render.gui.utils   import TimeKeeper
-from nectar_render.gui.bridge  import Bridge
+from nectar_render.gui          import utils
+from nectar_render.gui.utils    import TimeKeeper
+from nectar_render.gui.bridge   import Bridge
+from nectar_render.gui.registry import WidgetRegistry
 from nectar_render.gui.widgets import (
     ViewportWidget, ColorCorrection, ProgressBar, Profiler, MenuBar
 )
@@ -100,6 +101,8 @@ test_scene = Scene(
 class Interface(QObject):    
     def __init__(self: Self) -> None:
         super().__init__()
+        
+        WidgetRegistry.register_interface(self)
         
         self.viewport:  ViewportWidget = None
         self.progress_bar: ProgressBar = None

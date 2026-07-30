@@ -9,11 +9,11 @@ class Material;
 class HitRecord {
 public:
 
-    Hittable* hit_object   = nullptr; // Reference to hit object
-    uint32_t  object_index = 0u;      // Object index in BVH
+    Hittable* hit_object = nullptr; // Reference to hit object
+    size_t object_index = 0u;       // ID of hit object
     
-    Material* mat = nullptr;       // Reference to hit objects material
-    size_t    material_index = 0u; // Hit index in MaterialRegistry
+    Material* mat = nullptr;    // Reference to hit objects material
+    size_t material_index = 0u; // Hit index in MaterialRegistry
 
     Vector3 p;          // Position
     Vector3 n;          // Surface normal vector

@@ -117,7 +117,9 @@ public:
     
     /* UTILITIES */
 
-    __host__ void teardown() { if (d_texture_ptr) cudaFree(d_texture_ptr); }
+    __host__ void teardown() { 
+        if (d_texture_ptr) CUDAMemory::free(d_texture_ptr); 
+    }
 
     __host__ TextureView view() const {
         return TextureView{ type, d_texture_ptr, constant_color, C, H, W };

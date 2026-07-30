@@ -6,14 +6,12 @@ __global__ void mask_selected_kernel(
     size_t        W,
     DeviceCamera* cam,
     SceneGraph*   scene,
-    Hittable*     selected_object
+    size_t        selected_object_index
 ) {
 
     ProcessIndex p_idx = get_process_index();
     if (p_idx.x >= W || p_idx.y >= H) return;
     uint32_t pixel_idx = p_idx.y * W + p_idx.x;
-
-    if (!selected_object) { base_mask[pixel_idx] = 0u; return; }
 
     float su = (p_idx.x + 0.5f) / (float)W;
     float sv = (p_idx.y + 0.5f) / (float)H;
@@ -22,7 +20,7 @@ __global__ void mask_selected_kernel(
     HitRecord rec;
     bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
     base_mask[pixel_idx] = (
-        hit && rec.hit_object == selected_object
+        hit && rec.hit_object->get_object_index() == selected_object_index
     ) ? 255u : 0u;
 }
 
@@ -60,7 +58,7 @@ uint8_t* selection_mask(
     size_t        W,
     DeviceCamera* cam,
     SceneGraph*   scene,
-    Hittable*     selected_object,
+    size_t        selected_object_index,
     int           outline_radius
 ) {
     dim3 block(BS2D, BS2D, 1);
@@ -69,7 +67,7 @@ uint8_t* selection_mask(
     uint8_t* base_mask;
     CUDAMemory::allocate<uint8_t>(base_mask, H * W);
     mask_selected_kernel<<<grid, block>>>(
-        base_mask, H, W, cam, scene, selected_object
+        base_mask, H, W, cam, scene, selected_object_index
     );
 
     uint8_t* out_mask;
@@ -78,7 +76,7 @@ uint8_t* selection_mask(
         base_mask, out_mask, H, W, outline_radius
     );
 
-    cudaFree(base_mask);
+    CUDAMemory::free(base_mask);
     return out_mask;
 }
 

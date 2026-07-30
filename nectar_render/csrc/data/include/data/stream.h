@@ -103,7 +103,7 @@ public:
 
     void overlay(uint8_t* mask_ptr, Color color = Color::white()) { 
         if (has_overlay()) { 
-            cudaFree(overlay_mask); overlay_mask = nullptr; 
+            CUDAMemory::free(overlay_mask); overlay_mask = nullptr; 
         }
         overlay_mask = mask_ptr; 
         overlay_color = color;
@@ -163,7 +163,10 @@ private:
         bool disable = should_disable_overlay.exchange(
             false, std::memory_order_relaxed
         );
-        if (disable) { cudaFree(overlay_mask); overlay_mask = nullptr;} 
+        if (disable) { 
+            CUDAMemory::free(overlay_mask); 
+            overlay_mask = nullptr;
+        } 
         else composite_overlay(
             image_buffer, overlay_mask, overlay_color, C, H, W
         );

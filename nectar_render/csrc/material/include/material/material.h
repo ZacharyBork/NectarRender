@@ -536,7 +536,7 @@ public:
             tracker = nullptr;
         }
         void* core = core_ptr();
-        if (core) cudaFree(core);
+        if (core) CUDAMemory::free(core);
     }
     
     __device__ void update(MaterialCore* mat) {

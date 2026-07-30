@@ -100,7 +100,7 @@ public:
 
     size_t C, H, W; // Channels, Height, Width
 
-    __host__ ~DataObject() { if (data_ptr()) cudaFree(data_ptr()); }
+    __host__ ~DataObject() { if (data_ptr()) CUDAMemory::free(data_ptr()); }
 
     /* CONSTRUCTORS */
 
@@ -187,7 +187,7 @@ public:
     }
 
     __host__ void overwrite(float* new_d_ptr) {
-        if (d_ptr) cudaFree(d_ptr);
+        if (d_ptr) CUDAMemory::free(d_ptr);
         d_ptr = new_d_ptr;
     }
 
@@ -203,7 +203,7 @@ public:
         CUDAMemory::copy<uint8_t>(
             target, image_ptr, n_elements(), cudaMemcpyDeviceToHost
         );
-        cudaFree(image_ptr);
+        CUDAMemory::free(image_ptr);
 
         return result;
     }
