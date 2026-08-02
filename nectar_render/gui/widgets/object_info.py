@@ -3,7 +3,7 @@ from typing import Self
 from PySide6 import QtWidgets as W
 from PySide6.QtCore import Qt, QObject, Slot, Signal
 
-from nectar_render import SceneInterface, Color, Material as M
+from nectar_render import SceneInterface, Color, MaterialType, Material as M
 from nectar_render.gui.bridge import Bridge
 from nectar_render.gui.widgets.materials import MatSettingsPBR
 from nectar_render.gui.widgets.vector import VectorWidget
@@ -14,13 +14,6 @@ class MaterialSettings(W.QGroupBox):
         super().__init__()        
         
         
-        # mat = Bridge.scene_interface.get_material()
-        # print(mat)
-        # print(mat.material_type())
-        
-        
-        
-        
         self.setTitle('Material')
         layout = W.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -28,13 +21,30 @@ class MaterialSettings(W.QGroupBox):
         
         self.material_type = W.QComboBox()
         self.material_type.addItem('Lambertian')
-        self.material_type.addItem('Metal')
+        self.material_type.addItem('PBR')
         self.material_type.addItem('Dielectric')
         self.material_type.addItem('Emissive')
         layout.addWidget(self.material_type)
         
-        self.pbr_settings = MatSettingsPBR()
-        layout.addWidget(self.pbr_settings)
+        
+        
+        mat = Bridge.scene_interface.get_material()
+        match mat.material_type():
+            case MaterialType.Lambertian: 
+                self.material_type.setCurrentIndex(0)
+                            
+            case MaterialType.PBR:
+                self.material_type.setCurrentIndex(1)
+                self.core_settings = MatSettingsPBR(mat)
+                layout.addWidget(self.core_settings)
+            case MaterialType.Dielectric:
+                self.material_type.setCurrentIndex(2)
+            
+            case MaterialType.Emissive:
+                self.material_type.setCurrentIndex(3)
+            
+            case MaterialType.Isotropic:
+                self.material_type.setCurrentIndex(4)
 
         self.update_btn = W.QPushButton('Update')
         self.update_btn.clicked.connect(self.update_material)
@@ -42,7 +52,8 @@ class MaterialSettings(W.QGroupBox):
         
         
     def update_material(self: Self) -> None:
-        mat = self.pbr_settings.get_material()
+        mat = self.core_settings.get_material()
+        Bridge.scene_interface.set_material(mat)
         # Bridge.queue_function(
         #     lambda : Bridge.scene_interface.update_material(mat)
         # )
@@ -68,7 +79,7 @@ class ObjectInfo(QObject):
         self.root.addWidget(close_btn)
                 
         self.root.addWidget(XformController())
-        # self.root.addWidget(MaterialSettings())
+        self.root.addWidget(MaterialSettings())
         self.is_enabled = True
         
     def destroy(self: Self) -> None:

@@ -93,7 +93,8 @@ void register_engine(py::module_& m) {
             py::arg("start_color") = Color(1.0f, 1.0f, 1.0f),
             py::arg("end_color")   = Color(0.5f, 0.7f, 1.0f)
         )
-        .def("black", &SkyLight::black);
+        .def("black", &SkyLight::black)
+        .def("hdri",  &SkyLight::hdri);
 
 // ############################################################################
 // SCENE
@@ -167,11 +168,12 @@ void register_engine(py::module_& m) {
         .def_readwrite("camera_params", &EnginePollResponse::camera_params);
 
     py::class_<EngineRequests>(m_engine, "EngineRequests")
-        .def("start",       &EngineRequests::start)
-        .def("stop",        &EngineRequests::stop)
-        .def("restart",     &EngineRequests::restart)
-        .def("shutdown",    &EngineRequests::shutdown)
-        .def("rebuild_bvh", &EngineRequests::rebuild_bvh);
+        .def("start",             &EngineRequests::start)
+        .def("stop",              &EngineRequests::stop)
+        .def("restart",           &EngineRequests::restart)
+        .def("shutdown",          &EngineRequests::shutdown)
+        .def("rebuild_bvh",       &EngineRequests::rebuild_bvh)
+        .def("rebuild_materials", &EngineRequests::rebuild_materials);
 
     py::class_<RenderEngine>(m_engine, "RenderEngine")
         .def(py::init([](

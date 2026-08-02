@@ -85,11 +85,13 @@ target_link_libraries(_pathtracer PRIVATE
 target_include_directories(_pathtracer PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}
     external/tinyobjloader
+    external/stb
 )
 target_include_directories(nectar_cuda PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${pybind11_INCLUDE_DIRS}
     external/tinyobjloader
+    external/stb
 )
 
 ##############################################################################

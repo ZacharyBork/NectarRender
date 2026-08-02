@@ -27,19 +27,20 @@ from nectar_render.python import (
 )
 asset_root = Path(__file__).parent.parent.parent / 'tmp/assets'
 test_scene = Scene(
-    skylight  = SkyLight(
-        Color(0.4, 0.4, 0.4), Color(0.1, 0.2, 0.4)
+    skylight  = SkyLight.hdri(
+        asset_root.resolve().as_posix() + '/hdri/church_stairway.hdr',
+        1.0
     ),
     lights    = [
-        Hittable.OBJECT_LIGHT(
-            Hittable.QUAD(
-                Vector3(1.0, 1, 0.0),
-                Vector3(0.0, 180.0, -45.0),
-                Vector3(1),
-                Material.LAMBERTIAN(Color.white())
-            ),
-            15.0, Color(1.0, 0.4, 0.2)
-        )
+        # Hittable.OBJECT_LIGHT(
+        #     Hittable.QUAD(
+        #         Vector3(1.0, 1, 0.0),
+        #         Vector3(0.0, 180.0, -45.0),
+        #         Vector3(1),
+        #         Material.LAMBERTIAN(Color.white())
+        #     ),
+        #     15.0, Color(1.0, 0.4, 0.2)
+        # )
     ],
     hittables = [
         Hittable.QUAD( # Bottom
@@ -47,7 +48,7 @@ test_scene = Scene(
             Vector3(0.0, 0.0, 0.0),
             Vector3(100.0),
             Material.PBR(
-                Color.white(),
+                asset_root.resolve().as_posix() + '/tile.jpeg',
                 0.15,
                 0.2
             )

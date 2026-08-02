@@ -85,6 +85,7 @@ void RenderEngine::idle() {
 
 void RenderEngine::set_scene(Scene input_scene) { 
     current_scene = std::move(input_scene);
+    current_scene.build();
     scene_interface.update_scene(&current_scene);
 }
 
@@ -165,6 +166,10 @@ void RenderEngine::reset() {
 
     sample_idx = 1u;
     aovs.clear();
+
+    if (requests_.material_build_pending()) {
+        scene()->rebuild_materials_registry();
+    }
 
     if (requests_.bvh_build_pending()) {
         scene()->rebuild_hittables_registry();

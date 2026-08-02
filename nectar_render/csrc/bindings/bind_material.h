@@ -14,7 +14,7 @@ void register_material(py::module_& m) {
 
     /* TEXTURE CLASS */
 
-    py::enum_<TextureType>(m_material, "TextureType")
+    py::enum_<TextureType>(m_texture, "TextureType")
         .value("CONSTANT", TextureType::CONSTANT)
         .value("IMAGE",      TextureType::IMAGE)
         .def("__repr__", [](const TextureType& type) {
@@ -32,10 +32,15 @@ void register_material(py::module_& m) {
         .def_static("from_color",
             py::overload_cast<float, float, float>(&Texture::from_color),
             py::arg("r"), py::arg("g"), py::arg("b"))
-        .def_static("from_image", &Texture::from_image,
-            py::arg("filepath"), py::arg("host_ptr"),
-            py::arg("channels"), py::arg("height"), py::arg("width")
-        )
+        .def_static("from_image", &Texture::from_image, py::arg("filepath"))
+
+        .def_readonly("type",           &Texture::type)
+        .def_readonly("filepath",       &Texture::filepath)
+        .def_readonly("constant_color", &Texture::constant_color)
+        .def_readonly("C",              &Texture::C)
+        .def_readonly("H",              &Texture::H)
+        .def_readonly("W",              &Texture::W)
+
         .def("__repr__", [](const Texture& tex) {
             std::string output = "Texture(type = ";
             switch (tex.type) {
@@ -76,7 +81,10 @@ void register_material(py::module_& m) {
 
     py::classh<Material>(m_material, "Material")
         .def(py::init<>())
-        .def("material_type", &Material::material_type)
+        .def("material_type",       &Material::material_type)
+        .def("get_tracked_texture", &Material::get_tracked_texture,
+            return_policy::reference)
+
         .def("texture_count", &Material::texture_count)
         .def("__repr__", [](const Material& mat) {
             std::string output = "Material(type = ";

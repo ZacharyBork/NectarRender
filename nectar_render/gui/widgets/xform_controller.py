@@ -196,6 +196,7 @@ class TransformGnomon(W.QWidget):
             new_position, xform.rotation().forward(), xform.scale()
         )
 
+        Bridge.start_if_idle()
         Bridge.scene_interface.set_transform(new_xform)
         self.transform_updated.emit(new_xform)
         self.update()

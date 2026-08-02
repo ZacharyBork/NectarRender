@@ -429,8 +429,10 @@ public:
 
     __host__ static Material lambertian(std::shared_ptr<Texture> texture) {
         Material m(MaterialType::Lambertian); 
-        TextureView v = texture->view(); m.track(texture);
-        m.mat_lambertian = device_build<Lambertian>(v);
+        m.track(texture);
+        m.mat_lambertian = device_build<Lambertian>(
+            m.tracker->textures[0]->view()
+        );
         return m;
     }
 
@@ -448,16 +450,13 @@ public:
         std::shared_ptr<Texture> normal
     ) {
         Material m(MaterialType::PBR);
-
-        TextureView v_albedo    = albedo->view();
-        TextureView v_roughness = roughness->view();
-        TextureView v_metallic  = metallic->view();
-        TextureView v_emission  = emission->view();
-        TextureView v_normal    = normal->view();
-
         m.track({ albedo, roughness, metallic, emission, normal });
         m.mat_pbr = device_build<PBR>(
-            v_albedo, v_roughness, v_metallic, v_emission, v_normal
+            m.tracker->textures[0]->view(),
+            m.tracker->textures[1]->view(),
+            m.tracker->textures[2]->view(),
+            m.tracker->textures[3]->view(),
+            m.tracker->textures[4]->view()
         );
         return m;
     }
@@ -477,8 +476,10 @@ public:
         const float brightness = 35.0f
     ) {
         Material m(MaterialType::Emissive); 
-        TextureView v = texture->view(); m.track(texture);
-        m.mat_emissive = device_build<Emissive>(v, brightness);
+        m.track(texture);
+        m.mat_emissive = device_build<Emissive>(
+            m.tracker->textures[0]->view(), brightness
+        );
         return m;
     }
 
@@ -493,8 +494,10 @@ public:
 
     __host__ static Material isotropic(std::shared_ptr<Texture> texture) {
         Material m(MaterialType::Isotropic); 
-        TextureView v = texture->view(); m.track(texture);
-        m.mat_isotropic = device_build<Isotropic>(v);
+        m.track(texture);
+        m.mat_isotropic = device_build<Isotropic>(
+            m.tracker->textures[0]->view()
+        );
         return m;
     }
 
@@ -520,12 +523,21 @@ public:
     __host__ MaterialType material_type() const { return type; }
     __host__ uint8_t texture_count() const { 
         return tracker ? tracker->count : 0u; 
-    } 
+    }
+
+    __host__ std::shared_ptr<Texture>& get_tracked_texture(size_t index) {
+        return tracker->textures[index];
+    }
 
     // UPDATE =================================================================
 
     __host__ Material* build() const {
         return device_build<Material>(type, core_ptr());
+    }
+
+    __host__ void destroy_device_material() {
+        void* core = core_ptr();
+        if (core) CUDAMemory::free(core);
     }
 
     __host__ void teardown() {
@@ -535,8 +547,7 @@ public:
             delete tracker;
             tracker = nullptr;
         }
-        void* core = core_ptr();
-        if (core) CUDAMemory::free(core);
+        destroy_device_material();
     }
     
     __device__ void update(MaterialCore* mat) {

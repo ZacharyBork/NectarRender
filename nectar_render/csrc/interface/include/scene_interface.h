@@ -106,9 +106,11 @@ public:
 
     /* MATERIAL UTILS */
 
-    void update_material(const Material& material) {
-        // object->material = material.build();
-        return;
+    void set_material(Material mat) {
+        // scene->material_registry.update_material(
+        //     rec.material_index, std::move(mat)
+        // );
+        requests->restart(false, true);
     }
 
     Material& get_material() {

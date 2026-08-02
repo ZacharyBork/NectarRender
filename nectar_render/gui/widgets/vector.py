@@ -22,8 +22,6 @@ class VectorWidget(W.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setStyleSheet(
             'padding: 2px, 2px; '
-            'min-height: 18px; '
-            'max-height: 18px; '
             'min-width: 18px; '
         )
    
@@ -103,3 +101,6 @@ class VectorWidget(W.QWidget):
     
     def set_from_vector(self: Self, v: Vector3) -> None:
         self.x = v.x(); self.y = v.y(); self.z = v.z()
+        
+    def set_from_color(self: Self, c: Color) -> None:
+        self.x = c.r(); self.y = c.g(); self.z = c.b()

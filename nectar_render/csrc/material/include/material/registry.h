@@ -20,13 +20,10 @@ public:
 
     __host__ MaterialRegisty() {
         h_materials.push_back(make_default_material());
-        d_materials.push_back(h_materials.back().build());
     }
 
     __host__ void register_materials(std::vector<Hittable*> hittables) {
-        for (Hittable* obj : hittables)
-            register_material(obj);
-        build_device_materials();
+        for (Hittable* obj : hittables) register_material(obj);
     }
 
     __host__ Material** device_materials() { return d_material_ptrs;    }
@@ -35,20 +32,40 @@ public:
     __host__ Material& get_material(size_t index) { 
         return h_materials[index]; 
     }
+
+    __host__ void update_material(size_t index, Material new_material) { 
+        h_materials[index].teardown();
+        h_materials[index] = std::move(new_material);        
+    }
     
     __host__ Material* get_device_ptr(size_t index) { 
         return d_materials[index];
     }
 
     __host__ void destroy_device_materials() {
-        for (Material& m : h_materials) { m.teardown(); }
+        for (Material& m : h_materials) { m.destroy_device_material(); }
+        for (Material* m : d_materials) { if (m) CUDAMemory::free(m);  }
         if (d_material_ptrs) CUDAMemory::free(d_material_ptrs);
 
         d_material_ptrs = nullptr;
         d_materials.clear();
-        h_materials.clear();
-        h_materials.push_back(make_default_material());
-        d_materials.push_back(h_materials.back().build());
+    }
+
+    __host__ void teardown() {
+        destroy_device_materials();
+        for (Material& m : h_materials) { m.teardown(); }
+    }
+
+    __host__ void build_device_materials() {
+        for (Material& mat : h_materials)
+            d_materials.push_back(mat.build());
+
+        size_t n_bytes = material_count() * sizeof(Material*);
+        cudaMalloc(&d_material_ptrs, n_bytes);
+        cudaMemcpy(
+            d_material_ptrs, d_materials.data(), 
+            n_bytes, cudaMemcpyHostToDevice
+        );
     }
 
 private:
@@ -71,16 +88,9 @@ private:
 
         obj->set_material_index(h_materials.size());
         h_materials.push_back(std::move(obj->get_material()));
-        d_materials.push_back(h_materials.back().build());
     }
 
-    __host__ void build_device_materials() {
-        size_t n_bytes = material_count() * sizeof(Material*);
-        cudaMalloc(&d_material_ptrs, n_bytes);
-        cudaMemcpy(
-            d_material_ptrs, d_materials.data(), 
-            n_bytes, cudaMemcpyHostToDevice
-        );
-    }
+    
+    
 };
 

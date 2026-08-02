@@ -6,14 +6,19 @@ import numpy as np
 from os      import PathLike
 from pathlib import Path
 from PIL     import Image
+from typing  import TypeAlias
 
 from nectar_render.python.core import Color
+
+
+MaterialType: TypeAlias = root.MaterialType
+TextureType:  TypeAlias = tex.TextureType
 
 ###############################################################################
 # TEXTURES
 ###############################################################################
 
-class Texture:
+class Texture(tex.Texture):
     
     @staticmethod
     def from_color(
@@ -30,17 +35,19 @@ class Texture:
             raise FileNotFoundError(
                 f'Unable to locate image file at path: {fp.as_posix()}')
         
-        img = Image.open(fp).convert('RGB')
-        arr = np.array(img, dtype=np.uint8).transpose((2, 0, 1))
-        ptr = np.ascontiguousarray(arr).ctypes.data
-        C, H, W = arr.shape
-        return tex.Texture.from_image(fp.as_posix(), ptr, C, H, W)
+        return tex.Texture.from_image(fp.as_posix())
+    
+        # img = Image.open(fp).convert('RGB')
+        # arr = np.array(img, dtype=np.uint8).transpose((2, 0, 1))
+        # ptr = np.ascontiguousarray(arr).ctypes.data
+        # C, H, W = arr.shape
+        # return tex.Texture.from_image(fp.as_posix(), ptr, C, H, W)
 
 ###############################################################################
 # MATERIAL
 ###############################################################################
 
-class Material:
+class Material(root.Material):
     
     # CONSTRUCTORS ############################################################
 

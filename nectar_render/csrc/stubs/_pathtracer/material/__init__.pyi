@@ -5,7 +5,7 @@ from __future__ import annotations
 import _pathtracer.core.vector
 import typing
 from . import texture
-__all__: list[str] = ['Dielectric', 'Emissive', 'Isotropic', 'Lambertian', 'Material', 'MaterialCore', 'MaterialType', 'PBR', 'TextureType', 'texture']
+__all__: list[str] = ['Dielectric', 'Emissive', 'Isotropic', 'Lambertian', 'Material', 'MaterialCore', 'MaterialType', 'PBR', 'texture']
 class Dielectric(MaterialCore):
     pass
 class Emissive(MaterialCore):
@@ -48,6 +48,8 @@ class Material:
     def __init__(self) -> None:
         ...
     def __repr__(self) -> str:
+        ...
+    def get_tracked_texture(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> texture.Texture:
         ...
     def material_type(self) -> MaterialType:
         ...
@@ -107,44 +109,3 @@ class MaterialType:
         ...
 class PBR(MaterialCore):
     pass
-class TextureType:
-    """
-    Members:
-    
-      CONSTANT
-    
-      IMAGE
-    """
-    CONSTANT: typing.ClassVar[TextureType]  # value = <TextureType.CONSTANT: 0>
-    IMAGE: typing.ClassVar[TextureType]  # value = <TextureType.IMAGE: 1>
-    __members__: typing.ClassVar[dict[str, TextureType]]  # value = {'CONSTANT': <TextureType.CONSTANT: 0>, 'IMAGE': <TextureType.IMAGE: 1>}
-    def __eq__(self, other: typing.Any) -> bool:
-        ...
-    def __getstate__(self) -> int:
-        ...
-    def __hash__(self) -> int:
-        ...
-    def __index__(self) -> int:
-        ...
-    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    def __int__(self) -> int:
-        ...
-    def __ne__(self, other: typing.Any) -> bool:
-        ...
-    @typing.overload
-    def __repr__(self) -> str:
-        ...
-    @typing.overload
-    def __repr__(self) -> str:
-        ...
-    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    def __str__(self) -> str:
-        ...
-    @property
-    def name(self) -> str:
-        ...
-    @property
-    def value(self) -> int:
-        ...
