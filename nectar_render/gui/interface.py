@@ -7,7 +7,7 @@ from PySide6.QtCore    import Qt, QFile, QObject, Slot
 from PySide6.QtGui     import QAction
 from PySide6.QtUiTools import QUiLoader
 
-from nectar_render import Camera, EnginePollResponse
+from nectar_render import Camera, EngineType, EnginePollResponse
 from nectar_render.gui          import utils
 from nectar_render.gui.utils    import TimeKeeper
 from nectar_render.gui.bridge   import Bridge
@@ -289,16 +289,28 @@ class Interface(QObject):
         render_pass.addItem('Beauty')
         render_pass.addItem('Normal (WS)')
         
-        def set_render_mode(mode: str):
-            match mode:
-                case 'viewport': pass
-                case 'pathtracer': pass
-                
+        
         rm_viewport = self.find(W.QPushButton, 'render_mode_viewport')
         rm_pathtracer = self.find(W.QPushButton, 'render_mode_pathtracer')
+        def set_render_mode(mode: str):
+            match mode:
+                case 'viewport': 
+                    engine_type = EngineType.VIEWPORT
+                    rm_viewport.setEnabled(False)
+                    rm_pathtracer.setEnabled(True)
+                case 'pathtracer': 
+                    engine_type = EngineType.PATHTRACER
+                    rm_viewport.setEnabled(True)
+                    rm_pathtracer.setEnabled(False)
+            Bridge.ENGINE.set_engine_type(engine_type)
+            Bridge.requests.restart()
+        
+        utils.set_button_icon(rm_viewport, 'sphere', (16, 16))
+        utils.set_button_icon(rm_pathtracer, 'aperture', (16, 16))
         
         rm_viewport.clicked.connect(lambda : set_render_mode('viewport'))
         rm_pathtracer.clicked.connect(lambda : set_render_mode('pathtracer'))
+        rm_pathtracer.setEnabled(False)
         
     def _build_profiler(self: Self) -> None:
         tab = self.find(W.QWidget, 'profiler_tab')

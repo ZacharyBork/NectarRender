@@ -7,11 +7,11 @@
 #include <pybind11/functional.h>
 
 #include "core/include/core.h"
+#include "data/include/data.h"
 #include "host/include/host/utils.h"
 #include "hittable/include/hittable/hittable.h"
 #include "interface/include/scene_interface.h"
 
-#include "data/include/data.h"
 #include "scene.h"
 #include "camera.h"
 #include "trace.h"
@@ -30,6 +30,8 @@ inline constexpr std::memory_order relaxed = std::memory_order_relaxed;
 // ============================================================================
 
 enum class EngineState{ IDLE, RENDERING }; typedef EngineState ES;
+enum class EngineType{ PATHTRACER, VIEWPORT };
+
 enum class RenderMode { FULL, INTERACTIVE };
 enum class RenderReturnState{ FINISHED, STOPPED, RESTARTED };
 
@@ -97,6 +99,11 @@ public:
     bool is_rendering() const { return get_state()==ES::RENDERING; }
     bool is_idle()      const { return get_state()==ES::IDLE;      }
 
+    /* ENGINE TYPE */
+
+    EngineType get_engine_type() const { return engine_type.load(relaxed); }
+    void set_engine_type(EngineType t) { engine_type.store(t, relaxed);    }
+
     /* RENDER MODE */
 
     RenderMode get_render_mode() const    { return render_mode.load(relaxed); }
@@ -109,15 +116,13 @@ public:
     /* ENGINE STATES */
 
     RenderReturnState render();
-
+    RenderReturnState viewport();
     void idle();
 
     /* UTILITIES */
 
     void set_scene(Scene input_scene);
     SceneInterface& get_scene_interface();
-
-    void set_trace_mode(TraceMode mode);
 
     const uint32_t n_samples() const;
     void set_n_samples(uint32_t n);
@@ -127,26 +132,25 @@ public:
 
 private:
 
-    Camera       cam;
-    TraceConfig  config;
+    Camera cam;
+    uint32_t ray_depth, seed;
     RenderLayers aovs, sample_aovs;
-    uint32_t     ray_depth, seed;
-
+    
     uint32_t sample_idx = 1u;
 
-    Scene          current_scene;
-    TransferStream transfer_stream;
+    Scene current_scene;
     SceneInterface scene_interface;
-
+    TransferStream transfer_stream;
+    
     EngineRequests requests_;
-    std::atomic<EngineState> state       { EngineState::IDLE };
-    std::atomic<RenderMode>  render_mode { RenderMode::FULL  };
+    std::atomic<EngineState> state       { EngineState::IDLE      };
+    std::atomic<EngineType>  engine_type { EngineType::PATHTRACER };
+    std::atomic<RenderMode>  render_mode { RenderMode::FULL       };
 
     Time::time_point last_poll_time{};
     static constexpr auto poll_interval = std::chrono::milliseconds(16);
 
     void set_state(EngineState s);
-    void sample(uint32_t sample_index = 1u);
     void poll_gui_updates();
     void reset();
 

@@ -86,6 +86,8 @@ struct CameraParams {
     float movement_speed   = 5.0f;
     float look_sensitivity = 10.0f;
 
+
+
     __host__ CameraParams() 
       : resolution(Vector2(0.0f)), 
         position(Vector3(0.0f)),
@@ -165,11 +167,16 @@ struct DeviceCamera {
 public:
 
     CameraParams p;
+    size_t H, W;
 
     __host__ explicit DeviceCamera(
         CameraParams params,
         Vector2* sample_pattern
-    ) : p(params), sample_pattern(sample_pattern) { }
+    ) : p(params), 
+        H((size_t)p.resolution[0]), 
+        W((size_t)p.resolution[1]), 
+        sample_pattern(sample_pattern) 
+    { }
 
     __device__ Ray get_ray(
         uint32_t x,
@@ -277,11 +284,8 @@ public:
     std::function<void(CameraParams)> on_updated = hook_no_op<CameraParams>;
 
     __host__ explicit Camera(CameraParams p) : p(p) { }
-
     __host__ Camera(const Camera& other) : Camera(other.p) { }
-
     __host__ ~Camera() { if (d_cam_ptr) CUDAMemory::free(d_cam_ptr); }
-
     Camera& operator=(const Camera&) = delete;
 
     __host__ void __construct(const uint32_t seed) {
@@ -298,6 +302,9 @@ public:
     __host__ void update(CameraParams params) {
         p.update(params);
         with_gil_scoped_acquire(on_updated, p);
+        if (!d_cam_ptr) return;
+        DeviceCamera d_cam(p, sample_generator.pattern());
+        CUDAMemory::copy<DeviceCamera>(d_cam_ptr, &d_cam);
     }
 
     __host__ DeviceCamera* device_camera() {
@@ -341,7 +348,9 @@ public:
         return Vector2(px / rx, py / ry);
     }
 
-    __host__ const Vector2 resolution() const { return p.resolution; }
+    __host__ const Vector2 resolution() const { return p.resolution;  }
+    __host__ size_t height() const { return (size_t)resolution()[0];  }
+    __host__ size_t width()  const { return (size_t)resolution()[1];  }
     __host__ uint32_t n_samples() const { return p.samples_per_pixel; }
     
     __host__ CameraParams* parameters_() { return &p; }

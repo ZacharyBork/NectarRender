@@ -121,10 +121,10 @@ __device__ void linear_to_gamma(Color& pixel_color) {
 };
 
 __device__ void to_image(
-    size_t C,
-    Color& pixel_color, 
+    size_t      C,
+    Color&      pixel_color, 
     ColorIndex& c_idx,
-    uint8_t* result
+    uint8_t*    result
 ) {
     for (int channel = 0; channel < C; channel++) {
         if (isnan(pixel_color[channel])) pixel_color[channel] = 0.0f;
@@ -144,8 +144,8 @@ __device__ void to_image(
 // ============================================================================
 
 __global__ void process_stream_kernel(
-    DataView data, 
-    uint8_t* result, 
+    DataView     data, 
+    uint8_t*     result, 
     StreamConfig cfg
 ) {
     ColorIndex c_idx(data.C, data.H, data.W);
@@ -158,10 +158,15 @@ __global__ void process_stream_kernel(
     to_image(data.C, pixel_color, c_idx, result);
 }
 
-void process_stream(DataView data, uint8_t* result, StreamConfig cfg) {
+void process_stream(
+    DataView     data, 
+    uint8_t*     result, 
+    StreamConfig cfg, 
+    cudaStream_t stream
+) {
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((data.W + BS2D - 1) / BS2D, (data.H + BS2D - 1) / BS2D, 1);
-    process_stream_kernel<<<grid, block>>>(data, result, cfg);
+    process_stream_kernel<<<grid, block, 0, stream>>>(data, result, cfg);
         
 }
 
@@ -200,7 +205,8 @@ void composite_overlay(
     uint8_t* data,
     uint8_t* mask,
     Color    color,
-    size_t C, size_t H, size_t W
+    size_t C, size_t H, size_t W, 
+    cudaStream_t stream
 ) {   
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((W + BS2D - 1) / BS2D, (H + BS2D - 1) / BS2D, 1);
@@ -215,7 +221,7 @@ void composite_overlay(
         fminf(1.0f, fmaxf(0.0f, color.b())) * 255.0f
     );
     
-    composite_overlay_kernel<<<grid, block>>>(
+    composite_overlay_kernel<<<grid, block, 0, stream>>>(
         data, mask, color, C, H, W, r, g, b
     );
 }

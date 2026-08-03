@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <mutex>
 
 #include "core/include/core.h"
 #include "data_object.h"
@@ -20,9 +21,18 @@ struct StreamConfig {
     float tm_alpha = 1.0f;
 };
 
-void process_stream(DataView data, uint8_t* result, StreamConfig cfg);
+void process_stream(
+    DataView data, 
+    uint8_t* result, 
+    StreamConfig cfg, 
+    cudaStream_t stream
+);
 void composite_overlay(
-    uint8_t* data, uint8_t* mask, Color color, size_t C, size_t H, size_t W
+    uint8_t* data, 
+    uint8_t* mask, 
+    Color color, 
+    size_t C, size_t H, size_t W, 
+    cudaStream_t stream
 );
 
 
@@ -93,6 +103,16 @@ public:
         stream_config.store(cfg, std::memory_order_relaxed);
     }
 
+    template<typename Func>
+    void freeze_for(Func&& fn) {
+        std::lock_guard<std::mutex> lock(readback_mutex);
+        if (is_active()) {
+            cudaStreamSynchronize(transfer_stream);
+            set_state(StreamState::FROZEN);
+        }
+        fn();
+    }
+
     /* OVERLAYS */
 
     bool has_overlay() const { return overlay_mask != nullptr; }
@@ -102,6 +122,7 @@ public:
     }
 
     void overlay(uint8_t* mask_ptr, Color color = Color::white()) { 
+        std::lock_guard<std::mutex> lock(readback_mutex);
         if (has_overlay()) { 
             CUDAMemory::free(overlay_mask); overlay_mask = nullptr; 
         }
@@ -116,8 +137,14 @@ public:
     }
 
     uintptr_t readback() {
+        std::lock_guard<std::mutex> lock(readback_mutex);
         if (is_frozen()) return buffer_ptr();
-        process_stream(data->view(), image_buffer, stream_config);
+
+        process_stream(
+            data->view(), image_buffer, 
+            stream_config.load(std::memory_order_relaxed),
+            transfer_stream
+        );
         handle_overlay();
 
         cudaMemcpyAsync(
@@ -138,10 +165,10 @@ public:
 
 private:
 
-    std::atomic<bool> should_disable_overlay { false };
-    std::atomic<StreamState> state { StreamState::INACTIVE };
+    std::mutex readback_mutex;
 
-    
+    std::atomic<bool> should_disable_overlay { false };
+    std::atomic<StreamState>  state { StreamState::INACTIVE };
     std::atomic<StreamConfig> stream_config {};
 
     bool enabled = false;
@@ -168,7 +195,8 @@ private:
             overlay_mask = nullptr;
         } 
         else composite_overlay(
-            image_buffer, overlay_mask, overlay_color, C, H, W
+            image_buffer, overlay_mask, overlay_color, 
+            C, H, W, transfer_stream
         );
     }
 

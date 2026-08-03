@@ -16,7 +16,9 @@ RenderEngine::RenderEngine(
     scene_interface(SceneInterface(&cam, &transfer_stream, &requests_))
 { 
     cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE_LIMIT);
+    
     reset();
+    cam.__construct(seed);
     transfer_stream.link(aovs.get_layer(LayerType::BEAUTY));
     transfer_stream.start();
 }
@@ -30,17 +32,47 @@ RenderReturnState RenderEngine::render() {
         scene_interface.update();
         poll_gui_updates();
 
+        if (requests_.stop_pending())
+            return RenderReturnState::STOPPED;
+
+        uint32_t depth = is_interactive() ? 2u : ray_depth;
+        trace_full(
+            cam, current_scene.graph, sample_aovs.aovs(), 
+            sample_idx, depth, seed
+        );
+
+        aovs.accumulate(sample_aovs, sample_idx);
+        sample_aovs.clear();
+        
+        cudaDeviceSynchronize(); sample_idx++;
+        with_gil_scoped_acquire(on_frame_finished, sample_idx);
+
         if (requests_.restart_pending())
             return RenderReturnState::RESTARTED;
+    }
+    
+    return RenderReturnState::FINISHED;
+}
+
+RenderReturnState RenderEngine::viewport() {
+    while (true) {
+        scene_interface.update();
+        poll_gui_updates();
 
         if (requests_.stop_pending())
             return RenderReturnState::STOPPED;
 
-        sample(sample_idx); sample_idx++;
+        trace_viewport(cam, current_scene.graph, sample_aovs.aovs(), seed);
+
+        aovs.accumulate(sample_aovs, 1u);
+        sample_aovs.clear();
+        cudaDeviceSynchronize();
         with_gil_scoped_acquire(on_frame_finished, sample_idx);
+        std::this_thread::sleep_for(poll_interval);
+
+        if (requests_.restart_pending())
+            return RenderReturnState::RESTARTED;
     }
-    
-    return RenderReturnState::FINISHED;
 }
 
 void RenderEngine::idle() {
@@ -49,11 +81,13 @@ void RenderEngine::idle() {
 
         if (requests_.start_pending()) {                
             reset(); set_state(ES::RENDERING);
+            
+                        
             with_gil_scoped_acquire(on_render_started);
             
-            transfer_stream.unfreeze();
-            RenderReturnState return_state = render();
-            cudaDeviceSynchronize(); 
+            RenderReturnState return_state = (
+                engine_type.load(relaxed) == EngineType::VIEWPORT
+            ) ? viewport() : render();
             
             switch (return_state) {
                 case RenderReturnState::STOPPED:
@@ -89,11 +123,6 @@ void RenderEngine::set_scene(Scene input_scene) {
     scene_interface.update_scene(&current_scene);
 }
 
-void RenderEngine::set_trace_mode(TraceMode mode) {
-    if (is_rendering()) requests_.stop();
-    config.mode = mode;
-}
-
 // ============================================================================
 // UTILITIES
 // ============================================================================
@@ -126,18 +155,6 @@ __host__ void RenderEngine::set_state(EngineState s) {
     state.store(s, relaxed);
 }
 
-void RenderEngine::sample(uint32_t sample_index) {
-    uint32_t depth = is_interactive() ? 2u : ray_depth;
-    trace(
-        config, cam.device_camera(), current_scene.graph, 
-        sample_aovs.aovs(), sample_index, depth
-    );
-
-    aovs.accumulate(sample_aovs, sample_index);
-    sample_aovs.clear();
-    cudaDeviceSynchronize();
-}
-
 void RenderEngine::poll_gui_updates() {
     auto now = Time::now();
     bool should_poll = now - last_poll_time >= poll_interval;
@@ -154,7 +171,8 @@ void RenderEngine::poll_gui_updates() {
                 cam.update(response.camera_params);
                 render_mode.store(RenderMode::INTERACTIVE, relaxed);
             }
-            requests_.restart();
+            if (engine_type.load(relaxed) == EngineType::PATHTRACER)
+                requests_.restart();
         }
     } else {
         render_mode.store(RenderMode::FULL, relaxed);
@@ -162,16 +180,7 @@ void RenderEngine::poll_gui_updates() {
 }
 
 void RenderEngine::reset() {
-    transfer_stream.freeze();
-    cam.__construct(seed);
-    
-    config.H = (size_t)cam.resolution()[0];
-    config.W = (size_t)cam.resolution()[1];
-    config.seed = seed;
-
     sample_idx = 1u;
-    aovs.clear();
-
     if (scene()->is_pending_update()) scene()->update();
     with_gil_scoped_acquire(on_reset);
 }

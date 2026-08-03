@@ -17,6 +17,7 @@ from nectar_render.python.engine.camera  import Camera
 from nectar_render.python.engine.denoise import Denoiser, TVDenoiser
 
 Engine:             TypeAlias = root.RenderEngine
+EngineType:         TypeAlias = root.EngineType
 EnginePollResponse: TypeAlias = root.EnginePollResponse
 
 class RenderEngine:

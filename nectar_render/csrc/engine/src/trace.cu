@@ -106,43 +106,64 @@ __device__ bool trace_ray(
 // ============================================================================
 
 __global__ void trace_full_kernel(
-    TraceConfig   cfg, 
     DeviceCamera* cam,
     SceneGraph*   scene,
     AOVs*         aovs,
     uint32_t      sample_idx,
-    uint32_t      ray_depth
+    uint32_t      ray_depth,
+    uint32_t      seed
 ) {
     ProcessIndex p_idx = get_process_index();
-    if (p_idx.x >= cfg.W || p_idx.y >= cfg.H) return;
-    uint32_t pixel_idx = p_idx.y * cfg.W + p_idx.x;
+    if (p_idx.x >= cam->W || p_idx.y >= cam->H) return;
+    uint32_t pixel_idx = p_idx.y * cam->W + p_idx.x;
 
     Color atten = Color::white();
-    Generator gen(cfg.seed, pixel_idx + sample_idx * (cfg.W * cfg.H));
+    Generator gen(seed, pixel_idx + sample_idx * (cam->W * cam->H));
     Ray ray = cam->get_ray(
-        p_idx.x, p_idx.y, pixel_idx, sample_idx, cfg.seed, gen
+        p_idx.x, p_idx.y, pixel_idx, sample_idx, seed, gen
     );
 
     for (int bounce = 0; bounce < ray_depth; bounce++)
         if (!trace_ray(scene, aovs, ray, atten, gen)) break;
 }
 
+void trace_full(
+    Camera&     cam,
+    SceneGraph* scene,
+    AOVs*       aovs,
+    uint32_t    sample_idx,
+    uint32_t    ray_depth,
+    uint32_t    seed
+) {
+    dim3 block(BS2D, BS2D, 1);
+    dim3 grid(
+        (cam.width()  + BS2D - 1) / BS2D, 
+        (cam.height() + BS2D - 1) / BS2D, 
+        1
+    );
+    trace_full_kernel<<<grid, block>>>(
+        cam.device_camera(), scene, aovs, sample_idx, ray_depth, seed
+    );
+
+}
+
+// ============================================================================
+// VIEWPORT RENDERING
+// ============================================================================
 
 __global__ void trace_viewport_kernel(
-    TraceConfig   cfg, 
     DeviceCamera* cam,
     SceneGraph*   scene,
     AOVs*         aovs,
-    uint32_t      sample_idx,
-    uint32_t      ray_depth
+    uint32_t      seed
 ) {
     ProcessIndex p_idx = get_process_index();
-    if (p_idx.x >= cfg.W || p_idx.y >= cfg.H) return;
-    uint32_t pixel_idx = p_idx.y * cfg.W + p_idx.x;
+    if (p_idx.x >= cam->W || p_idx.y >= cam->H) return;
+    uint32_t pixel_idx = p_idx.y * cam->W + p_idx.x;
 
-    Generator gen(cfg.seed, pixel_idx + sample_idx * (cfg.W * cfg.H));
+    Generator gen(seed, pixel_idx * (cam->W * cam->H));
     Ray ray = cam->get_ray(
-        p_idx.x, p_idx.y, pixel_idx, sample_idx, cfg.seed, gen
+        p_idx.x, p_idx.y, pixel_idx, 0u, seed, gen
     );
 
     HitRecord rec;
@@ -159,24 +180,23 @@ __global__ void trace_viewport_kernel(
     viewport_color += rec.mat->viewport_color(rec);
     viewport_color *= dot(light_direction, -rec.n) * 0.5f + 0.5f;
 
-
-
     aovs->beauty += viewport_color;
 }
 
-
-void trace(
-    TraceConfig   cfg, 
-    DeviceCamera* cam,
-    SceneGraph*   scene,
-    AOVs*         aovs,
-    uint32_t      sample_idx,
-    uint32_t      ray_depth
+void trace_viewport(
+    Camera&     cam,
+    SceneGraph* scene,
+    AOVs*       aovs,
+    uint32_t    seed
 ) {
     dim3 block(BS2D, BS2D, 1);
-    dim3 grid((cfg.W + BS2D - 1) / BS2D, (cfg.H + BS2D - 1) / BS2D, 1);
-    trace_full_kernel<<<grid, block>>>(
-        cfg, cam, scene, aovs, sample_idx, ray_depth
+    dim3 grid(
+        (cam.width()  + BS2D - 1) / BS2D, 
+        (cam.height() + BS2D - 1) / BS2D, 
+        1
+    );
+    trace_viewport_kernel<<<grid, block>>>(
+        cam.device_camera(), scene, aovs, seed
     );
 }
 

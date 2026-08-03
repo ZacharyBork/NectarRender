@@ -7,23 +7,20 @@
 #include "engine/include/engine/scene.h"
 #include "light/include/skylight.h"
 
-enum class TraceMode{ Full, Viewport };
-struct TraceConfig {
-    TraceMode mode = TraceMode::Full;
+void trace_full(
+    Camera&     cam,
+    SceneGraph* scene,
+    AOVs*       aovs,
+    uint32_t    sample_idx,
+    uint32_t    ray_depth,
+    uint32_t    seed
+);
 
-    size_t H = (size_t)512;
-    size_t W = (size_t)512;
-
-    uint32_t seed = 54321u;
-};
-
-void trace(
-    TraceConfig   cfg,
-    DeviceCamera* cam,
-    SceneGraph*   scene,
-    AOVs*         aovs,
-    uint32_t      sample_idx,
-    uint32_t      ray_depth
+void trace_viewport(
+    Camera&     cam,
+    SceneGraph* scene,
+    AOVs*       aovs,
+    uint32_t    seed
 );
 
 void hit_test_ray(
