@@ -70,16 +70,16 @@ void register_data(py::module_& m) {
         .def("n_bytes",        &TransferStream::n_bytes);
 
     py::class_<DataObject>(m_data, "DataObject")
-        .def("n_pixels",        &DataObject::n_pixels)
-        .def("n_elements",      &DataObject::n_elements)
-        .def("n_bytes",         &DataObject::n_bytes)
-        .def("shape",           &DataObject::shape)
-        .def("numpy",           &DataObject::numpy)
-        .def("is_enabled",      &DataObject::is_enabled)
-        .def("device_ptr",      &DataObject::device_ptr)
-        .def_readonly("C",      &DataObject::C)
-        .def_readonly("H",      &DataObject::H)
-        .def_readonly("W",      &DataObject::W);
+        .def("n_pixels",   &DataObject::n_pixels)
+        .def("n_elements", &DataObject::n_elements)
+        .def("n_bytes",    &DataObject::n_bytes)
+        .def("shape",      &DataObject::shape)
+        .def("numpy",      &DataObject::numpy)
+        .def("is_enabled", &DataObject::is_enabled)
+        .def("device_ptr", &DataObject::device_ptr)
+        .def_readonly("C", &DataObject::C)
+        .def_readonly("H", &DataObject::H)
+        .def_readonly("W", &DataObject::W);
 
     py::enum_<LayerType>(m_data, "LayerType")
         .value("BEAUTY",    LayerType::BEAUTY)

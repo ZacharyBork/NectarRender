@@ -91,13 +91,14 @@ public:
             shadow, depth, emission, object_id
         );
 
-        AOVs* d_aov_ptr;
-        CUDAMemory::allocate<AOVs>(d_aov_ptr);
+        if (!d_aov_ptr) CUDAMemory::allocate<AOVs>(d_aov_ptr);
         CUDAMemory::copy<AOVs>(d_aov_ptr, &aovs_obj);
 
         return d_aov_ptr;
 
     }
+
+    __host__ void free_aovs() { if (d_aov_ptr) CUDAMemory::free(d_aov_ptr); }
 
     __host__ std::array<DataObject*, N_RENDER_LAYERS> get_data() {
         return {
@@ -153,6 +154,8 @@ public:
     }
 
 private:
+
+    AOVs* d_aov_ptr = nullptr;
 
     __host__ DataObject construct_data_object(size_t channels) {
         return DataObject(channels, H, W);

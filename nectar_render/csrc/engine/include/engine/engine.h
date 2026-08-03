@@ -78,7 +78,7 @@ public:
         uint32_t seed      = 54321u
     );
 
-    ~RenderEngine() = default;
+    ~RenderEngine();
 
     RenderEngine(const RenderEngine&) = delete;
     RenderEngine& operator=(const RenderEngine&) = delete;

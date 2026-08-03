@@ -1,7 +1,7 @@
 #include "engine/include/engine/engine.h"
 
 // ============================================================================
-// CONSTRUCTORS
+// CONSTRUCTOR / DESTRUCTOR
 // ============================================================================
 
 RenderEngine::RenderEngine(
@@ -22,6 +22,8 @@ RenderEngine::RenderEngine(
     transfer_stream.link(aovs.get_layer(LayerType::BEAUTY));
     transfer_stream.start();
 }
+
+RenderEngine::~RenderEngine() { aovs.free_aovs(); }
 
 // ============================================================================
 // ENGINE STATES
