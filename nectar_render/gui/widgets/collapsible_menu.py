@@ -32,6 +32,7 @@ class CollapsibleMenu(W.QFrame):
         self.setLayout(W.QVBoxLayout())
         self.layout().setAlignment(Qt.AlignmentFlag.AlignTop)
         self.layout().setSpacing(0)
+        self.layout().setContentsMargins(0, 0, 0, 0)
         
         self._build_toggle_btn()
         self._build_label()
@@ -74,14 +75,13 @@ class CollapsibleMenu(W.QFrame):
         layout = W.QVBoxLayout()
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         self.menu_area.setLayout(layout)
         self.menu_area.setVisible(self.is_open)
-        self.menu_area.setStyleSheet(
-                'background-color: rgba(70, 70, 70, 50);'
-                'border-radius: 6px;'
-            )
+        # self.menu_area.setStyleSheet(
+        #     'background-color: rgba(70, 70, 70, 50);'
+        #     'border-radius: 6px;'
+        # )
         self.layout().addWidget(self.menu_area)
     
 #### UTILITIES ################################################################

@@ -1,6 +1,6 @@
 from typing import Self
 from PySide6 import QtWidgets as W
-from PySide6.QtCore import Slot, QPointF
+from PySide6.QtCore import Slot, QPointF, Signal
 
 from nectar_render import SceneInterface, Transform, Vector2, Vector3, Color
 from nectar_render.gui.bridge import Bridge
@@ -8,6 +8,8 @@ from nectar_render.gui import utils
    
    
 class VectorWidget(W.QWidget):
+    updated = Signal()
+    
     def __init__(
         self:      Self,
         values:    tuple[float, float, float] = (0.0, 0.0, 0.0),
@@ -15,7 +17,7 @@ class VectorWidget(W.QWidget):
         max_value: float =  999999.0
     ) -> None:
         super().__init__()
-        self.values = values
+        self.defaults = values
         self._locked = False
         
         layout = W.QHBoxLayout()
@@ -31,7 +33,7 @@ class VectorWidget(W.QWidget):
             widget.setDecimals(2)
             widget.setMinimum(min_value)
             widget.setMaximum(max_value)
-            widget.setValue(self.values[idx])
+            widget.setValue(self.defaults[idx])
             widget.setButtonSymbols(
                 W.QAbstractSpinBox.ButtonSymbols.NoButtons
             )
@@ -67,20 +69,32 @@ class VectorWidget(W.QWidget):
     @property
     def x(self: Self) -> float: return self._axes['x'].value()
     @x.setter
-    def x(self: Self, value: float) -> None: self._axes['x'].setValue(value)
+    def x(self: Self, value: float) -> None: 
+        self._axes['x'].setValue(value)
+        self.updated.emit()
+        
     @property
     def y(self: Self) -> float: return self._axes['y'].value()
     @y.setter
-    def y(self: Self, value: float) -> None: self._axes['y'].setValue(value)
+    def y(self: Self, value: float) -> None: 
+        self._axes['y'].setValue(value)
+        self.updated.emit()
+        
     @property
     def z(self: Self) -> float: return self._axes['z'].value()
     @z.setter
-    def z(self: Self, value: float) -> None: self._axes['z'].setValue(value)
+    def z(self: Self, value: float) -> None: 
+        self._axes['z'].setValue(value)
+        self.updated.emit()
+        
     @property
     def is_locked(self: Self) -> bool: return self._locked
     
     def _reset(self: Self) -> None:
-        self.x, self.y, self.z = self.values
+        self._axes['x'].setValue(self.defaults[0])
+        self._axes['y'].setValue(self.defaults[1])
+        self._axes['z'].setValue(self.defaults[2])
+        self.updated.emit()
         
     def _toggle_lock(self: Self) -> None:
         self._locked = not self._locked

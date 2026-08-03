@@ -7,7 +7,7 @@
 #include "engine/include/engine/engine.h"
 #include "engine/include/engine/camera.h"
 #include "core/include/core/transform.h"
-#include "engine/include/engine/light.h"
+#include "engine/include/engine/skylight.h"
 #include "engine/include/engine/denoise.h"
 
 namespace py = pybind11;
@@ -77,24 +77,55 @@ void register_engine(py::module_& m) {
         );
 
 // ############################################################################
-// LIGHTS
+// SKYLIGHT
 // ############################################################################
 
-    auto m_lights = m_engine.def_submodule("lights", "Lights submodule.");
+    auto m_skylight = m_engine.def_submodule("skylight", "Skylight module.");
+    
+    py::enum_<SkylightType>(m_skylight, "SkylightType")
+        .value("Null",   SkylightType::Null)
+        .value("Simple", SkylightType::Simple)
+        .value("HDRI",   SkylightType::HDRI)
+        .def("__repr__", [](const SkylightType& type) {
+            switch (type) {
+                case SkylightType::Null:   return "SkylightType.Null";
+                case SkylightType::Simple: return "SkylightType.Simple";
+                case SkylightType::HDRI:   return "SkylightType.HDRI";
+            }
+            return "SkylightType.UNKNOWN";
+        });
 
-    py::class_<SkyLight>(m_lights, "SkyLight")
+    py::class_<SimpleSkylightConfig>(
+        m_skylight, "SimpleSkylightConfig")
+        .def_readwrite("start", &SimpleSkylightConfig::start)
+        .def_readwrite("end",   &SimpleSkylightConfig::end);
+
+    py::class_<HDRISkylightConfig>(
+        m_skylight, "HDRISkylightConfig")
+        .def_readwrite("rotation",  &HDRISkylightConfig::rotation)
+        .def_readwrite("intensity", &HDRISkylightConfig::intensity);
+
+    py::class_<Sky::Simple>(m_skylight, "Simple");
+    py::class_<Sky::HDRI>  (m_skylight, "HDRI");
+
+    py::classh<Skylight>(m_skylight, "Skylight")
         .def(py::init<>())
-        .def(py::init([](
-            const Color& start_color, 
-            const Color& end_color
-        ) {
-            return SkyLight(start_color, end_color);
-        }),
+        .def_static("simple", &Skylight::simple,
             py::arg("start_color") = Color(1.0f, 1.0f, 1.0f),
             py::arg("end_color")   = Color(0.5f, 0.7f, 1.0f)
         )
-        .def("black", &SkyLight::black)
-        .def("hdri",  &SkyLight::hdri);
+        .def_static("hdri", py::overload_cast<>(&Skylight::hdri))
+        .def_static("hdri",
+            py::overload_cast<const std::string&>(&Skylight::hdri),
+            py::arg("filepath")
+        )
+        .def("load_hdri_file", &Skylight::load_hdri_file)
+        .def("config_simple", &Skylight::config_simple, 
+            py::return_value_policy::reference
+        )
+        .def("config_hdri", &Skylight::config_hdri, 
+            py::return_value_policy::reference
+        );
 
 // ############################################################################
 // SCENE
@@ -104,7 +135,7 @@ void register_engine(py::module_& m) {
         .def(py::init([](
             py::list hittables,
             py::list lights,
-            SkyLight skylight
+            std::unique_ptr<Skylight> skylight
         ) {
             std::vector<Hittable*> obj_ptrs;
             obj_ptrs.reserve(hittables.size());
@@ -116,7 +147,7 @@ void register_engine(py::module_& m) {
             for (auto& item : lights)
                 light_ptrs.push_back(item.cast<Hittable*>());
 
-            return Scene(obj_ptrs, light_ptrs, skylight);
+            return Scene(obj_ptrs, light_ptrs, std::move(*skylight));
         }),
             py::arg("hittables"), 
             py::arg("lights"), 
@@ -171,9 +202,7 @@ void register_engine(py::module_& m) {
         .def("start",             &EngineRequests::start)
         .def("stop",              &EngineRequests::stop)
         .def("restart",           &EngineRequests::restart)
-        .def("shutdown",          &EngineRequests::shutdown)
-        .def("rebuild_bvh",       &EngineRequests::rebuild_bvh)
-        .def("rebuild_materials", &EngineRequests::rebuild_materials);
+        .def("shutdown",          &EngineRequests::shutdown);
 
     py::class_<RenderEngine>(m_engine, "RenderEngine")
         .def(py::init([](

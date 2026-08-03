@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <atomic>
 #include <optional>
 #include <unordered_map>
 #include <cuda_runtime.h>
@@ -10,7 +11,7 @@
 #include "hittable/include/hittable/registry.h"
 
 #include "material/include/material/registry.h"
-#include "engine/include/engine/light.h"
+#include "engine/include/engine/skylight.h"
 
 struct SceneGraph {
     BVHNode*   __restrict__ bvh_nodes;
@@ -18,7 +19,7 @@ struct SceneGraph {
     Hittable** __restrict__ lights;
     Material** __restrict__ materials;
     
-    SkyLightView skylight;
+    Skylight* skylight;
 
     size_t n_lights;
 
@@ -77,32 +78,84 @@ public:
     SceneGraph h_graph{};
 
     std::vector<Hittable*> lights;
-    SkyLight skylight;
+    Skylight skylight;
 
     HittablesRegistry hittables_registry;
     MaterialRegisty   material_registry;
 
-    __host__ Scene(const Scene&) = delete;
-    __host__ Scene& operator=(const Scene&) = delete;
+    // CONSTRUCTORS ===========================================================
 
-    __host__ Scene(Scene&&) noexcept = default;
-    __host__ Scene& operator=(Scene&&) noexcept = default;
+    __host__ ~Scene() { teardown(); }
 
     __host__ Scene() 
       : lights(std::vector<Hittable*>{}),
-        skylight(SkyLight())
+        skylight(std::move(Skylight()))
     { }
 
     __host__ Scene(
         std::vector<Hittable*> hittables,
         std::vector<Hittable*> lights,
-        SkyLight&              skylight
+        Skylight               skylight
     ) : lights(std::move(lights)),
-        skylight(skylight)
+        skylight(std::move(skylight))
     { 
         for (Hittable* light : this->lights) hittables.push_back(light);
         hittables_registry = HittablesRegistry(hittables);
     }
+
+
+    __host__ Scene(Scene&& other) noexcept
+      : lights(std::move(other.lights)),
+        skylight(std::move(other.skylight)),
+        hittables_registry(std::move(other.hittables_registry)),
+        material_registry(std::move(other.material_registry)),
+        graph(other.graph),
+        h_graph(other.h_graph)
+    {
+        materials_build_pending.store(
+            other.materials_build_pending.load(std::memory_order_relaxed), 
+            std::memory_order_relaxed
+        );
+        hittables_build_pending.store(
+            other.hittables_build_pending.load(std::memory_order_relaxed), 
+            std::memory_order_relaxed
+        );
+        skylight_update_pending.store(
+            other.skylight_update_pending.load(std::memory_order_relaxed), 
+            std::memory_order_relaxed
+        );
+        other.graph = nullptr;
+    }
+
+    __host__ Scene& operator=(Scene&& other) noexcept {
+        if (this != &other) {
+            lights = std::move(other.lights);
+            skylight = std::move(other.skylight);
+            hittables_registry = std::move(other.hittables_registry);
+            material_registry = std::move(other.material_registry);
+            graph = other.graph;
+            h_graph = other.h_graph;
+            materials_build_pending.store(
+                other.materials_build_pending.load(std::memory_order_relaxed), 
+                std::memory_order_relaxed
+            );
+            hittables_build_pending.store(
+                other.hittables_build_pending.load(std::memory_order_relaxed), 
+                std::memory_order_relaxed
+            );
+            skylight_update_pending.store(
+                other.skylight_update_pending.load(std::memory_order_relaxed), 
+                std::memory_order_relaxed
+            );
+            other.graph = nullptr;
+        }
+        return *this;
+    }
+
+    __host__ Scene(const Scene&) = delete;
+    __host__ Scene& operator=(const Scene&) = delete;
+
+    // BUILD / TEARDOWN =======================================================
 
     __host__ void teardown() {
         if (!graph) return;
@@ -126,7 +179,7 @@ public:
         h_graph.objects = hittables_registry.device_hittables();
         h_graph.bvh_nodes = hittables_registry.bvh_nodes;
 
-        h_graph.skylight = skylight.view();
+        h_graph.skylight = skylight.build();
         h_graph.n_lights = lights.size();
 
         build_device_lights();
@@ -135,6 +188,28 @@ public:
         CUDAMemory::copy<SceneGraph>(graph, &h_graph);
     }
 
+    // REQUESTS ===============================================================
+
+    __host__ void request_reset(
+        const bool rebuild_hittables = false,
+        const bool rebuild_materials = false,
+        const bool update_skylight   = false
+    ) {
+        if (rebuild_hittables)
+            hittables_build_pending.store(true, std::memory_order_relaxed);
+        if (rebuild_materials)
+            materials_build_pending.store(true, std::memory_order_relaxed);
+        if (update_skylight)
+            skylight_update_pending.store(true, std::memory_order_relaxed);
+    }
+
+    __host__ bool is_pending_update() {
+        return materials_build_pending.load(std::memory_order_relaxed)
+            || hittables_build_pending.load(std::memory_order_relaxed)
+            || skylight_update_pending.load(std::memory_order_relaxed);
+    }
+
+    // UPDATING ===============================================================
 
     __host__ void rebuild_hittables_registry() {
         hittables_registry.destroy_device_hittables();
@@ -144,21 +219,33 @@ public:
         h_graph.bvh_nodes = hittables_registry.bvh_nodes;
 
         build_device_lights();
-
-        if (!graph) CUDAMemory::allocate<SceneGraph>(graph);
-        CUDAMemory::copy<SceneGraph>(graph, &h_graph);
     }
 
     __host__ void rebuild_materials_registry() {
         material_registry.destroy_device_materials();
         material_registry.build_device_materials();
         h_graph.materials = material_registry.device_materials();
+    }
+
+    __host__ void update() {
+        if (materials_build_pending.exchange(false, std::memory_order_relaxed))
+            rebuild_materials_registry();
+
+        if (hittables_build_pending.exchange(false, std::memory_order_relaxed))
+            rebuild_hittables_registry();
+
+        if (skylight_update_pending.exchange(false, std::memory_order_relaxed))
+            h_graph.skylight = skylight.build();
 
         if (!graph) CUDAMemory::allocate<SceneGraph>(graph);
         CUDAMemory::copy<SceneGraph>(graph, &h_graph);
     }
 
 private:
+
+    std::atomic<bool> materials_build_pending { false };
+    std::atomic<bool> hittables_build_pending { false };
+    std::atomic<bool> skylight_update_pending { false };
 
     __host__ void build_device_lights() {
         if (h_graph.lights) CUDAMemory::free(h_graph.lights);

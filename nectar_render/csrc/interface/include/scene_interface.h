@@ -10,7 +10,7 @@
 #include "engine/include/engine/trace.h"
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/scene.h"
-#include "engine/include/engine/light.h"
+#include "engine/include/engine/skylight.h"
 #include "engine/include/engine/requests.h"
 
 uint8_t* selection_mask(
@@ -101,7 +101,23 @@ public:
 
     void set_transform(const Transform& xform) {
         hit_object()->set_transform(xform);
-        requests->restart(true);
+        scene->request_reset(true, false, false);
+        requests->restart();
+    }
+
+    /* SKYLIGHT */
+
+    Skylight& get_skylight() { return scene->skylight; }
+
+    void request_skylight_update() {
+        scene->request_reset(false, false, true);
+        requests->restart();
+    }
+
+    void swap_skylight(Skylight new_skylight) {
+        scene->skylight = std::move(new_skylight);
+        scene->request_reset(false, false, true);
+        requests->restart();
     }
 
     /* MATERIAL UTILS */
@@ -110,7 +126,7 @@ public:
         // scene->material_registry.update_material(
         //     rec.material_index, std::move(mat)
         // );
-        requests->restart(false, true);
+        requests->restart();
     }
 
     Material& get_material() {

@@ -5,7 +5,7 @@
 #include "data/include/data.h"
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/scene.h"
-#include "engine/include/engine/light.h"
+#include "engine/include/engine/skylight.h"
 
 struct TraceConfig {
     size_t H = (size_t)512;

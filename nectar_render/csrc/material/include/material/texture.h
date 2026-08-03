@@ -8,7 +8,6 @@ enum class TextureType { CONSTANT, IMAGE };
 __host__ inline std::vector<uint8_t> load_image_uint8(
     const std::string& filepath, int& C, int& H, int& W
 ) {
-    int channels_in_file;
     unsigned char* data = stbi_load(filepath.c_str(), &W, &H, &C, 0);
     if (!data) {
         throw std::runtime_error(std::string("Failed to load image: ") 

@@ -1,7 +1,7 @@
 #include "core/include/core/cuda.h"
 
 #include "hittable/include/hittable.h"
-#include "engine/include/engine/light.h"
+#include "engine/include/engine/skylight.h"
 #include "engine/include/engine/scene.h"
 
 // ############################################################################

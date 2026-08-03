@@ -8,4 +8,6 @@ from .xform_controller import XformController
 from .color_correction import ColorCorrection
 from .menubar          import MenuBar
 from .collapsible_menu import CollapsibleMenu
+from .file_selector    import FileSelector
+from .spinbox_slider   import SpinboxSlider
 

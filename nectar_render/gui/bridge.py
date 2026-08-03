@@ -105,6 +105,10 @@ class BridgeMeta(type):
     @property
     def requests(cls: type[Self]) -> root.EngineRequests: 
         return BridgeMeta.ENGINE.requests()
+    
+    @property
+    def scene(cls: type[Self]) -> Scene:
+        return BridgeMeta.ENGINE.scene()
 
     @property
     def scene_interface(cls: type[Self]) -> SceneInterface:

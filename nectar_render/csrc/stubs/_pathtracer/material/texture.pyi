@@ -15,9 +15,6 @@ class Texture:
     def from_color(r: typing.SupportsFloat | typing.SupportsIndex, g: typing.SupportsFloat | typing.SupportsIndex, b: typing.SupportsFloat | typing.SupportsIndex) -> Texture:
         ...
     @staticmethod
-    def from_hdri(filepath: str) -> Texture:
-        ...
-    @staticmethod
     def from_image(filepath: str) -> Texture:
         ...
     def __repr__(self) -> str:

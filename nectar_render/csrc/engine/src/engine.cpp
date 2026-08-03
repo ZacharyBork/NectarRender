@@ -167,14 +167,7 @@ void RenderEngine::reset() {
     sample_idx = 1u;
     aovs.clear();
 
-    if (requests_.material_build_pending()) {
-        scene()->rebuild_materials_registry();
-    }
-
-    if (requests_.bvh_build_pending()) {
-        scene()->rebuild_hittables_registry();
-    }
-
+    if (scene()->is_pending_update()) scene()->update();
     with_gil_scoped_acquire(on_reset);
 }
 

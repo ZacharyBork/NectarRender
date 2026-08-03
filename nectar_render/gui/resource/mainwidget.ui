@@ -512,8 +512,8 @@
                    <rect>
                     <x>0</x>
                     <y>0</y>
-                    <width>98</width>
-                    <height>28</height>
+                    <width>425</width>
+                    <height>548</height>
                    </rect>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -615,7 +615,7 @@
                     <x>0</x>
                     <y>0</y>
                     <width>410</width>
-                    <height>636</height>
+                    <height>645</height>
                    </rect>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -634,6 +634,33 @@
                    <property name="bottomMargin">
                     <number>3</number>
                    </property>
+                   <item>
+                    <widget class="QFrame" name="settings_frame">
+                     <property name="frameShape">
+                      <enum>QFrame::NoFrame</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Raised</enum>
+                     </property>
+                     <layout class="QVBoxLayout" name="verticalLayout_16">
+                      <property name="spacing">
+                       <number>3</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>3</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>3</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>3</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>3</number>
+                      </property>
+                     </layout>
+                    </widget>
+                   </item>
                    <item>
                     <widget class="QGroupBox" name="general_settings">
                      <property name="title">
@@ -1225,8 +1252,8 @@
                    <rect>
                     <x>0</x>
                     <y>0</y>
-                    <width>219</width>
-                    <height>162</height>
+                    <width>425</width>
+                    <height>548</height>
                    </rect>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_10">

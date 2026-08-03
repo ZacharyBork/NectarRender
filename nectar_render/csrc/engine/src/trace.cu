@@ -80,7 +80,7 @@ __device__ bool trace_ray(
     bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
 
     if (!hit) {
-        aovs->beauty += atten * scene->skylight.sample(ray);
+        aovs->beauty += atten * scene->skylight->sample(ray);
         return false;
     }
 

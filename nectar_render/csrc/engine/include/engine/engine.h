@@ -76,7 +76,7 @@ public:
         uint32_t seed      = 54321u
     );
 
-    ~RenderEngine() { current_scene.teardown(); }
+    ~RenderEngine() = default;
 
     RenderEngine(const RenderEngine&) = delete;
     RenderEngine& operator=(const RenderEngine&) = delete;

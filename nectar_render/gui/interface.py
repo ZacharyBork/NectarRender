@@ -3,7 +3,7 @@ from typing  import Self
 from pathlib import Path
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore    import QFile, QObject, Slot
+from PySide6.QtCore    import Qt, QFile, QObject, Slot
 from PySide6.QtGui     import QAction
 from PySide6.QtUiTools import QUiLoader
 
@@ -13,8 +13,11 @@ from nectar_render.gui.utils    import TimeKeeper
 from nectar_render.gui.bridge   import Bridge
 from nectar_render.gui.registry import WidgetRegistry
 from nectar_render.gui.widgets import (
-    ViewportWidget, ColorCorrection, ProgressBar, Profiler, MenuBar
+    ViewportWidget, ColorCorrection, ProgressBar, Profiler, MenuBar,
+    CollapsibleMenu, SpinboxSlider
 )
+
+from nectar_render.gui.settings_groups import SkylightSettings
 
 from nectar_render.scenes.cornell_box import CornellBox
 
@@ -23,13 +26,12 @@ from nectar_render.scenes.cornell_box import CornellBox
 ###############################################################################
 
 from nectar_render.python import (
-    Hittable, Vector3, Color, Material, Scene, SkyLight
+    Hittable, Vector3, Color, Material, Scene, Skylight
 )
 asset_root = Path(__file__).parent.parent.parent / 'tmp/assets'
 test_scene = Scene(
-    skylight  = SkyLight.hdri(
-        asset_root.resolve().as_posix() + '/hdri/church_stairway.hdr',
-        1.0
+    skylight  = Skylight.hdri(
+        asset_root.resolve().as_posix() + '/hdri/brown_photostudio.hdr'
     ),
     lights    = [
         # Hittable.OBJECT_LIGHT(
@@ -111,10 +113,10 @@ class Interface(QObject):
         self.color_correction:  ColorCorrection = None
         
         self.camera = Camera(
-            resolution   = (512, 512),
+            resolution   = (1024, 1028),
             position     = (0.0, 0.0, 2.0),
             rotation     = (0.0, 0.0, 0.0),
-            num_samples  = 2048,
+            num_samples  = 1024,
             focal_length = 3.0
         )
         self.scene = test_scene
@@ -294,7 +296,14 @@ class Interface(QObject):
     def _init_menu_bar(self: Self) -> None:
         self._menubar = MenuBar(self)
 
+#### SETTINGS TAB #############################################################
 
+
+    def build_settings_tab(self: Self) -> None:
+        frame = self.find(W.QFrame, 'settings_frame')
+        frame.layout().addWidget(SkylightSettings())
+        
+        
 #### ENTRYPOINT ###############################################################
 
     def run(self: Self) -> None:
@@ -310,6 +319,8 @@ class Interface(QObject):
         self._build_profiler()
         self._init_callbacks()
         self._init_menu_bar()
+        
+        self.build_settings_tab()
         
         self.progress_bar = ProgressBar(
             self.find(W.QFrame, 'progress_frame').layout()

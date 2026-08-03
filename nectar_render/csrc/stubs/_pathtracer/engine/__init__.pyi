@@ -8,19 +8,15 @@ import collections.abc
 import typing
 from . import camera
 from . import denoise
-from . import lights
-__all__: list[str] = ['EnginePollResponse', 'EngineRequests', 'EngineState', 'RenderEngine', 'Scene', 'camera', 'denoise', 'lights']
+from . import skylight
+__all__: list[str] = ['EnginePollResponse', 'EngineRequests', 'EngineState', 'RenderEngine', 'Scene', 'camera', 'denoise', 'skylight']
 class EnginePollResponse:
     camera_params: camera.CameraParams
     should_update_camera: bool
     def __init__(self) -> None:
         ...
 class EngineRequests:
-    def rebuild_bvh(self) -> None:
-        ...
-    def rebuild_materials(self) -> None:
-        ...
-    def restart(self, arg0: bool, arg1: bool) -> None:
+    def restart(self) -> None:
         ...
     def shutdown(self) -> None:
         ...
@@ -113,5 +109,5 @@ class RenderEngine:
     def stream(self) -> _pathtracer.data.TransferStream:
         ...
 class Scene:
-    def __init__(self, hittables: list, lights: list, skylight: lights.SkyLight) -> None:
+    def __init__(self, hittables: list, lights: list, skylight: skylight.Skylight) -> None:
         ...
