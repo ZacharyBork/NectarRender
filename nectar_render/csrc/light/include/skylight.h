@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstring>
+
 #include "core/include/core.h"
 #include "engine/include/engine/ray.h"
 #include "material/include/material/texture.h"

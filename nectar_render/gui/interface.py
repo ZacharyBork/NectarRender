@@ -289,12 +289,24 @@ class Interface(QObject):
         render_pass.addItem('Beauty')
         render_pass.addItem('Normal (WS)')
         
+        def set_render_mode(mode: str):
+            match mode:
+                case 'viewport': pass
+                case 'pathtracer': pass
+                
+        rm_viewport = self.find(W.QPushButton, 'render_mode_viewport')
+        rm_pathtracer = self.find(W.QPushButton, 'render_mode_pathtracer')
+        
+        rm_viewport.clicked.connect(lambda : set_render_mode('viewport'))
+        rm_pathtracer.clicked.connect(lambda : set_render_mode('pathtracer'))
+        
     def _build_profiler(self: Self) -> None:
         tab = self.find(W.QWidget, 'profiler_tab')
         self.profiler = Profiler(tab)    
         
     def _init_menu_bar(self: Self) -> None:
         self._menubar = MenuBar(self)
+        
 
 #### SETTINGS TAB #############################################################
 

@@ -40,6 +40,10 @@ public:
         albedo = other->albedo;
     };
     
+    __device__ Color viewport_color(HitRecord& rec) {
+        return albedo.sample(rec.uv, rec.p);
+    }
+
     __device__ bool scatter(
         HitRecord& rec,
         Ray& ray,
@@ -100,6 +104,10 @@ public:
         metallic_tex  = other->metallic_tex;
         emission_tex  = other->emission_tex;
         normal_tex    = other->normal_tex;
+    }
+
+    __device__ Color viewport_color(HitRecord& rec) {
+        return albedo_tex.sample(rec.uv, rec.p);
     }
 
     __device__ NOINLINE Vector3 get_shading_normal(
@@ -203,6 +211,10 @@ public:
         ior = other->ior;
     };
 
+    __device__ Color viewport_color(HitRecord& rec) {
+        return Color::black();
+    }
+
     __device__ NOINLINE bool scatter(
         HitRecord& rec,
         Ray& ray,
@@ -271,6 +283,10 @@ public:
         brightness = other->brightness;
     };
 
+    __device__ Color viewport_color(HitRecord& rec) {
+        return texture.sample(rec.uv, rec.p);
+    }
+
     __device__ bool scatter(
         HitRecord& rec, 
         Ray& ray, 
@@ -312,6 +328,10 @@ public:
         Isotropic* other = reinterpret_cast<Isotropic*>(mat);
         texture = other->texture;
     };
+
+    __device__ Color viewport_color(HitRecord& rec) {
+        return texture.sample(rec.uv, rec.p);
+    }
 
     __device__ bool scatter(
         HitRecord& rec,
@@ -557,6 +577,18 @@ public:
             FOR_EACH_MATERIAL_TYPE(X)
             #undef X
         }
+    }
+
+    // VIEWPORT ===============================================================
+
+    __device__ Color viewport_color(HitRecord& rec) {
+        switch (type) {
+            #define X(Name, Member) case MaterialType::Name: \
+                return Member->viewport_color(rec);
+            FOR_EACH_MATERIAL_TYPE(X)
+            #undef X
+        }
+        return Color::black();
     }
 
     // SCATTER ================================================================

@@ -5,18 +5,20 @@
 #include "data/include/data.h"
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/scene.h"
-#include "engine/include/engine/skylight.h"
+#include "light/include/skylight.h"
 
+enum class TraceMode{ Full, Viewport };
 struct TraceConfig {
+    TraceMode mode = TraceMode::Full;
+
     size_t H = (size_t)512;
     size_t W = (size_t)512;
 
     uint32_t seed = 54321u;
-
 };
 
 void trace(
-    TraceConfig   cfg, 
+    TraceConfig   cfg,
     DeviceCamera* cam,
     SceneGraph*   scene,
     AOVs*         aovs,

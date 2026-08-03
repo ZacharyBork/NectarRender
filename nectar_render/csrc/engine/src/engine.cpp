@@ -89,6 +89,11 @@ void RenderEngine::set_scene(Scene input_scene) {
     scene_interface.update_scene(&current_scene);
 }
 
+void RenderEngine::set_trace_mode(TraceMode mode) {
+    if (is_rendering()) requests_.stop();
+    config.mode = mode;
+}
+
 // ============================================================================
 // UTILITIES
 // ============================================================================

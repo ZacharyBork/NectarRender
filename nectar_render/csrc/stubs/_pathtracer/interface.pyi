@@ -4,6 +4,7 @@ Interface module.
 from __future__ import annotations
 import _pathtracer.core
 import _pathtracer.hittable
+import _pathtracer.light
 import _pathtracer.material
 import typing
 __all__: list[str] = ['SceneInterface']
@@ -16,7 +17,7 @@ class SceneInterface:
         ...
     def get_material(self) -> _pathtracer.material.Material:
         ...
-    def get_skylight(self) -> Skylight:
+    def get_skylight(self) -> _pathtracer.light.Skylight:
         ...
     def get_transform(self) -> _pathtracer.core.Transform:
         ...
@@ -32,5 +33,5 @@ class SceneInterface:
         ...
     def set_transform(self, arg0: _pathtracer.core.Transform) -> None:
         ...
-    def swap_skylight(self, new_skylight: Skylight) -> None:
+    def swap_skylight(self, new_skylight: _pathtracer.light.Skylight) -> None:
         ...

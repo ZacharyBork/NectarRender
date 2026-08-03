@@ -105,7 +105,7 @@ __device__ bool trace_ray(
 // LIGHT TRANSPORT LOOP
 // ============================================================================
 
-__global__ void trace_kernel(
+__global__ void trace_full_kernel(
     TraceConfig   cfg, 
     DeviceCamera* cam,
     SceneGraph*   scene,
@@ -127,6 +127,44 @@ __global__ void trace_kernel(
         if (!trace_ray(scene, aovs, ray, atten, gen)) break;
 }
 
+
+__global__ void trace_viewport_kernel(
+    TraceConfig   cfg, 
+    DeviceCamera* cam,
+    SceneGraph*   scene,
+    AOVs*         aovs,
+    uint32_t      sample_idx,
+    uint32_t      ray_depth
+) {
+    ProcessIndex p_idx = get_process_index();
+    if (p_idx.x >= cfg.W || p_idx.y >= cfg.H) return;
+    uint32_t pixel_idx = p_idx.y * cfg.W + p_idx.x;
+
+    Generator gen(cfg.seed, pixel_idx + sample_idx * (cfg.W * cfg.H));
+    Ray ray = cam->get_ray(
+        p_idx.x, p_idx.y, pixel_idx, sample_idx, cfg.seed, gen
+    );
+
+    HitRecord rec;
+    bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
+
+    if (!hit) {
+        aovs->beauty += scene->skylight->sample(ray);
+        return;
+    }
+
+    Vector3 light_direction(-1.0f, -1.0f, -1.0f);
+    Color viewport_color(0.0f, 0.0f, 0.0f);
+
+    viewport_color += rec.mat->viewport_color(rec);
+    viewport_color *= dot(light_direction, -rec.n) * 0.5f + 0.5f;
+
+
+
+    aovs->beauty += viewport_color;
+}
+
+
 void trace(
     TraceConfig   cfg, 
     DeviceCamera* cam,
@@ -137,7 +175,7 @@ void trace(
 ) {
     dim3 block(BS2D, BS2D, 1);
     dim3 grid((cfg.W + BS2D - 1) / BS2D, (cfg.H + BS2D - 1) / BS2D, 1);
-    trace_kernel<<<grid, block>>>(
+    trace_full_kernel<<<grid, block>>>(
         cfg, cam, scene, aovs, sample_idx, ray_depth
     );
 }

@@ -3,6 +3,7 @@
 #include "bindings/bind_core.h"
 #include "bindings/bind_cuda.h"
 #include "bindings/bind_data.h"
+#include "bindings/bind_lights.h"
 #include "bindings/bind_engine.h"
 #include "bindings/bind_hittable.h"
 #include "bindings/bind_interface.h"
@@ -20,6 +21,7 @@ PYBIND11_MODULE(_pathtracer, m) {
     register_cuda(m);
     register_material(m);
     register_hittable(m);
+    register_light(m);
     register_interface(m);
     register_data(m);
     register_engine(m);

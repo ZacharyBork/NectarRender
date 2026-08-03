@@ -5,13 +5,15 @@
 #include "core/include/core.h"
 #include "hittable/include/hittable/hittable.h"
 #include "material/include/material/material.h"
+#include "light/include/skylight.h"
 
 #include "data/include/data.h"
 #include "engine/include/engine/trace.h"
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/scene.h"
-#include "engine/include/engine/skylight.h"
 #include "engine/include/engine/requests.h"
+
+
 
 uint8_t* selection_mask(
     size_t        H, 

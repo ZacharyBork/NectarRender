@@ -6,12 +6,11 @@
 #include <unordered_map>
 #include <cuda_runtime.h>
 
+#include "light/include/skylight.h"
 #include "hittable/include/bvh/node.h"
 #include "hittable/include/hittable/hittable.h"
 #include "hittable/include/hittable/registry.h"
-
 #include "material/include/material/registry.h"
-#include "engine/include/engine/skylight.h"
 
 struct SceneGraph {
     BVHNode*   __restrict__ bvh_nodes;

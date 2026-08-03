@@ -7,7 +7,6 @@
 #include "engine/include/engine/engine.h"
 #include "engine/include/engine/camera.h"
 #include "core/include/core/transform.h"
-#include "engine/include/engine/skylight.h"
 #include "engine/include/engine/denoise.h"
 
 namespace py = pybind11;
@@ -80,52 +79,52 @@ void register_engine(py::module_& m) {
 // SKYLIGHT
 // ############################################################################
 
-    auto m_skylight = m_engine.def_submodule("skylight", "Skylight module.");
+    // auto m_skylight = m_engine.def_submodule("skylight", "Skylight module.");
     
-    py::enum_<SkylightType>(m_skylight, "SkylightType")
-        .value("Null",   SkylightType::Null)
-        .value("Simple", SkylightType::Simple)
-        .value("HDRI",   SkylightType::HDRI)
-        .def("__repr__", [](const SkylightType& type) {
-            switch (type) {
-                case SkylightType::Null:   return "SkylightType.Null";
-                case SkylightType::Simple: return "SkylightType.Simple";
-                case SkylightType::HDRI:   return "SkylightType.HDRI";
-            }
-            return "SkylightType.UNKNOWN";
-        });
+    // py::enum_<SkylightType>(m_skylight, "SkylightType")
+    //     .value("Null",   SkylightType::Null)
+    //     .value("Simple", SkylightType::Simple)
+    //     .value("HDRI",   SkylightType::HDRI)
+    //     .def("__repr__", [](const SkylightType& type) {
+    //         switch (type) {
+    //             case SkylightType::Null:   return "SkylightType.Null";
+    //             case SkylightType::Simple: return "SkylightType.Simple";
+    //             case SkylightType::HDRI:   return "SkylightType.HDRI";
+    //         }
+    //         return "SkylightType.UNKNOWN";
+    //     });
 
-    py::class_<SimpleSkylightConfig>(
-        m_skylight, "SimpleSkylightConfig")
-        .def_readwrite("start", &SimpleSkylightConfig::start)
-        .def_readwrite("end",   &SimpleSkylightConfig::end);
+    // py::class_<SimpleSkylightConfig>(
+    //     m_skylight, "SimpleSkylightConfig")
+    //     .def_readwrite("start", &SimpleSkylightConfig::start)
+    //     .def_readwrite("end",   &SimpleSkylightConfig::end);
 
-    py::class_<HDRISkylightConfig>(
-        m_skylight, "HDRISkylightConfig")
-        .def_readwrite("rotation",  &HDRISkylightConfig::rotation)
-        .def_readwrite("intensity", &HDRISkylightConfig::intensity);
+    // py::class_<HDRISkylightConfig>(
+    //     m_skylight, "HDRISkylightConfig")
+    //     .def_readwrite("rotation",  &HDRISkylightConfig::rotation)
+    //     .def_readwrite("intensity", &HDRISkylightConfig::intensity);
 
-    py::class_<Sky::Simple>(m_skylight, "Simple");
-    py::class_<Sky::HDRI>  (m_skylight, "HDRI");
+    // py::class_<Sky::Simple>(m_skylight, "Simple");
+    // py::class_<Sky::HDRI>  (m_skylight, "HDRI");
 
-    py::classh<Skylight>(m_skylight, "Skylight")
-        .def(py::init<>())
-        .def_static("simple", &Skylight::simple,
-            py::arg("start_color") = Color(1.0f, 1.0f, 1.0f),
-            py::arg("end_color")   = Color(0.5f, 0.7f, 1.0f)
-        )
-        .def_static("hdri", py::overload_cast<>(&Skylight::hdri))
-        .def_static("hdri",
-            py::overload_cast<const std::string&>(&Skylight::hdri),
-            py::arg("filepath")
-        )
-        .def("load_hdri_file", &Skylight::load_hdri_file)
-        .def("config_simple", &Skylight::config_simple, 
-            py::return_value_policy::reference
-        )
-        .def("config_hdri", &Skylight::config_hdri, 
-            py::return_value_policy::reference
-        );
+    // py::classh<Skylight>(m_skylight, "Skylight")
+    //     .def(py::init<>())
+    //     .def_static("simple", &Skylight::simple,
+    //         py::arg("start_color") = Color(1.0f, 1.0f, 1.0f),
+    //         py::arg("end_color")   = Color(0.5f, 0.7f, 1.0f)
+    //     )
+    //     .def_static("hdri", py::overload_cast<>(&Skylight::hdri))
+    //     .def_static("hdri",
+    //         py::overload_cast<const std::string&>(&Skylight::hdri),
+    //         py::arg("filepath")
+    //     )
+    //     .def("load_hdri_file", &Skylight::load_hdri_file)
+    //     .def("config_simple", &Skylight::config_simple, 
+    //         py::return_value_policy::reference
+    //     )
+    //     .def("config_hdri", &Skylight::config_hdri, 
+    //         py::return_value_policy::reference
+    //     );
 
 // ############################################################################
 // SCENE
@@ -191,6 +190,17 @@ void register_engine(py::module_& m) {
             return "EngineState.UNKNOWN";
         });
 
+    py::enum_<TraceMode>(m_engine, "TraceMode")
+        .value("Full",     TraceMode::Full)
+        .value("Viewport", TraceMode::Viewport)
+        .def("__repr__", [](const TraceMode& mode) {
+            switch (mode) {
+                case TraceMode::Full:      return "TraceMode.Full";
+                case TraceMode::Viewport: return "TraceMode.Viewport";
+            }
+            return "TraceMode.UNKNOWN";
+        });
+
     py::class_<EnginePollResponse>(m_engine, "EnginePollResponse")
         .def(py::init<>())
         .def_readwrite(
@@ -242,6 +252,8 @@ void register_engine(py::module_& m) {
         .def_readwrite("on_reset",           &RenderEngine::on_reset)
         .def_readwrite("on_shutdown",        &RenderEngine::on_shutdown)
         .def_readwrite("poll_updates",       &RenderEngine::poll_updates)
+
+        .def("set_trace_mode", &RenderEngine::set_trace_mode)
 
         .def("camera",   &RenderEngine::camera,   return_policy::reference)
         .def("layers",   &RenderEngine::layers,   return_policy::reference)

@@ -117,6 +117,8 @@ public:
     void set_scene(Scene input_scene);
     SceneInterface& get_scene_interface();
 
+    void set_trace_mode(TraceMode mode);
+
     const uint32_t n_samples() const;
     void set_n_samples(uint32_t n);
 

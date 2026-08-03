@@ -4,12 +4,12 @@ Engine module.
 from __future__ import annotations
 import _pathtracer.data
 import _pathtracer.interface
+import _pathtracer.light
 import collections.abc
 import typing
 from . import camera
 from . import denoise
-from . import skylight
-__all__: list[str] = ['EnginePollResponse', 'EngineRequests', 'EngineState', 'RenderEngine', 'Scene', 'camera', 'denoise', 'skylight']
+__all__: list[str] = ['EnginePollResponse', 'EngineRequests', 'EngineState', 'RenderEngine', 'Scene', 'TraceMode', 'camera', 'denoise']
 class EnginePollResponse:
     camera_params: camera.CameraParams
     should_update_camera: bool
@@ -106,8 +106,51 @@ class RenderEngine:
         ...
     def set_scene(self, arg0: Scene) -> None:
         ...
+    def set_trace_mode(self, arg0: TraceMode) -> None:
+        ...
     def stream(self) -> _pathtracer.data.TransferStream:
         ...
 class Scene:
-    def __init__(self, hittables: list, lights: list, skylight: skylight.Skylight) -> None:
+    def __init__(self, hittables: list, lights: list, skylight: _pathtracer.light.Skylight) -> None:
+        ...
+class TraceMode:
+    """
+    Members:
+    
+      Full
+    
+      Viewport
+    """
+    Full: typing.ClassVar[TraceMode]  # value = <TraceMode.Full: 0>
+    Viewport: typing.ClassVar[TraceMode]  # value = <TraceMode.Viewport: 1>
+    __members__: typing.ClassVar[dict[str, TraceMode]]  # value = {'Full': <TraceMode.Full: 0>, 'Viewport': <TraceMode.Viewport: 1>}
+    def __eq__(self, other: typing.Any) -> bool:
+        ...
+    def __getstate__(self) -> int:
+        ...
+    def __hash__(self) -> int:
+        ...
+    def __index__(self) -> int:
+        ...
+    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __int__(self) -> int:
+        ...
+    def __ne__(self, other: typing.Any) -> bool:
+        ...
+    @typing.overload
+    def __repr__(self) -> str:
+        ...
+    @typing.overload
+    def __repr__(self) -> str:
+        ...
+    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
+        ...
+    def __str__(self) -> str:
+        ...
+    @property
+    def name(self) -> str:
+        ...
+    @property
+    def value(self) -> int:
         ...

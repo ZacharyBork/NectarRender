@@ -1,22 +1,49 @@
 """
-Skylight submodule.
+Lights module.
 """
 from __future__ import annotations
 import _pathtracer.core.vector
 import typing
-__all__: list[str] = ['HDRI', 'Simple', 'Skylight', 'SkylightType']
+__all__: list[str] = ['HDRI', 'HDRISkylightConfig', 'Simple', 'SimpleSkylightConfig', 'Skylight', 'SkylightType']
 class HDRI:
     pass
+class HDRISkylightConfig:
+    @property
+    def intensity(self) -> float:
+        ...
+    @intensity.setter
+    def intensity(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
+    @property
+    def rotation(self) -> float:
+        ...
+    @rotation.setter
+    def rotation(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        ...
 class Simple:
     pass
+class SimpleSkylightConfig:
+    end: _pathtracer.core.vector.Color
+    start: _pathtracer.core.vector.Color
 class Skylight:
     @staticmethod
-    def hdri(arg0: str, arg1: typing.SupportsFloat | typing.SupportsIndex) -> Skylight:
+    @typing.overload
+    def hdri() -> Skylight:
         ...
     @staticmethod
-    def simple(arg0: _pathtracer.core.vector.Color, arg1: _pathtracer.core.vector.Color) -> Skylight:
+    @typing.overload
+    def hdri(filepath: str) -> Skylight:
+        ...
+    @staticmethod
+    def simple(start_color: _pathtracer.core.vector.Color = ..., end_color: _pathtracer.core.vector.Color = ...) -> Skylight:
         ...
     def __init__(self) -> None:
+        ...
+    def config_hdri(self) -> HDRISkylightConfig:
+        ...
+    def config_simple(self) -> SimpleSkylightConfig:
+        ...
+    def load_hdri_file(self, arg0: str) -> None:
         ...
 class SkylightType:
     """

@@ -1,5 +1,5 @@
 import _pathtracer
-root = _pathtracer.engine.skylight
+root = _pathtracer.light
 
 from typing import TypeAlias
 

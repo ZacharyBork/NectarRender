@@ -1,9 +1,0 @@
-"""
-Core utility submodule.
-"""
-from __future__ import annotations
-__all__: list[str] = ['destroy_cublas_handle']
-def destroy_cublas_handle() -> None:
-    """
-    Destroys cuBLAS handle. Registered atexit for Python module.
-    """
