@@ -57,24 +57,23 @@ RenderReturnState RenderEngine::render() {
 }
 
 RenderReturnState RenderEngine::viewport() {
-    while (true) {
-        scene_interface.update();
-        poll_gui_updates();
+    scene_interface.update();
+    poll_gui_updates();
 
-        if (requests_.stop_pending())
-            return RenderReturnState::STOPPED;
+    if (requests_.stop_pending())
+        return RenderReturnState::STOPPED;
 
-        trace_viewport(cam, current_scene.graph, sample_aovs.aovs(), seed);
+    trace_viewport(cam, current_scene.graph, sample_aovs.aovs(), seed);
 
-        aovs.accumulate(sample_aovs, 1u);
-        sample_aovs.clear();
-        cudaDeviceSynchronize();
-        with_gil_scoped_acquire(on_frame_finished, sample_idx);
-        std::this_thread::sleep_for(poll_interval);
+    aovs.accumulate(sample_aovs, 1u);
+    sample_aovs.clear();
+    cudaDeviceSynchronize();
+    with_gil_scoped_acquire(on_frame_finished, sample_idx);
+    
+    if (requests_.restart_pending())
+        return RenderReturnState::RESTARTED;
 
-        if (requests_.restart_pending())
-            return RenderReturnState::RESTARTED;
-    }
+    return RenderReturnState::WAITING;
 }
 
 void RenderEngine::idle() {
@@ -83,8 +82,6 @@ void RenderEngine::idle() {
 
         if (requests_.start_pending()) {                
             reset(); set_state(ES::RENDERING);
-            
-                        
             with_gil_scoped_acquire(on_render_started);
             
             RenderReturnState return_state = (
@@ -92,6 +89,7 @@ void RenderEngine::idle() {
             ) ? viewport() : render();
             
             switch (return_state) {
+                case RenderReturnState::WAITING: requests_.start(); break;
                 case RenderReturnState::STOPPED:
                     set_state(ES::IDLE); 
                     with_gil_scoped_acquire(on_stopped); 
@@ -104,6 +102,7 @@ void RenderEngine::idle() {
                     set_state(ES::IDLE);
                     with_gil_scoped_acquire(on_render_finished);
                     continue;
+                
             }
             
         }
@@ -176,7 +175,7 @@ void RenderEngine::poll_gui_updates() {
             if (engine_type.load(relaxed) == EngineType::PATHTRACER)
                 requests_.restart();
         }
-    } else {
+    } else if (render_mode.load(relaxed) == RenderMode::INTERACTIVE) {
         render_mode.store(RenderMode::FULL, relaxed);
     }
 }

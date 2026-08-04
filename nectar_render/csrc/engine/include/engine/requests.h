@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include "core/include/core.h"
 
 class EngineRequests {
 public:
@@ -16,8 +17,6 @@ public:
     bool shutdown_pending() { return shutdown_.exchange(false, relaxed); }
 
 private:
-
-    static constexpr auto relaxed = std::memory_order_relaxed;
 
     std::atomic<bool> start_    { false };
     std::atomic<bool> stop_     { false };

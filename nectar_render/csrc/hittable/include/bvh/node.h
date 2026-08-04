@@ -34,7 +34,7 @@ public:
 
         std::vector<T> reordered(items.size());
         for (size_t i = 0; i < order.size(); i++) 
-            reordered[i] = items[order[i]];
+            reordered[i] = std::move(items[order[i]]);
         items = std::move(reordered);
     }
 

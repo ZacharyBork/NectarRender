@@ -18,14 +18,6 @@
 #include "requests.h"
 
 // ============================================================================
-// GLOBALS
-// ============================================================================
-
-typedef std::chrono::high_resolution_clock Time;
-typedef std::chrono::duration<float> fsec;
-inline constexpr std::memory_order relaxed = std::memory_order_relaxed;
-
-// ============================================================================
 // DATA UTILS
 // ============================================================================
 
@@ -33,7 +25,7 @@ enum class EngineState{ IDLE, RENDERING }; typedef EngineState ES;
 enum class EngineType{ PATHTRACER, VIEWPORT };
 
 enum class RenderMode { FULL, INTERACTIVE };
-enum class RenderReturnState{ FINISHED, STOPPED, RESTARTED };
+enum class RenderReturnState{ FINISHED, STOPPED, RESTARTED, WAITING };
 
 // ============================================================================
 // GUI POLLING

@@ -69,8 +69,8 @@ private:
     bool is_light_ = false;
     bool is_volumetric_ = false;
 
-    size_t material_index = (size_t)0;
-    size_t object_index   = (size_t)0;
+    size_t material_index = 0UL;
+    size_t object_id      = 0UL;
     
 public:
 
@@ -92,14 +92,14 @@ public:
         HittableType type, 
         Transform    xform,
         Transform    delta,
-        size_t       object_index,
+        size_t       object_id,
         size_t       material_index,
         Hittable*    wrapped_object,
         void*        obj
     ) : type(type),
         xform(xform),
         delta(delta),
-        object_index(object_index),
+        object_id(object_id),
         material_index(material_index),
         wrapped_object(wrapped_object)
     { 
@@ -268,7 +268,7 @@ public:
 
     __host__ Hittable* build() {
         return device_build<Hittable>(
-            type, xform, delta, object_index, material_index, 
+            type, xform, delta, object_id, material_index, 
             wrapped_object, core_ptr()
         );
     }
@@ -302,9 +302,9 @@ public:
         return material_index; 
     }
 
-    __host__ void set_object_index(size_t idx) { object_index = idx; }
-    __host__ __device__ size_t get_object_index() const { 
-        return object_index; 
+    __host__ void set_object_id(size_t idx) { object_id = idx; }
+    __host__ __device__ size_t get_object_id() const { 
+        return object_id; 
     }
 
     // HIT TESTING ============================================================

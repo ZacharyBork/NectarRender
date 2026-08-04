@@ -50,7 +50,7 @@ public:
     /* STREAM STATE */
 
     StreamState get_state() const {
-        return state.load(std::memory_order_relaxed);
+        return state.load(relaxed);
     }
 
     bool is_active()   const { return get_state()==StreamState::ACTIVE;   }
@@ -100,7 +100,7 @@ public:
     }
 
     void update_config(StreamConfig cfg) {
-        stream_config.store(cfg, std::memory_order_relaxed);
+        stream_config.store(cfg, relaxed);
     }
 
     template<typename Func>
@@ -118,7 +118,7 @@ public:
     bool has_overlay() const { return overlay_mask != nullptr; }
 
     void remove_overlay() { 
-        should_disable_overlay.store(true, std::memory_order_relaxed);
+        should_disable_overlay.store(true, relaxed);
     }
 
     void overlay(uint8_t* mask_ptr, Color color = Color::white()) { 
@@ -142,7 +142,7 @@ public:
 
         process_stream(
             data->view(), image_buffer, 
-            stream_config.load(std::memory_order_relaxed),
+            stream_config.load(relaxed),
             transfer_stream
         );
         handle_overlay();
@@ -182,13 +182,13 @@ private:
     uint8_t* overlay_mask = nullptr;
 
     void set_state(StreamState new_state) {
-        state.store(new_state, std::memory_order_relaxed);
+        state.store(new_state, relaxed);
     }
 
     void handle_overlay() {
         if (!overlay_mask) return;
         bool disable = should_disable_overlay.exchange(
-            false, std::memory_order_relaxed
+            false, relaxed
         );
         if (disable) { 
             CUDAMemory::free(overlay_mask); 

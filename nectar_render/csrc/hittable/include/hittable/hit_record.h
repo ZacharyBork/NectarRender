@@ -10,7 +10,7 @@ class HitRecord {
 public:
 
     Hittable* hit_object = nullptr; // Reference to hit object
-    size_t object_index = 0u;       // ID of hit object
+    size_t object_id = 0u;          // ID of hit object
     
     Material* mat = nullptr;    // Reference to hit objects material
     size_t material_index = 0u; // Hit index in MaterialRegistry

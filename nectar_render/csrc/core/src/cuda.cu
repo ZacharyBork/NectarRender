@@ -14,7 +14,7 @@ __global__ void device_build_kernel(T* d_obj, Args... args) {
 }
 
 template<typename T, typename... Args>
-T* device_build(Args... args) {
+__host__ T* device_build(Args... args) {
     T* d_ptr;
     CUDAMemory::allocate<T>(d_ptr);
     device_build_kernel<<<1, 1>>>(d_ptr, args...);
@@ -25,7 +25,6 @@ T* device_build(Args... args) {
 // HITTABLES ==================================================================
 
 template Quad*   device_build<Quad>();
-// template Quad*   device_build<Quad>(Vector3, Vector3, Vector3, size_t, size_t);
 template Sphere* device_build<Sphere>(float);
 template Cube*   device_build<Cube>(Quad**);
 template ConstantMedium* device_build<ConstantMedium>(float);
@@ -70,7 +69,7 @@ __global__ void fill_memory_kernel(T* d_ptr, T value, size_t n_elements) {
 }
 
 template<typename T>
-void run_fill_memory(T* d_ptr, T value, size_t n_elements) {
+__host__ void run_fill_memory(T* d_ptr, T value, size_t n_elements) {
     fill_memory_kernel<<<1, 1>>>(d_ptr, value, n_elements);
 }
 

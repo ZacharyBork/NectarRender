@@ -26,23 +26,24 @@ from nectar_render.scenes.cornell_box import CornellBox
 ###############################################################################
 
 from nectar_render.python import (
-    Hittable, Vector3, Color, Material, Scene, Skylight
+    Hittable, Vector3, Color, Material, Scene, Skylight, Texture
 )
 asset_root = Path(__file__).parent.parent.parent / 'tmp/assets'
+
 test_scene = Scene(
     skylight  = Skylight.hdri(
         asset_root.resolve().as_posix() + '/hdri/brown_photostudio.hdr'
     ),
     lights    = [
-        # Hittable.OBJECT_LIGHT(
-        #     Hittable.QUAD(
-        #         Vector3(1.0, 1, 0.0),
-        #         Vector3(0.0, 180.0, -45.0),
-        #         Vector3(1),
-        #         Material.LAMBERTIAN(Color.white())
-        #     ),
-        #     15.0, Color(1.0, 0.4, 0.2)
-        # )
+        Hittable.OBJECT_LIGHT(
+            Hittable.QUAD(
+                Vector3(1.0, 1, 0.0),
+                Vector3(0.0, 180.0, -45.0),
+                Vector3(1),
+                Material.LAMBERTIAN(Color.white())
+            ),
+            15.0, Color(1.0, 0.4, 0.2)
+        )
     ],
     hittables = [
         Hittable.QUAD( # Bottom
@@ -50,9 +51,12 @@ test_scene = Scene(
             Vector3(0.0, 0.0, 0.0),
             Vector3(100.0),
             Material.PBR(
-                asset_root.resolve().as_posix() + '/tile.jpeg',
-                0.15,
-                0.2
+                albedo=Texture.from_image(
+                    asset_root.resolve().as_posix() + '/tile.jpeg', 
+                    0.02
+                ), 
+                roughness=0.15, 
+                metallic=0.2
             )
         ),
         # Hittable.QUAD( # Top
@@ -292,16 +296,19 @@ class Interface(QObject):
         
         rm_viewport = self.find(W.QPushButton, 'render_mode_viewport')
         rm_pathtracer = self.find(W.QPushButton, 'render_mode_pathtracer')
+        progress_frame = self.find(W.QFrame, 'progress_frame')
         def set_render_mode(mode: str):
             match mode:
                 case 'viewport': 
                     engine_type = EngineType.VIEWPORT
                     rm_viewport.setEnabled(False)
                     rm_pathtracer.setEnabled(True)
+                    progress_frame.setVisible(False)
                 case 'pathtracer': 
                     engine_type = EngineType.PATHTRACER
                     rm_viewport.setEnabled(True)
                     rm_pathtracer.setEnabled(False)
+                    progress_frame.setVisible(True)
             Bridge.ENGINE.set_engine_type(engine_type)
             Bridge.requests.restart()
         
@@ -310,7 +317,9 @@ class Interface(QObject):
         
         rm_viewport.clicked.connect(lambda : set_render_mode('viewport'))
         rm_pathtracer.clicked.connect(lambda : set_render_mode('pathtracer'))
-        rm_pathtracer.setEnabled(False)
+        rm_viewport.setEnabled(False)
+        
+        set_render_mode('viewport')
         
     def _build_profiler(self: Self) -> None:
         tab = self.find(W.QWidget, 'profiler_tab')
@@ -319,6 +328,77 @@ class Interface(QObject):
     def _init_menu_bar(self: Self) -> None:
         self._menubar = MenuBar(self)
         
+        
+    def _init_timeline(self: Self) -> None:
+        frame = self.find(W.QFrame, 'timeline_frame')
+        frame.setStyleSheet('background-color: rgba(20, 20, 20, 255);')
+        timeline = self.find(W.QSlider, 'timeline')
+        timeline.setStyleSheet('''
+            QSlider::groove {
+                border: 1px solid #999999;
+                background-color: #1f2128;
+                height: 4px;
+                border-radius: 4px;
+            }
+
+            QSlider::handle:horizontal {
+                border: 1px solid #5c5c5c;
+                width: 4px;
+                margin: -50px 0;
+                border-radius: 4px;
+            }
+
+        ''')
+                
+    def _init_toolbar(self: Self) -> None:
+        cursor_btn = self.find(W.QPushButton, 'cursor_tool_button')
+        gnomon_btn = self.find(W.QPushButton, 'gnomon_tool_button')
+        
+        def toolbutton(button_type: str): 
+            match button_type:
+                case 'cursor': 
+                    gnomon_btn.setStyleSheet('background-color: #1f2128;')
+                    cursor_btn.setStyleSheet('background-color: #555b6d')
+                case 'gnomon': 
+                    cursor_btn.setStyleSheet('background-color: #1f2128;')
+                    gnomon_btn.setStyleSheet('background-color: #555b6d')
+        
+        cursor_btn.clicked.connect(lambda : toolbutton('cursor'))
+        gnomon_btn.clicked.connect(lambda : toolbutton('gnomon'))
+        utils.set_button_icon(cursor_btn, 'cursor', (24, 24))
+        utils.set_button_icon(gnomon_btn, 'vector_three', (24, 24))
+        
+        toolbutton('cursor')
+        
+        
+        vm_fill = self.find(W.QPushButton, 'view_mode_fill')
+        vm_native = self.find(W.QPushButton, 'view_mode_native')
+        vm_viewport = self.find(W.QPushButton, 'view_mode_viewport_size')
+        
+        def view_mode(mode: str):
+            match mode:
+                case 'fill': 
+                    vm_fill.setStyleSheet('background-color: #555b6d')
+                    vm_native.setStyleSheet('background-color: #1f2128;')
+                    vm_viewport.setStyleSheet('background-color: #1f2128;')
+                case 'native': 
+                    vm_fill.setStyleSheet('background-color: #1f2128;')
+                    vm_native.setStyleSheet('background-color: #555b6d')
+                    vm_viewport.setStyleSheet('background-color: #1f2128;')
+                case 'viewport':
+                    vm_fill.setStyleSheet('background-color: #1f2128;')
+                    vm_native.setStyleSheet('background-color: #1f2128;')
+                    vm_viewport.setStyleSheet('background-color: #555b6d')
+                
+        vm_fill.clicked.connect(lambda : view_mode('fill'))
+        vm_native.clicked.connect(lambda : view_mode('native'))
+        vm_viewport.clicked.connect(lambda : view_mode('viewport'))
+        
+        utils.set_button_icon(vm_fill, 'stretch_fill', (18, 18))
+        utils.set_button_icon(vm_native, 'original_size', (18, 18))
+        utils.set_button_icon(vm_viewport, 'resize', (18, 18))
+        
+        view_mode('fill')
 
 #### SETTINGS TAB #############################################################
 
@@ -343,6 +423,8 @@ class Interface(QObject):
         self._build_profiler()
         self._init_callbacks()
         self._init_menu_bar()
+        self._init_timeline()
+        self._init_toolbar()
         
         self.build_settings_tab()
         
@@ -355,6 +437,7 @@ class Interface(QObject):
         
         TimeKeeper.start()
         Bridge.thread.start()
+        self.play_button()
         self.mainwidget.show()
         
         sys.exit(self.app.exec())

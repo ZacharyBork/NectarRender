@@ -53,20 +53,26 @@ public:
     uint8_t*    d_tex_ptr;
     Color       constant_color;
     size_t      C, H, W;
+    float       scale;
     
     __device__ Color sample(Vector2 uv, const Vector3& p) const {
         switch (type) {
             case TextureType::CONSTANT: return constant_color;
-            case TextureType::IMAGE:    return sample_image(uv, p);
+            case TextureType::IMAGE:
+                return sample_image(uv);
         }
         return Color::black();
     };
 
 private:
 
-    __device__ Color sample_image(Vector2 uv, const Vector3& p) const {
-        float u = Interval(0.0f, 1.0f).clamp(uv.u());
-        float v = 1.0f - Interval(0.0f, 1.0f).clamp(uv.v());
+    __device__ Color sample_image(Vector2 uv) const {
+        Vector2 scaled_uvs = uv * (1.0f / fmaxf(FMIN, scale));
+        scaled_uvs[0] = fmodf(scaled_uvs[0], 1.0f);
+        scaled_uvs[1] = fmodf(scaled_uvs[1], 1.0f);
+
+        float u = Interval(0.0f, 1.0f).clamp(scaled_uvs.u());
+        float v = 1.0f - Interval(0.0f, 1.0f).clamp(scaled_uvs.v());
 
         int i = (int)(u * W); if (i >= (int)W) i = (int)W - 1;
         int j = (int)(v * H); if (j >= (int)H) j = (int)H - 1;
@@ -94,6 +100,8 @@ public:
     Color constant_color = Color::black();
     size_t C = 0UL, H = 0UL, W = 0UL;
 
+    float texture_scale = 1.0f;
+
     /* CONSTRUCTORS / DESTRUCTORS */
 
     __host__ __device__ Texture() {}
@@ -108,7 +116,8 @@ public:
           filepath(std::move(other.filepath)),
           d_texture_ptr(other.d_texture_ptr), 
           constant_color(other.constant_color),
-          C(other.C), H(other.H), W(other.W)
+          C(other.C), H(other.H), W(other.W),
+          texture_scale(other.texture_scale)
     {
         other.d_texture_ptr = nullptr;
     }
@@ -121,6 +130,7 @@ public:
             filepath       = std::move(other.filepath);
             d_texture_ptr  = other.d_texture_ptr;
             constant_color = other.constant_color;
+            texture_scale  = other.texture_scale;
             other.d_texture_ptr = nullptr;
         }
         return *this;
@@ -146,10 +156,12 @@ public:
     }
 
     __host__ static std::shared_ptr<Texture> from_image(
-        std::string filepath
+        std::string filepath,
+        float scale = 1.0f
     ) { 
         Texture t(TextureType::IMAGE);
         t.filepath = filepath.c_str();
+        t.texture_scale = scale;
         
         int C, H, W;
         std::vector<uint8_t> image_data = load_image_uint8(filepath, C, H, W);
@@ -172,7 +184,7 @@ public:
 
     __host__ TextureView view() const {
         return TextureView{ 
-            type, d_texture_ptr, constant_color, C, H, W
+            type, d_texture_ptr, constant_color, C, H, W, texture_scale
         };
     }
 

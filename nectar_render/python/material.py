@@ -29,19 +29,14 @@ class Texture(tex.Texture):
         return tex.Texture.from_color(*color)
     
     @staticmethod
-    def from_image(filepath: PathLike) -> tex.Texture:
+    def from_image(filepath: PathLike, scale: float = 1.0) -> tex.Texture:
         fp = Path(filepath)
-        if not fp.exists():
-            raise FileNotFoundError(
-                f'Unable to locate image file at path: {fp.as_posix()}')
+        if fp.exists(): return tex.Texture.from_image(fp.as_posix(), scale)
+        raise FileNotFoundError(
+            f'Unable to locate image file at path: {fp.as_posix()}'
+        )
         
-        return tex.Texture.from_image(fp.as_posix())
-    
-        # img = Image.open(fp).convert('RGB')
-        # arr = np.array(img, dtype=np.uint8).transpose((2, 0, 1))
-        # ptr = np.ascontiguousarray(arr).ctypes.data
-        # C, H, W = arr.shape
-        # return tex.Texture.from_image(fp.as_posix(), ptr, C, H, W)
+        
 
 ###############################################################################
 # MATERIAL

@@ -159,28 +159,27 @@ __global__ void trace_viewport_kernel(
 ) {
     ProcessIndex p_idx = get_process_index();
     if (p_idx.x >= cam->W || p_idx.y >= cam->H) return;
-    uint32_t pixel_idx = p_idx.y * cam->W + p_idx.x;
-
-    Generator gen(seed, pixel_idx * (cam->W * cam->H));
-    Ray ray = cam->get_ray(
-        p_idx.x, p_idx.y, pixel_idx, 0u, seed, gen
-    );
 
     HitRecord rec;
+    Ray ray = cam->get_ray_center(p_idx.x, p_idx.y);
     bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
 
-    if (!hit) {
-        aovs->beauty += scene->skylight->sample(ray);
-        return;
-    }
+    if (!hit) { aovs->beauty += scene->skylight->sample(ray); return; }
 
-    Vector3 light_direction(-1.0f, -1.0f, -1.0f);
-    Color viewport_color(0.0f, 0.0f, 0.0f);
+    Vector3 light_vector = cam->p.position - rec.p;
+    float light_dist = light_vector.length();
 
-    viewport_color += rec.mat->viewport_color(rec);
-    viewport_color *= dot(light_direction, -rec.n) * 0.5f + 0.5f;
+    Vector3 headlight_dir = normalize(light_vector);
+    float headlight = dot(headlight_dir, rec.n) * 0.5f + 0.5f;
+    headlight *= 1.0f / (light_dist * light_dist);
+    headlight = fminf(0.75f, headlight);
 
-    aovs->beauty += viewport_color;
+    Vector3 directional_light_dir = Vector3(1.0f, 1.0f, 1.0f);
+    float directional = (dot(directional_light_dir, rec.n) + 1.0f) * 0.5f;
+    directional = fmaxf(0.1f, directional);
+
+    Color col = rec.mat->viewport_color(rec);
+    aovs->beauty += col * fmaxf(headlight, directional);
 }
 
 void trace_viewport(

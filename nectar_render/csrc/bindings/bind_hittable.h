@@ -15,7 +15,7 @@ void register_hittable(py::module_& m) {
         .def(py::init<>())
         .def("d_object_ptr",          &HitRecord::d_object_ptr)
         .def_readonly("hit_object",   &HitRecord::hit_object)
-        .def_readonly("object_index", &HitRecord::object_index)
+        .def_readonly("object_id", &HitRecord::object_id)
         .def_readonly("p",            &HitRecord::p)
         .def_readonly("n",            &HitRecord::n)
         .def_readonly("tangent",      &HitRecord::tangent)

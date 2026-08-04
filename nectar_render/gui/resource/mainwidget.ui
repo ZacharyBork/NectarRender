@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <property name="spacing">
-     <number>3</number>
+     <number>0</number>
     </property>
     <property name="leftMargin">
      <number>0</number>
@@ -33,10 +33,16 @@
     <item>
      <widget class="QFrame" name="frame_2">
       <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
+       <enum>QFrame::NoFrame</enum>
       </property>
       <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="lineWidth">
+       <number>0</number>
+      </property>
+      <property name="midLineWidth">
+       <number>0</number>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
        <property name="spacing">
@@ -142,7 +148,7 @@
                 </widget>
                </item>
                <item row="1" column="0">
-                <widget class="QPushButton" name="pushButton_2">
+                <widget class="QPushButton" name="gnomon_tool_button">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
                    <horstretch>0</horstretch>
@@ -161,7 +167,7 @@
                 </widget>
                </item>
                <item row="0" column="0">
-                <widget class="QPushButton" name="pushButton">
+                <widget class="QPushButton" name="cursor_tool_button">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
                    <horstretch>0</horstretch>
@@ -179,7 +185,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="6" column="0">
+               <item row="8" column="0">
                 <spacer name="verticalSpacer_4">
                  <property name="orientation">
                   <enum>Qt::Vertical</enum>
@@ -230,11 +236,101 @@
                  </property>
                 </widget>
                </item>
-               <item row="5" column="0">
+               <item row="6" column="0">
                 <widget class="Line" name="line">
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
                  </property>
+                </widget>
+               </item>
+               <item row="7" column="0">
+                <widget class="QFrame" name="frame_7">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="frameShape">
+                  <enum>QFrame::StyledPanel</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_17">
+                  <property name="spacing">
+                   <number>3</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>3</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>3</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QPushButton" name="view_mode_fill">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>30</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="view_mode_native">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>30</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="view_mode_viewport_size">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>30</width>
+                      <height>30</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
                 </widget>
                </item>
               </layout>
@@ -524,6 +620,9 @@
            <enum>QFrame::Raised</enum>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_6">
+           <property name="spacing">
+            <number>3</number>
+           </property>
            <property name="leftMargin">
             <number>3</number>
            </property>
@@ -537,1030 +636,1066 @@
             <number>3</number>
            </property>
            <item>
-            <widget class="QTabWidget" name="settings_tabs">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
+            <widget class="QSplitter" name="splitter_3">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
              </property>
-             <property name="currentIndex">
-              <number>1</number>
-             </property>
-             <widget class="QWidget" name="selected_tab">
+             <widget class="QFrame" name="outliner_frame">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_18">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QTreeWidget" name="outliner">
+                 <column>
+                  <property name="text">
+                   <string notr="true">1</string>
+                  </property>
+                 </column>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QTabWidget" name="settings_tabs">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
-              <attribute name="title">
-               <string>Selected</string>
-              </attribute>
-              <layout class="QVBoxLayout" name="verticalLayout_11">
-               <property name="leftMargin">
-                <number>0</number>
+              <property name="currentIndex">
+               <number>1</number>
+              </property>
+              <widget class="QWidget" name="selected_tab">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
                </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QScrollArea" name="scrollArea_3">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="horizontalScrollBarPolicy">
-                  <enum>Qt::ScrollBarAlwaysOff</enum>
-                 </property>
-                 <property name="widgetResizable">
-                  <bool>true</bool>
-                 </property>
-                 <widget class="QWidget" name="scrollAreaWidgetContents_3">
-                  <property name="geometry">
-                   <rect>
-                    <x>0</x>
-                    <y>0</y>
-                    <width>425</width>
-                    <height>548</height>
-                   </rect>
+               <attribute name="title">
+                <string>Selected</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_11">
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QScrollArea" name="scrollArea_3">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
                   </property>
-                  <layout class="QVBoxLayout" name="verticalLayout_12">
-                   <property name="spacing">
-                    <number>6</number>
+                  <property name="horizontalScrollBarPolicy">
+                   <enum>Qt::ScrollBarAlwaysOff</enum>
+                  </property>
+                  <property name="widgetResizable">
+                   <bool>true</bool>
+                  </property>
+                  <widget class="QWidget" name="scrollAreaWidgetContents_3">
+                   <property name="geometry">
+                    <rect>
+                     <x>0</x>
+                     <y>0</y>
+                     <width>396</width>
+                     <height>410</height>
+                    </rect>
                    </property>
-                   <property name="leftMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>0</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QFrame" name="selected_settings">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="frameShape">
-                      <enum>QFrame::NoFrame</enum>
-                     </property>
-                     <property name="frameShadow">
-                      <enum>QFrame::Sunken</enum>
-                     </property>
-                     <layout class="QVBoxLayout" name="verticalLayout_13">
-                      <property name="spacing">
-                       <number>3</number>
+                   <layout class="QVBoxLayout" name="verticalLayout_12">
+                    <property name="spacing">
+                     <number>6</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <widget class="QFrame" name="selected_settings">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
                       </property>
-                      <property name="leftMargin">
-                       <number>3</number>
+                      <property name="frameShape">
+                       <enum>QFrame::NoFrame</enum>
                       </property>
-                      <property name="topMargin">
-                       <number>3</number>
+                      <property name="frameShadow">
+                       <enum>QFrame::Sunken</enum>
                       </property>
-                      <property name="rightMargin">
-                       <number>3</number>
+                      <layout class="QVBoxLayout" name="verticalLayout_13">
+                       <property name="spacing">
+                        <number>3</number>
+                       </property>
+                       <property name="leftMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>3</number>
+                       </property>
+                      </layout>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="verticalSpacer_3">
+                      <property name="orientation">
+                       <enum>Qt::Vertical</enum>
                       </property>
-                      <property name="bottomMargin">
-                       <number>3</number>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>20</width>
+                        <height>40</height>
+                       </size>
                       </property>
-                     </layout>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="verticalSpacer_3">
-                     <property name="orientation">
-                      <enum>Qt::Vertical</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>20</width>
-                       <height>40</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
+                     </spacer>
+                    </item>
+                   </layout>
+                  </widget>
                  </widget>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-             <widget class="QWidget" name="settings_tab">
-              <attribute name="title">
-               <string>Settings</string>
-              </attribute>
-              <layout class="QVBoxLayout" name="verticalLayout_8">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QScrollArea" name="scrollArea">
-                 <property name="horizontalScrollBarPolicy">
-                  <enum>Qt::ScrollBarAlwaysOff</enum>
-                 </property>
-                 <property name="widgetResizable">
-                  <bool>true</bool>
-                 </property>
-                 <widget class="QWidget" name="scrollAreaWidgetContents">
-                  <property name="geometry">
-                   <rect>
-                    <x>0</x>
-                    <y>0</y>
-                    <width>410</width>
-                    <height>645</height>
-                   </rect>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="settings_tab">
+               <attribute name="title">
+                <string>Settings</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_8">
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QScrollArea" name="scrollArea">
+                  <property name="horizontalScrollBarPolicy">
+                   <enum>Qt::ScrollBarAlwaysOff</enum>
                   </property>
-                  <layout class="QVBoxLayout" name="verticalLayout_7">
-                   <property name="spacing">
-                    <number>3</number>
-                   </property>
-                   <property name="leftMargin">
-                    <number>3</number>
-                   </property>
-                   <property name="topMargin">
-                    <number>3</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>3</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>3</number>
-                   </property>
-                   <item>
-                    <widget class="QFrame" name="settings_frame">
-                     <property name="frameShape">
-                      <enum>QFrame::NoFrame</enum>
-                     </property>
-                     <property name="frameShadow">
-                      <enum>QFrame::Raised</enum>
-                     </property>
-                     <layout class="QVBoxLayout" name="verticalLayout_16">
-                      <property name="spacing">
-                       <number>3</number>
-                      </property>
-                      <property name="leftMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="topMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="rightMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>3</number>
-                      </property>
-                     </layout>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QGroupBox" name="general_settings">
-                     <property name="title">
-                      <string>General</string>
-                     </property>
-                     <property name="checkable">
-                      <bool>true</bool>
-                     </property>
-                     <layout class="QFormLayout" name="formLayout_2">
-                      <property name="verticalSpacing">
-                       <number>3</number>
-                      </property>
-                      <property name="leftMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="topMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="rightMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>3</number>
-                      </property>
-                      <item row="0" column="0">
-                       <widget class="QLabel" name="label_6">
-                        <property name="text">
-                         <string>Samples per Pixel</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="0" column="1">
-                       <widget class="QSpinBox" name="n_samples">
-                        <property name="minimum">
-                         <number>1</number>
-                        </property>
-                        <property name="maximum">
-                         <number>99999</number>
-                        </property>
-                        <property name="value">
-                         <number>512</number>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="1" column="0">
-                       <widget class="QLabel" name="label_10">
-                        <property name="text">
-                         <string>Max Ray Depth</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="1" column="1">
-                       <widget class="QSpinBox" name="max_depth">
-                        <property name="minimum">
-                         <number>0</number>
-                        </property>
-                        <property name="maximum">
-                         <number>512</number>
-                        </property>
-                        <property name="value">
-                         <number>5</number>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QGroupBox" name="camera_settings">
-                     <property name="title">
-                      <string>Camera</string>
-                     </property>
-                     <property name="checkable">
-                      <bool>true</bool>
-                     </property>
-                     <layout class="QFormLayout" name="formLayout">
-                      <property name="horizontalSpacing">
-                       <number>6</number>
-                      </property>
-                      <property name="verticalSpacing">
-                       <number>3</number>
-                      </property>
-                      <property name="leftMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="topMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="rightMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>3</number>
-                      </property>
-                      <item row="1" column="0">
-                       <widget class="QLabel" name="label">
-                        <property name="text">
-                         <string>Focal Length</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="1" column="1">
-                       <widget class="QDoubleSpinBox" name="focal_length">
-                        <property name="frame">
-                         <bool>true</bool>
-                        </property>
-                        <property name="buttonSymbols">
-                         <enum>QAbstractSpinBox::PlusMinus</enum>
-                        </property>
-                        <property name="decimals">
-                         <number>4</number>
-                        </property>
-                        <property name="minimum">
-                         <double>0.000100000000000</double>
-                        </property>
-                        <property name="maximum">
-                         <double>999.000000000000000</double>
-                        </property>
-                        <property name="value">
-                         <double>3.000000000000000</double>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="2" column="0">
-                       <widget class="QLabel" name="label_2">
-                        <property name="text">
-                         <string>Focus Distance</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="2" column="1">
-                       <widget class="QDoubleSpinBox" name="focus_distance">
-                        <property name="decimals">
-                         <number>4</number>
-                        </property>
-                        <property name="minimum">
-                         <double>0.000100000000000</double>
-                        </property>
-                        <property name="maximum">
-                         <double>32767.000000000000000</double>
-                        </property>
-                        <property name="value">
-                         <double>10.000000000000000</double>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="3" column="0">
-                       <widget class="QLabel" name="label_3">
-                        <property name="text">
-                         <string>Aperture</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="3" column="1">
-                       <widget class="QDoubleSpinBox" name="aperture">
-                        <property name="decimals">
-                         <number>4</number>
-                        </property>
-                        <property name="minimum">
-                         <double>0.000100000000000</double>
-                        </property>
-                        <property name="maximum">
-                         <double>1024.000000000000000</double>
-                        </property>
-                        <property name="singleStep">
-                         <double>0.010000000000000</double>
-                        </property>
-                        <property name="value">
-                         <double>0.010000000000000</double>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="4" column="0">
-                       <widget class="QLabel" name="label_4">
-                        <property name="text">
-                         <string>Sensor Width</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="4" column="1">
-                       <widget class="QDoubleSpinBox" name="sensor_width">
-                        <property name="decimals">
-                         <number>4</number>
-                        </property>
-                        <property name="minimum">
-                         <double>0.000100000000000</double>
-                        </property>
-                        <property name="maximum">
-                         <double>1024.000000000000000</double>
-                        </property>
-                        <property name="singleStep">
-                         <double>0.100000000000000</double>
-                        </property>
-                        <property name="value">
-                         <double>2.000000000000000</double>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="5" column="0">
-                       <widget class="QLabel" name="label_5">
-                        <property name="text">
-                         <string>Shutter Speed</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="5" column="1">
-                       <widget class="QDoubleSpinBox" name="shutter_speed">
-                        <property name="decimals">
-                         <number>4</number>
-                        </property>
-                        <property name="minimum">
-                         <double>0.000100000000000</double>
-                        </property>
-                        <property name="maximum">
-                         <double>999.990000000000009</double>
-                        </property>
-                        <property name="singleStep">
-                         <double>0.100000000000000</double>
-                        </property>
-                        <property name="value">
-                         <double>1.000000000000000</double>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="0" column="1">
-                       <layout class="QHBoxLayout" name="horizontalLayout_6">
-                        <item>
-                         <spacer name="horizontalSpacer_2">
-                          <property name="orientation">
-                           <enum>Qt::Horizontal</enum>
-                          </property>
-                          <property name="sizeHint" stdset="0">
-                           <size>
-                            <width>40</width>
-                            <height>20</height>
-                           </size>
-                          </property>
-                         </spacer>
-                        </item>
-                        <item>
-                         <widget class="QToolButton" name="lock_camera">
-                          <property name="text">
-                           <string>...</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </item>
-                      <item row="0" column="0">
-                       <widget class="QLabel" name="label_19">
-                        <property name="text">
-                         <string>TextLabel</string>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QGroupBox" name="color_correction_settings">
-                     <property name="title">
-                      <string>Color Correction</string>
-                     </property>
-                     <property name="checkable">
-                      <bool>true</bool>
-                     </property>
-                     <layout class="QVBoxLayout" name="verticalLayout_14">
-                      <property name="leftMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="topMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="rightMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>3</number>
-                      </property>
-                      <item>
-                       <widget class="QGroupBox" name="groupBox_2">
-                        <property name="title">
-                         <string>Image</string>
-                        </property>
-                        <property name="flat">
-                         <bool>true</bool>
-                        </property>
-                        <layout class="QFormLayout" name="formLayout_5">
-                         <property name="verticalSpacing">
-                          <number>3</number>
-                         </property>
-                         <property name="leftMargin">
-                          <number>3</number>
-                         </property>
-                         <property name="topMargin">
-                          <number>3</number>
-                         </property>
-                         <property name="rightMargin">
-                          <number>3</number>
-                         </property>
-                         <property name="bottomMargin">
-                          <number>3</number>
-                         </property>
-                         <item row="0" column="0">
-                          <widget class="QLabel" name="label_14">
-                           <property name="text">
-                            <string>To Gamma</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="0" column="1">
-                          <widget class="QCheckBox" name="linear_to_gamma">
-                           <property name="text">
-                            <string/>
-                           </property>
-                           <property name="checked">
-                            <bool>true</bool>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QGroupBox" name="groupBox_3">
-                        <property name="title">
-                         <string>Tonemapping</string>
-                        </property>
-                        <property name="flat">
-                         <bool>true</bool>
-                        </property>
-                        <layout class="QFormLayout" name="formLayout_6">
-                         <property name="verticalSpacing">
-                          <number>3</number>
-                         </property>
-                         <property name="leftMargin">
-                          <number>3</number>
-                         </property>
-                         <property name="topMargin">
-                          <number>3</number>
-                         </property>
-                         <property name="rightMargin">
-                          <number>3</number>
-                         </property>
-                         <property name="bottomMargin">
-                          <number>3</number>
-                         </property>
-                         <item row="0" column="0">
-                          <widget class="QCheckBox" name="enable_tonemap">
-                           <property name="text">
-                            <string>Enable</string>
-                           </property>
-                           <property name="checked">
-                            <bool>true</bool>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="0" column="1">
-                          <widget class="QComboBox" name="tonemap_method">
-                           <property name="currentText">
-                            <string/>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="1" column="0">
-                          <widget class="QLabel" name="label_12">
-                           <property name="text">
-                            <string>Blend</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="1" column="1">
-                          <layout class="QHBoxLayout" name="horizontalLayout">
-                           <item>
-                            <widget class="QSlider" name="tonemap_alpha">
-                             <property name="maximum">
-                              <number>100</number>
-                             </property>
-                             <property name="value">
-                              <number>100</number>
-                             </property>
-                             <property name="orientation">
-                              <enum>Qt::Horizontal</enum>
-                             </property>
-                             <property name="tickPosition">
-                              <enum>QSlider::TicksBelow</enum>
-                             </property>
-                             <property name="tickInterval">
-                              <number>10</number>
-                             </property>
-                            </widget>
-                           </item>
-                           <item>
-                            <widget class="QLabel" name="tonemap_blend_percent">
-                             <property name="sizePolicy">
-                              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                               <horstretch>0</horstretch>
-                               <verstretch>0</verstretch>
-                              </sizepolicy>
-                             </property>
-                             <property name="minimumSize">
-                              <size>
-                               <width>40</width>
-                               <height>0</height>
-                              </size>
-                             </property>
-                             <property name="text">
-                              <string>100%</string>
-                             </property>
-                             <property name="alignment">
-                              <set>Qt::AlignCenter</set>
-                             </property>
-                            </widget>
-                           </item>
-                          </layout>
-                         </item>
-                         <item row="2" column="0">
-                          <widget class="QLabel" name="label_15">
-                           <property name="text">
-                            <string>White Point</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="2" column="1">
-                          <widget class="QDoubleSpinBox" name="tonemap_white_point">
-                           <property name="singleStep">
-                            <double>0.200000000000000</double>
-                           </property>
-                           <property name="value">
-                            <double>1.000000000000000</double>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QGroupBox" name="white_balance_settings">
-                        <property name="title">
-                         <string>White Balance</string>
-                        </property>
-                        <layout class="QFormLayout" name="formLayout_7">
-                         <item row="0" column="0">
-                          <widget class="QLabel" name="label_16">
-                           <property name="text">
-                            <string>Enable</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="1" column="0">
-                          <widget class="QLabel" name="label_17">
-                           <property name="text">
-                            <string>Temperature</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="2" column="0">
-                          <widget class="QLabel" name="label_18">
-                           <property name="text">
-                            <string>Tint</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="1" column="1">
-                          <layout class="QHBoxLayout" name="horizontalLayout_4">
-                           <item>
-                            <widget class="QSlider" name="wb_temp">
-                             <property name="minimum">
-                              <number>1</number>
-                             </property>
-                             <property name="maximum">
-                              <number>12000</number>
-                             </property>
-                             <property name="value">
-                              <number>6800</number>
-                             </property>
-                             <property name="orientation">
-                              <enum>Qt::Horizontal</enum>
-                             </property>
-                             <property name="invertedAppearance">
-                              <bool>false</bool>
-                             </property>
-                             <property name="tickPosition">
-                              <enum>QSlider::TicksBothSides</enum>
-                             </property>
-                             <property name="tickInterval">
-                              <number>500</number>
-                             </property>
-                            </widget>
-                           </item>
-                           <item>
-                            <widget class="QLabel" name="wb_temp_label">
-                             <property name="text">
-                              <string>6800k</string>
-                             </property>
-                            </widget>
-                           </item>
-                          </layout>
-                         </item>
-                         <item row="2" column="1">
-                          <layout class="QHBoxLayout" name="horizontalLayout_5">
-                           <item>
-                            <widget class="QSlider" name="wb_tint">
-                             <property name="maximum">
-                              <number>500</number>
-                             </property>
-                             <property name="value">
-                              <number>100</number>
-                             </property>
-                             <property name="orientation">
-                              <enum>Qt::Horizontal</enum>
-                             </property>
-                             <property name="tickPosition">
-                              <enum>QSlider::TicksBelow</enum>
-                             </property>
-                             <property name="tickInterval">
-                              <number>25</number>
-                             </property>
-                            </widget>
-                           </item>
-                           <item>
-                            <widget class="QLabel" name="wb_tint_label">
-                             <property name="text">
-                              <string>1.0</string>
-                             </property>
-                            </widget>
-                           </item>
-                          </layout>
-                         </item>
-                         <item row="0" column="1">
-                          <widget class="QCheckBox" name="enable_white_balance">
-                           <property name="text">
-                            <string/>
-                           </property>
-                           <property name="checked">
-                            <bool>true</bool>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </widget>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="verticalSpacer">
-                     <property name="orientation">
-                      <enum>Qt::Vertical</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>20</width>
-                       <height>40</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </widget>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-             <widget class="QWidget" name="profiler_tab">
-              <attribute name="title">
-               <string>Profiler</string>
-              </attribute>
-              <layout class="QVBoxLayout" name="verticalLayout_9">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QScrollArea" name="scrollArea_2">
-                 <property name="widgetResizable">
-                  <bool>true</bool>
-                 </property>
-                 <widget class="QWidget" name="scrollAreaWidgetContents_2">
-                  <property name="geometry">
-                   <rect>
-                    <x>0</x>
-                    <y>0</y>
-                    <width>425</width>
-                    <height>548</height>
-                   </rect>
+                  <property name="widgetResizable">
+                   <bool>true</bool>
                   </property>
-                  <layout class="QVBoxLayout" name="verticalLayout_10">
-                   <property name="leftMargin">
-                    <number>3</number>
+                  <widget class="QWidget" name="scrollAreaWidgetContents">
+                   <property name="geometry">
+                    <rect>
+                     <x>0</x>
+                     <y>0</y>
+                     <width>381</width>
+                     <height>645</height>
+                    </rect>
                    </property>
-                   <property name="topMargin">
-                    <number>3</number>
-                   </property>
-                   <property name="rightMargin">
-                    <number>3</number>
-                   </property>
-                   <property name="bottomMargin">
-                    <number>3</number>
-                   </property>
-                   <item>
-                    <widget class="QFrame" name="frame_4">
-                     <property name="frameShape">
-                      <enum>QFrame::StyledPanel</enum>
-                     </property>
-                     <property name="frameShadow">
-                      <enum>QFrame::Raised</enum>
-                     </property>
-                     <layout class="QFormLayout" name="formLayout_3">
-                      <property name="horizontalSpacing">
-                       <number>6</number>
+                   <layout class="QVBoxLayout" name="verticalLayout_7">
+                    <property name="spacing">
+                     <number>3</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>3</number>
+                    </property>
+                    <item>
+                     <widget class="QFrame" name="settings_frame">
+                      <property name="frameShape">
+                       <enum>QFrame::NoFrame</enum>
                       </property>
-                      <property name="verticalSpacing">
-                       <number>3</number>
+                      <property name="frameShadow">
+                       <enum>QFrame::Raised</enum>
                       </property>
-                      <property name="leftMargin">
-                       <number>3</number>
+                      <layout class="QVBoxLayout" name="verticalLayout_16">
+                       <property name="spacing">
+                        <number>3</number>
+                       </property>
+                       <property name="leftMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>3</number>
+                       </property>
+                      </layout>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QGroupBox" name="general_settings">
+                      <property name="title">
+                       <string>General</string>
                       </property>
-                      <property name="topMargin">
-                       <number>3</number>
+                      <property name="checkable">
+                       <bool>true</bool>
                       </property>
-                      <property name="rightMargin">
-                       <number>3</number>
-                      </property>
-                      <property name="bottomMargin">
-                       <number>3</number>
-                      </property>
-                      <item row="0" column="0">
-                       <widget class="QLabel" name="label_8">
-                        <property name="text">
-                         <string>Enabled</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="0" column="1">
-                       <widget class="QFrame" name="frame_5">
-                        <property name="frameShape">
-                         <enum>QFrame::StyledPanel</enum>
-                        </property>
-                        <property name="frameShadow">
-                         <enum>QFrame::Raised</enum>
-                        </property>
-                        <layout class="QHBoxLayout" name="horizontalLayout_2">
-                         <property name="spacing">
-                          <number>3</number>
+                      <layout class="QFormLayout" name="formLayout_2">
+                       <property name="verticalSpacing">
+                        <number>3</number>
+                       </property>
+                       <property name="leftMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>3</number>
+                       </property>
+                       <item row="0" column="0">
+                        <widget class="QLabel" name="label_6">
+                         <property name="text">
+                          <string>Samples per Pixel</string>
                          </property>
-                         <property name="leftMargin">
+                        </widget>
+                       </item>
+                       <item row="0" column="1">
+                        <widget class="QSpinBox" name="n_samples">
+                         <property name="minimum">
+                          <number>1</number>
+                         </property>
+                         <property name="maximum">
+                          <number>99999</number>
+                         </property>
+                         <property name="value">
+                          <number>512</number>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="0">
+                        <widget class="QLabel" name="label_10">
+                         <property name="text">
+                          <string>Max Ray Depth</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="1">
+                        <widget class="QSpinBox" name="max_depth">
+                         <property name="minimum">
                           <number>0</number>
                          </property>
-                         <property name="topMargin">
-                          <number>0</number>
+                         <property name="maximum">
+                          <number>512</number>
                          </property>
-                         <property name="rightMargin">
-                          <number>0</number>
+                         <property name="value">
+                          <number>5</number>
                          </property>
-                         <property name="bottomMargin">
-                          <number>0</number>
+                        </widget>
+                       </item>
+                      </layout>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QGroupBox" name="camera_settings">
+                      <property name="title">
+                       <string>Camera</string>
+                      </property>
+                      <property name="checkable">
+                       <bool>true</bool>
+                      </property>
+                      <layout class="QFormLayout" name="formLayout">
+                       <property name="horizontalSpacing">
+                        <number>6</number>
+                       </property>
+                       <property name="verticalSpacing">
+                        <number>3</number>
+                       </property>
+                       <property name="leftMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>3</number>
+                       </property>
+                       <item row="1" column="0">
+                        <widget class="QLabel" name="label">
+                         <property name="text">
+                          <string>Focal Length</string>
                          </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="1">
+                        <widget class="QDoubleSpinBox" name="focal_length">
+                         <property name="frame">
+                          <bool>true</bool>
+                         </property>
+                         <property name="buttonSymbols">
+                          <enum>QAbstractSpinBox::PlusMinus</enum>
+                         </property>
+                         <property name="decimals">
+                          <number>4</number>
+                         </property>
+                         <property name="minimum">
+                          <double>0.000100000000000</double>
+                         </property>
+                         <property name="maximum">
+                          <double>999.000000000000000</double>
+                         </property>
+                         <property name="value">
+                          <double>3.000000000000000</double>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="2" column="0">
+                        <widget class="QLabel" name="label_2">
+                         <property name="text">
+                          <string>Focus Distance</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="2" column="1">
+                        <widget class="QDoubleSpinBox" name="focus_distance">
+                         <property name="decimals">
+                          <number>4</number>
+                         </property>
+                         <property name="minimum">
+                          <double>0.000100000000000</double>
+                         </property>
+                         <property name="maximum">
+                          <double>32767.000000000000000</double>
+                         </property>
+                         <property name="value">
+                          <double>10.000000000000000</double>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="3" column="0">
+                        <widget class="QLabel" name="label_3">
+                         <property name="text">
+                          <string>Aperture</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="3" column="1">
+                        <widget class="QDoubleSpinBox" name="aperture">
+                         <property name="decimals">
+                          <number>4</number>
+                         </property>
+                         <property name="minimum">
+                          <double>0.000100000000000</double>
+                         </property>
+                         <property name="maximum">
+                          <double>1024.000000000000000</double>
+                         </property>
+                         <property name="singleStep">
+                          <double>0.010000000000000</double>
+                         </property>
+                         <property name="value">
+                          <double>0.010000000000000</double>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="4" column="0">
+                        <widget class="QLabel" name="label_4">
+                         <property name="text">
+                          <string>Sensor Width</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="4" column="1">
+                        <widget class="QDoubleSpinBox" name="sensor_width">
+                         <property name="decimals">
+                          <number>4</number>
+                         </property>
+                         <property name="minimum">
+                          <double>0.000100000000000</double>
+                         </property>
+                         <property name="maximum">
+                          <double>1024.000000000000000</double>
+                         </property>
+                         <property name="singleStep">
+                          <double>0.100000000000000</double>
+                         </property>
+                         <property name="value">
+                          <double>2.000000000000000</double>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="5" column="0">
+                        <widget class="QLabel" name="label_5">
+                         <property name="text">
+                          <string>Shutter Speed</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="5" column="1">
+                        <widget class="QDoubleSpinBox" name="shutter_speed">
+                         <property name="decimals">
+                          <number>4</number>
+                         </property>
+                         <property name="minimum">
+                          <double>0.000100000000000</double>
+                         </property>
+                         <property name="maximum">
+                          <double>999.990000000000009</double>
+                         </property>
+                         <property name="singleStep">
+                          <double>0.100000000000000</double>
+                         </property>
+                         <property name="value">
+                          <double>1.000000000000000</double>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="0" column="1">
+                        <layout class="QHBoxLayout" name="horizontalLayout_6">
                          <item>
-                          <widget class="QCheckBox" name="profiler_enabled">
-                           <property name="sizePolicy">
-                            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-                             <horstretch>0</horstretch>
-                             <verstretch>0</verstretch>
-                            </sizepolicy>
+                          <spacer name="horizontalSpacer_2">
+                           <property name="orientation">
+                            <enum>Qt::Horizontal</enum>
                            </property>
-                           <property name="text">
-                            <string/>
+                           <property name="sizeHint" stdset="0">
+                            <size>
+                             <width>40</width>
+                             <height>20</height>
+                            </size>
                            </property>
-                           <property name="checked">
-                            <bool>false</bool>
-                           </property>
-                          </widget>
+                          </spacer>
                          </item>
                          <item>
-                          <widget class="QProgressBar" name="profiler_progress">
-                           <property name="sizePolicy">
-                            <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
-                             <horstretch>0</horstretch>
-                             <verstretch>0</verstretch>
-                            </sizepolicy>
-                           </property>
-                           <property name="value">
-                            <number>0</number>
-                           </property>
-                           <property name="textVisible">
-                            <bool>false</bool>
+                          <widget class="QToolButton" name="lock_camera">
+                           <property name="text">
+                            <string>...</string>
                            </property>
                           </widget>
                          </item>
                         </layout>
-                       </widget>
-                      </item>
-                      <item row="1" column="0">
-                       <widget class="QLabel" name="label_7">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="text">
-                         <string>Interval (ms)</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="1" column="1">
-                       <widget class="QSpinBox" name="profiler_interval">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="minimum">
-                         <number>1</number>
-                        </property>
-                        <property name="maximum">
-                         <number>999999</number>
-                        </property>
-                        <property name="singleStep">
-                         <number>1000</number>
-                        </property>
-                        <property name="value">
-                         <number>1000</number>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QGroupBox" name="groupBox">
-                     <property name="title">
-                      <string>CUDA</string>
-                     </property>
-                     <layout class="QFormLayout" name="formLayout_4">
-                      <property name="verticalSpacing">
-                       <number>3</number>
+                       </item>
+                       <item row="0" column="0">
+                        <widget class="QLabel" name="label_19">
+                         <property name="text">
+                          <string>TextLabel</string>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QGroupBox" name="color_correction_settings">
+                      <property name="title">
+                       <string>Color Correction</string>
                       </property>
-                      <property name="leftMargin">
-                       <number>3</number>
+                      <property name="checkable">
+                       <bool>true</bool>
                       </property>
-                      <property name="topMargin">
-                       <number>3</number>
+                      <layout class="QVBoxLayout" name="verticalLayout_14">
+                       <property name="leftMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>3</number>
+                       </property>
+                       <item>
+                        <widget class="QGroupBox" name="groupBox_2">
+                         <property name="title">
+                          <string>Image</string>
+                         </property>
+                         <property name="flat">
+                          <bool>true</bool>
+                         </property>
+                         <layout class="QFormLayout" name="formLayout_5">
+                          <property name="verticalSpacing">
+                           <number>3</number>
+                          </property>
+                          <property name="leftMargin">
+                           <number>3</number>
+                          </property>
+                          <property name="topMargin">
+                           <number>3</number>
+                          </property>
+                          <property name="rightMargin">
+                           <number>3</number>
+                          </property>
+                          <property name="bottomMargin">
+                           <number>3</number>
+                          </property>
+                          <item row="0" column="0">
+                           <widget class="QLabel" name="label_14">
+                            <property name="text">
+                             <string>To Gamma</string>
+                            </property>
+                           </widget>
+                          </item>
+                          <item row="0" column="1">
+                           <widget class="QCheckBox" name="linear_to_gamma">
+                            <property name="text">
+                             <string/>
+                            </property>
+                            <property name="checked">
+                             <bool>true</bool>
+                            </property>
+                           </widget>
+                          </item>
+                         </layout>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QGroupBox" name="groupBox_3">
+                         <property name="title">
+                          <string>Tonemapping</string>
+                         </property>
+                         <property name="flat">
+                          <bool>true</bool>
+                         </property>
+                         <layout class="QFormLayout" name="formLayout_6">
+                          <property name="verticalSpacing">
+                           <number>3</number>
+                          </property>
+                          <property name="leftMargin">
+                           <number>3</number>
+                          </property>
+                          <property name="topMargin">
+                           <number>3</number>
+                          </property>
+                          <property name="rightMargin">
+                           <number>3</number>
+                          </property>
+                          <property name="bottomMargin">
+                           <number>3</number>
+                          </property>
+                          <item row="0" column="0">
+                           <widget class="QCheckBox" name="enable_tonemap">
+                            <property name="text">
+                             <string>Enable</string>
+                            </property>
+                            <property name="checked">
+                             <bool>true</bool>
+                            </property>
+                           </widget>
+                          </item>
+                          <item row="0" column="1">
+                           <widget class="QComboBox" name="tonemap_method">
+                            <property name="currentText">
+                             <string/>
+                            </property>
+                           </widget>
+                          </item>
+                          <item row="1" column="0">
+                           <widget class="QLabel" name="label_12">
+                            <property name="text">
+                             <string>Blend</string>
+                            </property>
+                           </widget>
+                          </item>
+                          <item row="1" column="1">
+                           <layout class="QHBoxLayout" name="horizontalLayout">
+                            <item>
+                             <widget class="QSlider" name="tonemap_alpha">
+                              <property name="maximum">
+                               <number>100</number>
+                              </property>
+                              <property name="value">
+                               <number>100</number>
+                              </property>
+                              <property name="orientation">
+                               <enum>Qt::Horizontal</enum>
+                              </property>
+                              <property name="tickPosition">
+                               <enum>QSlider::TicksBelow</enum>
+                              </property>
+                              <property name="tickInterval">
+                               <number>10</number>
+                              </property>
+                             </widget>
+                            </item>
+                            <item>
+                             <widget class="QLabel" name="tonemap_blend_percent">
+                              <property name="sizePolicy">
+                               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                                <horstretch>0</horstretch>
+                                <verstretch>0</verstretch>
+                               </sizepolicy>
+                              </property>
+                              <property name="minimumSize">
+                               <size>
+                                <width>40</width>
+                                <height>0</height>
+                               </size>
+                              </property>
+                              <property name="text">
+                               <string>100%</string>
+                              </property>
+                              <property name="alignment">
+                               <set>Qt::AlignCenter</set>
+                              </property>
+                             </widget>
+                            </item>
+                           </layout>
+                          </item>
+                          <item row="2" column="0">
+                           <widget class="QLabel" name="label_15">
+                            <property name="text">
+                             <string>White Point</string>
+                            </property>
+                           </widget>
+                          </item>
+                          <item row="2" column="1">
+                           <widget class="QDoubleSpinBox" name="tonemap_white_point">
+                            <property name="singleStep">
+                             <double>0.200000000000000</double>
+                            </property>
+                            <property name="value">
+                             <double>1.000000000000000</double>
+                            </property>
+                           </widget>
+                          </item>
+                         </layout>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QGroupBox" name="white_balance_settings">
+                         <property name="title">
+                          <string>White Balance</string>
+                         </property>
+                         <layout class="QFormLayout" name="formLayout_7">
+                          <item row="0" column="0">
+                           <widget class="QLabel" name="label_16">
+                            <property name="text">
+                             <string>Enable</string>
+                            </property>
+                           </widget>
+                          </item>
+                          <item row="1" column="0">
+                           <widget class="QLabel" name="label_17">
+                            <property name="text">
+                             <string>Temperature</string>
+                            </property>
+                           </widget>
+                          </item>
+                          <item row="2" column="0">
+                           <widget class="QLabel" name="label_18">
+                            <property name="text">
+                             <string>Tint</string>
+                            </property>
+                           </widget>
+                          </item>
+                          <item row="1" column="1">
+                           <layout class="QHBoxLayout" name="horizontalLayout_4">
+                            <item>
+                             <widget class="QSlider" name="wb_temp">
+                              <property name="minimum">
+                               <number>1</number>
+                              </property>
+                              <property name="maximum">
+                               <number>12000</number>
+                              </property>
+                              <property name="value">
+                               <number>6800</number>
+                              </property>
+                              <property name="orientation">
+                               <enum>Qt::Horizontal</enum>
+                              </property>
+                              <property name="invertedAppearance">
+                               <bool>false</bool>
+                              </property>
+                              <property name="tickPosition">
+                               <enum>QSlider::TicksBothSides</enum>
+                              </property>
+                              <property name="tickInterval">
+                               <number>500</number>
+                              </property>
+                             </widget>
+                            </item>
+                            <item>
+                             <widget class="QLabel" name="wb_temp_label">
+                              <property name="text">
+                               <string>6800k</string>
+                              </property>
+                             </widget>
+                            </item>
+                           </layout>
+                          </item>
+                          <item row="2" column="1">
+                           <layout class="QHBoxLayout" name="horizontalLayout_5">
+                            <item>
+                             <widget class="QSlider" name="wb_tint">
+                              <property name="maximum">
+                               <number>500</number>
+                              </property>
+                              <property name="value">
+                               <number>100</number>
+                              </property>
+                              <property name="orientation">
+                               <enum>Qt::Horizontal</enum>
+                              </property>
+                              <property name="tickPosition">
+                               <enum>QSlider::TicksBelow</enum>
+                              </property>
+                              <property name="tickInterval">
+                               <number>25</number>
+                              </property>
+                             </widget>
+                            </item>
+                            <item>
+                             <widget class="QLabel" name="wb_tint_label">
+                              <property name="text">
+                               <string>1.0</string>
+                              </property>
+                             </widget>
+                            </item>
+                           </layout>
+                          </item>
+                          <item row="0" column="1">
+                           <widget class="QCheckBox" name="enable_white_balance">
+                            <property name="text">
+                             <string/>
+                            </property>
+                            <property name="checked">
+                             <bool>true</bool>
+                            </property>
+                           </widget>
+                          </item>
+                         </layout>
+                        </widget>
+                       </item>
+                      </layout>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="verticalSpacer">
+                      <property name="orientation">
+                       <enum>Qt::Vertical</enum>
                       </property>
-                      <property name="rightMargin">
-                       <number>3</number>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>20</width>
+                        <height>40</height>
+                       </size>
                       </property>
-                      <property name="bottomMargin">
-                       <number>3</number>
-                      </property>
-                      <item row="0" column="0">
-                       <widget class="QLabel" name="label_9">
-                        <property name="text">
-                         <string>Used</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="0" column="1">
-                       <widget class="QLabel" name="cuda_mem_used">
-                        <property name="text">
-                         <string/>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="1" column="0">
-                       <widget class="QLabel" name="label_11">
-                        <property name="text">
-                         <string>Free</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="1" column="1">
-                       <widget class="QLabel" name="cuda_mem_free">
-                        <property name="text">
-                         <string/>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="2" column="0">
-                       <widget class="QLabel" name="label_13">
-                        <property name="text">
-                         <string>Total</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="2" column="1">
-                       <widget class="QLabel" name="cuda_mem_total">
-                        <property name="text">
-                         <string/>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                   <item>
-                    <spacer name="verticalSpacer_2">
-                     <property name="orientation">
-                      <enum>Qt::Vertical</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>20</width>
-                       <height>40</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
+                     </spacer>
+                    </item>
+                   </layout>
+                  </widget>
                  </widget>
-                </widget>
-               </item>
-              </layout>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="profiler_tab">
+               <attribute name="title">
+                <string>Profiler</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout_9">
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QScrollArea" name="scrollArea_2">
+                  <property name="widgetResizable">
+                   <bool>true</bool>
+                  </property>
+                  <widget class="QWidget" name="scrollAreaWidgetContents_2">
+                   <property name="geometry">
+                    <rect>
+                     <x>0</x>
+                     <y>0</y>
+                     <width>396</width>
+                     <height>410</height>
+                    </rect>
+                   </property>
+                   <layout class="QVBoxLayout" name="verticalLayout_10">
+                    <property name="leftMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>3</number>
+                    </property>
+                    <item>
+                     <widget class="QFrame" name="frame_4">
+                      <property name="frameShape">
+                       <enum>QFrame::StyledPanel</enum>
+                      </property>
+                      <property name="frameShadow">
+                       <enum>QFrame::Raised</enum>
+                      </property>
+                      <layout class="QFormLayout" name="formLayout_3">
+                       <property name="horizontalSpacing">
+                        <number>6</number>
+                       </property>
+                       <property name="verticalSpacing">
+                        <number>3</number>
+                       </property>
+                       <property name="leftMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>3</number>
+                       </property>
+                       <item row="0" column="0">
+                        <widget class="QLabel" name="label_8">
+                         <property name="text">
+                          <string>Enabled</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="0" column="1">
+                        <widget class="QFrame" name="frame_5">
+                         <property name="frameShape">
+                          <enum>QFrame::StyledPanel</enum>
+                         </property>
+                         <property name="frameShadow">
+                          <enum>QFrame::Raised</enum>
+                         </property>
+                         <layout class="QHBoxLayout" name="horizontalLayout_2">
+                          <property name="spacing">
+                           <number>3</number>
+                          </property>
+                          <property name="leftMargin">
+                           <number>0</number>
+                          </property>
+                          <property name="topMargin">
+                           <number>0</number>
+                          </property>
+                          <property name="rightMargin">
+                           <number>0</number>
+                          </property>
+                          <property name="bottomMargin">
+                           <number>0</number>
+                          </property>
+                          <item>
+                           <widget class="QCheckBox" name="profiler_enabled">
+                            <property name="sizePolicy">
+                             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                              <horstretch>0</horstretch>
+                              <verstretch>0</verstretch>
+                             </sizepolicy>
+                            </property>
+                            <property name="text">
+                             <string/>
+                            </property>
+                            <property name="checked">
+                             <bool>false</bool>
+                            </property>
+                           </widget>
+                          </item>
+                          <item>
+                           <widget class="QProgressBar" name="profiler_progress">
+                            <property name="sizePolicy">
+                             <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
+                              <horstretch>0</horstretch>
+                              <verstretch>0</verstretch>
+                             </sizepolicy>
+                            </property>
+                            <property name="value">
+                             <number>0</number>
+                            </property>
+                            <property name="textVisible">
+                             <bool>false</bool>
+                            </property>
+                           </widget>
+                          </item>
+                         </layout>
+                        </widget>
+                       </item>
+                       <item row="1" column="0">
+                        <widget class="QLabel" name="label_7">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="text">
+                          <string>Interval (ms)</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="1">
+                        <widget class="QSpinBox" name="profiler_interval">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="minimum">
+                          <number>1</number>
+                         </property>
+                         <property name="maximum">
+                          <number>999999</number>
+                         </property>
+                         <property name="singleStep">
+                          <number>1000</number>
+                         </property>
+                         <property name="value">
+                          <number>1000</number>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QGroupBox" name="groupBox">
+                      <property name="title">
+                       <string>CUDA</string>
+                      </property>
+                      <layout class="QFormLayout" name="formLayout_4">
+                       <property name="verticalSpacing">
+                        <number>3</number>
+                       </property>
+                       <property name="leftMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>3</number>
+                       </property>
+                       <item row="0" column="0">
+                        <widget class="QLabel" name="label_9">
+                         <property name="text">
+                          <string>Used</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="0" column="1">
+                        <widget class="QLabel" name="cuda_mem_used">
+                         <property name="text">
+                          <string/>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="0">
+                        <widget class="QLabel" name="label_11">
+                         <property name="text">
+                          <string>Free</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="1">
+                        <widget class="QLabel" name="cuda_mem_free">
+                         <property name="text">
+                          <string/>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="2" column="0">
+                        <widget class="QLabel" name="label_13">
+                         <property name="text">
+                          <string>Total</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="2" column="1">
+                        <widget class="QLabel" name="cuda_mem_total">
+                         <property name="text">
+                          <string/>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="verticalSpacer_2">
+                      <property name="orientation">
+                       <enum>Qt::Vertical</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>20</width>
+                        <height>40</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                   </layout>
+                  </widget>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
              </widget>
             </widget>
            </item>
@@ -1572,18 +1707,27 @@
      </widget>
     </item>
     <item>
-     <widget class="QFrame" name="frame_7">
+     <widget class="QFrame" name="timeline_frame">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+       <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>50</height>
+       </size>
+      </property>
       <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
+       <enum>QFrame::Box</enum>
       </property>
       <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
+       <enum>QFrame::Sunken</enum>
+      </property>
+      <property name="lineWidth">
+       <number>3</number>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_7">
        <property name="leftMargin">
@@ -1599,7 +1743,13 @@
         <number>3</number>
        </property>
        <item>
-        <widget class="QSlider" name="horizontalSlider">
+        <widget class="QSlider" name="timeline">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="maximum">
           <number>240</number>
          </property>

@@ -6,7 +6,7 @@ __global__ void mask_selected_kernel(
     size_t        W,
     DeviceCamera* cam,
     SceneGraph*   scene,
-    size_t        selected_object_index
+    size_t        selected_object_id
 ) {
 
     ProcessIndex p_idx = get_process_index();
@@ -20,7 +20,7 @@ __global__ void mask_selected_kernel(
     HitRecord rec;
     bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
     base_mask[pixel_idx] = (
-        hit && rec.hit_object->get_object_index() == selected_object_index
+        hit && rec.hit_object->get_object_id() == selected_object_id
     ) ? 255u : 0u;
 }
 
@@ -58,7 +58,7 @@ uint8_t* selection_mask(
     size_t        W,
     DeviceCamera* cam,
     SceneGraph*   scene,
-    size_t        selected_object_index,
+    size_t        selected_object_id,
     int           outline_radius
 ) {
     dim3 block(BS2D, BS2D, 1);
@@ -67,7 +67,7 @@ uint8_t* selection_mask(
     uint8_t* base_mask;
     CUDAMemory::allocate<uint8_t>(base_mask, H * W);
     mask_selected_kernel<<<grid, block>>>(
-        base_mask, H, W, cam, scene, selected_object_index
+        base_mask, H, W, cam, scene, selected_object_id
     );
 
     uint8_t* out_mask;

@@ -32,7 +32,10 @@ void register_material(py::module_& m) {
         .def_static("from_color",
             py::overload_cast<float, float, float>(&Texture::from_color),
             py::arg("r"), py::arg("g"), py::arg("b"))
-        .def_static("from_image", &Texture::from_image, py::arg("filepath"))
+        .def_static("from_image", &Texture::from_image, 
+            py::arg("filepath"),
+            py::arg("scale") = 1.0f
+        )
 
         .def_readonly("type",           &Texture::type)
         .def_readonly("filepath",       &Texture::filepath)

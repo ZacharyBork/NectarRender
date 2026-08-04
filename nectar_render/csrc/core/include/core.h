@@ -23,6 +23,10 @@
 
 #define NOINLINE __attribute__((noinline))
 
+typedef std::chrono::high_resolution_clock Time;
+typedef std::chrono::duration<float> fsec;
+inline constexpr std::memory_order relaxed = std::memory_order_relaxed;
+
 // UTILITIES ==================================================================
 
 /* Template used to define general no-op for std::function hook defaults meant

@@ -178,6 +178,11 @@ public:
         sample_pattern(sample_pattern) 
     { }
 
+    __device__ Ray get_ray_center(uint32_t x, uint32_t y) {
+        Vector3 focus_point = get_focus_point(x, y, 0u, 0u, 0u);
+        return Ray(p.position, normalize(focus_point - p.position));
+    }
+
     __device__ Ray get_ray(
         uint32_t x,
         uint32_t y,

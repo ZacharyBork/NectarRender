@@ -20,7 +20,7 @@ uint8_t* selection_mask(
     size_t        W,
     DeviceCamera* cam,
     SceneGraph*   scene,
-    size_t        selected_object_index,
+    size_t        selected_object_id,
     int           outline_radius
 );
 
@@ -56,6 +56,8 @@ public:
     /* INTERACTION */
 
     void query_scene(float u, float v) {
+        std::lock_guard<std::mutex> lock(interface_mutex);
+
         HitRecord* d_rec;
         CUDAMemory::allocate<HitRecord>(d_rec);
         hit_test_ray(u, v, scene->graph, camera->device_camera(), d_rec);
@@ -71,45 +73,44 @@ public:
 
     void enable() {
         if (is_enabled()) return;
-        enabled.store(true, std::memory_order_relaxed);
+        enabled.store(true, relaxed);
     }
 
     void disable() { 
-        teardown_pending.store(true, std::memory_order_relaxed);
+        teardown_pending.store(true, relaxed);
     }
 
-    bool is_enabled() const { return enabled.load(std::memory_order_relaxed); }
+    bool is_enabled() const { return enabled.load(relaxed); }
     bool is_disabled() const { return !is_enabled(); }
     bool is_pending_teardown() const {
-        return teardown_pending.load(std::memory_order_relaxed); 
+        return teardown_pending.load(relaxed); 
     }
-    
-
-
-
 
     /* PROPERTY ACCESS */
 
     Scene* get_scene() { return scene; }
     HitRecord& get_hit_record() { return rec; }
 
-
-
     /* TRANSFORM UTILS */
 
     Transform get_transform() { 
-        return hit_object()->get_transform(); 
+        std::lock_guard<std::mutex> lock(interface_mutex);
+        return hit_object()->host_object->get_transform(); 
     }
 
     void set_transform(const Transform& xform) {
-        hit_object()->set_transform(xform);
+        std::lock_guard<std::mutex> lock(interface_mutex);
+        hit_object()->host_object->set_transform(xform);
+        hit_object()->mark_dirty();
         scene->request_reset(true, false, false);
         requests->restart();
     }
 
     /* SKYLIGHT */
 
-    Skylight& get_skylight() { return scene->skylight; }
+    Skylight& get_skylight() { 
+        std::lock_guard<std::mutex> lock(interface_mutex);
+        return scene->skylight; }
 
     void request_skylight_update() {
         scene->request_reset(false, false, true);
@@ -117,6 +118,7 @@ public:
     }
 
     void swap_skylight(Skylight new_skylight) {
+        std::lock_guard<std::mutex> lock(interface_mutex);
         scene->skylight = std::move(new_skylight);
         scene->request_reset(false, false, true);
         requests->restart();
@@ -146,14 +148,16 @@ private:
     SelectionMaskConfig mask_cfg;
     ToolState tool_state = ToolState::SELECT;
 
+    std::mutex interface_mutex;
+
     std::atomic<bool> enabled { false };
     std::atomic<bool> teardown_pending { false };
 
     size_t material_index() { return rec.material_index; }
-    size_t object_index()   { return rec.object_index;   }
+    size_t object_id()      { return rec.object_id;   }
 
-    Hittable* hit_object() {
-        return scene->hittables_registry.get_object_host(object_index());
+    HittableRegistryEntry* hit_object() {
+        return scene->hittables_registry.get_entry(object_id());
     }
 
     Material& host_material() {
@@ -163,7 +167,7 @@ private:
     void build_selection_mask() {
         uint8_t* d_mask_ptr = selection_mask(
             stream->H, stream->W, camera->device_camera(), scene->graph, 
-            object_index(), mask_cfg.outline_radius
+            object_id(), mask_cfg.outline_radius
         );
         stream->overlay(d_mask_ptr, mask_cfg.color);
     }
@@ -171,8 +175,8 @@ private:
     void teardown() {
         stream->remove_overlay();
         rec = HitRecord();
-        teardown_pending.store(false, std::memory_order_relaxed);
-        enabled.store(false, std::memory_order_relaxed);
+        teardown_pending.store(false, relaxed);
+        enabled.store(false, relaxed);
     }
     
 };
