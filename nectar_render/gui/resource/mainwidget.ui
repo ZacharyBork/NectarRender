@@ -660,36 +660,6 @@
                <property name="bottomMargin">
                 <number>0</number>
                </property>
-               <item>
-                <widget class="QTreeWidget" name="outliner">
-                 <property name="alternatingRowColors">
-                  <bool>false</bool>
-                 </property>
-                 <property name="headerHidden">
-                  <bool>false</bool>
-                 </property>
-                 <property name="columnCount">
-                  <number>1</number>
-                 </property>
-                 <attribute name="headerVisible">
-                  <bool>true</bool>
-                 </attribute>
-                 <attribute name="headerCascadingSectionResizes">
-                  <bool>false</bool>
-                 </attribute>
-                 <attribute name="headerHighlightSections">
-                  <bool>false</bool>
-                 </attribute>
-                 <attribute name="headerShowSortIndicator" stdset="0">
-                  <bool>false</bool>
-                 </attribute>
-                 <column>
-                  <property name="text">
-                   <string notr="true">1</string>
-                  </property>
-                 </column>
-                </widget>
-               </item>
               </layout>
              </widget>
              <widget class="QTabWidget" name="settings_tabs">
@@ -745,7 +715,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>396</width>
-                     <height>414</height>
+                     <height>364</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -1485,7 +1455,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>396</width>
-                     <height>414</height>
+                     <height>364</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_10">

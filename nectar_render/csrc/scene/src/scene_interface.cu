@@ -20,7 +20,7 @@ __global__ void mask_selected_kernel(
     HitRecord rec;
     bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
     base_mask[pixel_idx] = (
-        hit && rec.hit_object->get_object_id() == selected_object_id
+        hit && rec.object_id == selected_object_id
     ) ? 255u : 0u;
 }
 

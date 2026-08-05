@@ -28,7 +28,7 @@ public:
 
     __host__ void register_material(Hittable* obj) {
         if (obj->get_material().material_type() == MaterialType::Null) {
-            obj->set_material_index((size_t)0);
+            obj->set_material_id((size_t)0);
             return;
         }
 
@@ -38,7 +38,7 @@ public:
                 "additional materials."
             );
 
-        obj->set_material_index(h_materials.size());
+        obj->set_material_id(h_materials.size());
         h_materials.push_back(std::move(obj->get_material()));
     }
 

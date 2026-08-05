@@ -14,7 +14,7 @@ from nectar_render.gui.bridge   import Bridge
 from nectar_render.gui.registry import WidgetRegistry
 from nectar_render.gui.widgets import (
     ViewportWidget, ColorCorrection, ProgressBar, Profiler, MenuBar,
-    CollapsibleMenu, SpinboxSlider
+    CollapsibleMenu, SpinboxSlider, Outliner
 )
 
 from nectar_render.gui.settings_groups import SkylightSettings
@@ -113,6 +113,7 @@ class Interface(QObject):
         
         self.viewport:  ViewportWidget = None
         self.progress_bar: ProgressBar = None
+        self.outliner:        Outliner = None
         self.profiler:        Profiler = None
         self.color_correction:  ColorCorrection = None
         
@@ -410,6 +411,11 @@ class Interface(QObject):
         utils.set_button_icon(vm_viewport, 'resize', (18, 18))
         
         view_mode('fill')
+        
+    def _init_outliner(self: Self) -> None:
+        frame = self.find(W.QFrame, 'outliner_frame')
+        self.outliner = Outliner(frame)
+        frame.layout().addWidget(self.outliner)
 
 #### SETTINGS TAB #############################################################
 
@@ -430,15 +436,18 @@ class Interface(QObject):
         self.find = self.mainwidget.findChild
         
         
-        self.find(W.QPushButton, 'test_button').clicked.connect(
-            lambda : Bridge.scene_interface.add_object(
-                Hittable.SPHERE(
-                    Vector3(0.0, 0.0, 0.0),
-                    0.33, Material.PBR(Color.red(), 0.1, 1.0)
-                )
-            )
-        )
+        # self.find(W.QPushButton, 'test_button').clicked.connect(
+        #     lambda : Bridge.scene_interface.add_object(
+        #         Hittable.SPHERE(
+        #             Vector3(0.0, 0.0, 0.0),
+        #             0.33, Material.PBR(Color.red(), 0.1, 1.0)
+        #         )
+        #     )
+        # )
         
+        self.find(W.QPushButton, 'test_button').clicked.connect(
+            lambda : self.outliner.refresh()
+        )
         
 
         self._build_viewport()
@@ -448,6 +457,7 @@ class Interface(QObject):
         self._init_menu_bar()
         self._init_timeline()
         self._init_toolbar()
+        self._init_outliner()
         
         self.build_settings_tab()
         

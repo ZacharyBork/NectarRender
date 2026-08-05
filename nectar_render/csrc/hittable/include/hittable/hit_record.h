@@ -9,11 +9,10 @@ class Material;
 class HitRecord {
 public:
 
-    Hittable* hit_object = nullptr; // Reference to hit object
-    size_t object_id = 0u;          // ID of hit object
+    size_t object_id = 0UL; // ID of hit object
     
-    Material* mat = nullptr;    // Reference to hit objects material
-    size_t material_index = 0u; // Hit index in MaterialRegistry
+    Material* mat = nullptr;  // Reference to hit objects material
+    size_t material_id = 0UL; // Hit index in MaterialRegistry
 
     Vector3 p;          // Position
     Vector3 n;          // Surface normal vector
@@ -49,10 +48,6 @@ public:
         t = dot(
             p - world_ray.origin(), world_ray.direction()
         ) / world_ray.direction().length_squared();
-    }
-
-    __host__ uintptr_t d_object_ptr() const {
-        return reinterpret_cast<uintptr_t>(hit_object);
     }
 
 };

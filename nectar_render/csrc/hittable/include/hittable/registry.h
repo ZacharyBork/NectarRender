@@ -15,48 +15,48 @@ public:
     bool is_light = false;
     HittableType type = HittableType::Null;
         
-    size_t object_id = 0UL;
-    size_t material_index = 0UL;
-    std::string tag = "";
+    size_t object_id   = 0UL;
+    size_t parent_id   = 0UL;
+    size_t material_id = 0UL;
+
+    std::string name = "";
     
     // CONSTRUCTORS / DESTRUCTORS =============================================
 
-    __host__ HittableRegistryEntry() = default;
-    __host__ HittableRegistryEntry(Hittable* obj) : host_object(obj) { }
+    HittableRegistryEntry() = default;
+    HittableRegistryEntry(Hittable* obj) : host_object(obj) { }
 
-    __host__ ~HittableRegistryEntry() { if (d_ptr) CUDAMemory::free(d_ptr); }
-
-    __host__ HittableRegistryEntry(const HittableRegistryEntry&) = delete;
-    __host__ HittableRegistryEntry& operator=(
+    HittableRegistryEntry(const HittableRegistryEntry&) = delete;
+    HittableRegistryEntry& operator=(
         const HittableRegistryEntry&
     ) = delete;
 
-    __host__ HittableRegistryEntry(HittableRegistryEntry&& other) noexcept
+    HittableRegistryEntry(HittableRegistryEntry&& other) noexcept
       : host_object(other.host_object), 
         d_ptr(other.d_ptr),
         is_light(other.is_light), 
         type(other.type),
         object_id(other.object_id), 
-        material_index(other.material_index),
-        tag(std::move(other.tag))
+        material_id(other.material_id),
+        name(std::move(other.name))
     {
         rebuild_pending.store(other.rebuild_pending.load(relaxed), relaxed);
         other.d_ptr = nullptr;
         other.host_object = nullptr;
     }
 
-    __host__ HittableRegistryEntry& operator=(
+    HittableRegistryEntry& operator=(
         HittableRegistryEntry&& other
     ) noexcept {
         if (this != &other) {
             if (d_ptr) CUDAMemory::free(d_ptr);
-            host_object    = other.host_object;
-            d_ptr          = other.d_ptr;
-            is_light       = other.is_light;
-            type           = other.type;
-            object_id      = other.object_id;
-            material_index = other.material_index;
-            tag            = std::move(other.tag);
+            host_object = other.host_object;
+            d_ptr       = other.d_ptr;
+            is_light    = other.is_light;
+            type        = other.type;
+            object_id   = other.object_id;
+            material_id = other.material_id;
+            name        = std::move(other.name);
             rebuild_pending.store(
                 other.rebuild_pending.load(relaxed), relaxed
             );
@@ -69,7 +69,7 @@ public:
 
     // DEVICE BUILD / DESTROY =================================================
     
-    __host__ void build() {
+    void build() {
         if (d_ptr && !rebuild_pending.load(relaxed)) return;
         destroy_device_hittable();
         rebuild_pending.exchange(false, relaxed);
@@ -78,17 +78,19 @@ public:
         is_light = host_object->is_light();
         type     = host_object->hittable_type();
 
-        object_id      = host_object->get_object_id();
-        material_index = host_object->get_material_index();
+        object_id   = host_object->get_object_id();
+        material_id = host_object->get_material_id();
+
+        name = hittabletype_to_string(type);
     }
 
-    __host__ void destroy_device_hittable() {
+    void destroy_device_hittable() {
         if (d_ptr) { CUDAMemory::free(d_ptr); d_ptr = nullptr; }
     }
 
     // UTILITIES ==============================================================
 
-    __host__ void mark_dirty() { rebuild_pending.store(true, relaxed); }
+    void mark_dirty() { rebuild_pending.store(true, relaxed); }
 
 private:
 
@@ -103,11 +105,11 @@ public:
 
     // CONSTRUCTORS ===========================================================
 
-    __host__ HittablesRegistry() { } 
+    HittablesRegistry() { } 
     
     // REGISTRATION ===========================================================
 
-    __host__ void register_hittable(Hittable* hittable) {
+    void register_hittable(Hittable* hittable) {
         if (n_objects > MAX_REGISTRY_ENTRIES) 
             throw std::runtime_error(
                 "Hittables registry exceeded maximum registry entries ["
@@ -120,7 +122,7 @@ public:
         n_objects++;
     }
 
-    __host__ void register_hittable(std::unique_ptr<Hittable> hittable) {
+    void register_hittable(std::unique_ptr<Hittable> hittable) {
         if (n_objects > MAX_REGISTRY_ENTRIES) 
             throw std::runtime_error(
                 "Hittables registry exceeded maximum registry entries ["
@@ -136,7 +138,7 @@ public:
         n_objects++;
     }
 
-    __host__ void register_hittables(std::vector<Hittable*>& hittables) {
+    void register_hittables(std::vector<Hittable*>& hittables) {
         for (size_t i = 0UL; i < hittables.size(); i++) {
             register_hittable(hittables[i]);
         }
@@ -144,12 +146,12 @@ public:
 
     // DEVICE BUILD / DESTROY =================================================
 
-    __host__ void build() {
+    void build() {
         build_bvh();
         build_device_hittables();
     }
 
-    __host__ void destroy_device_hittables() {
+    void destroy_device_hittables() {
         for (size_t i = 0UL; i < n_objects; i++) 
             entries[i].destroy_device_hittable();
 
@@ -162,16 +164,16 @@ public:
 
     // INSPECTION =============================================================
 
-    __host__ size_t object_count()   { return n_objects;   }
-    __host__ size_t bvh_node_count() { return n_bvh_nodes; }
+    size_t object_count()   { return n_objects;   }
+    size_t bvh_node_count() { return n_bvh_nodes; }
 
-    __host__ BVHNode*   device_bvh_nodes() { return bvh_nodes;        }
-    __host__ Hittable** device_lights()    { return d_lights_ptrs;    }
-    __host__ Hittable** device_hittables() { return d_hittables_ptrs; }
+    BVHNode*   device_bvh_nodes() { return bvh_nodes;        }
+    Hittable** device_lights()    { return d_lights_ptrs;    }
+    Hittable** device_hittables() { return d_hittables_ptrs; }
     
     // REGISTRY ACCESS ========================================================
 
-    __host__ std::vector<Hittable*> objects() { 
+    std::vector<Hittable*> objects() { 
         std::vector<Hittable*> objs;
         objs.reserve(n_objects);
         for (size_t i = 0UL; i < n_objects; i++) 
@@ -179,11 +181,21 @@ public:
         return objs;
     }
 
-    __host__ HittableRegistryEntry* get_entry(size_t index) {
+    HittableRegistryEntry* get_entry(size_t index) {
         auto it = index_to_object.find(index);
         if (it == index_to_object.end())
             throw std::runtime_error("Object index not valid.");
         return it->second;
+    }
+
+    std::vector<HittableRegistryEntry*> get_all_entries() {
+        std::vector<HittableRegistryEntry*> all_entries;
+        all_entries.reserve(n_objects);
+
+        for (size_t i = 0UL; i < n_objects; i++)
+            all_entries.push_back(&entries[i]);
+        
+        return all_entries;
     }
 
 private:
@@ -201,7 +213,7 @@ private:
     
     std::unordered_map<size_t, HittableRegistryEntry*> index_to_object;
 
-    __host__ void build_bvh() {
+    void build_bvh() {
         std::vector<HittableRegistryEntry> hittables;
         hittables.reserve(n_objects);
         for (size_t i = 0UL; i < n_objects; i++)
@@ -221,7 +233,7 @@ private:
         CUDAMemory::copy<BVHNode>(bvh_nodes, bvh.nodes.data(), n_bvh_nodes);
     }
 
-    __host__ void build_device_hittables() {
+    void build_device_hittables() {
         std::vector<Hittable*> d_lights;
         std::vector<Hittable*> d_hittables; d_hittables.reserve(n_objects);
 

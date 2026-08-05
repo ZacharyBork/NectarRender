@@ -8,12 +8,12 @@
 #include "light/include/skylight.h"
 
 #include "data/include/data.h"
-#include "scene/include/scene.h"
 #include "engine/include/engine/trace.h"
 #include "engine/include/engine/camera.h"
 #include "engine/include/engine/requests.h"
 
-
+#include "scene.h"
+#include "outliner.h"
 
 uint8_t* selection_mask(
     size_t        H, 
@@ -43,7 +43,9 @@ public:
         EngineRequests* requests
     ) : camera(camera), stream(stream), requests(requests) { }
 
-    void update_scene(Scene* new_scene) { scene = new_scene; }
+    void update_scene(Scene* new_scene) { 
+        scene = new_scene; outliner.set_scene(scene);
+    }
 
     // UPDATE HANDLING ========================================================
 
@@ -53,7 +55,7 @@ public:
         build_selection_mask();
     }
 
-    // INTERACTION ============================================================
+    // OBJECT SELECTION =======================================================
 
     void query_scene(float u, float v) {
         std::lock_guard<std::mutex> lock(interface_mutex);
@@ -65,7 +67,15 @@ public:
         cudaMemcpy(&rec, d_rec, sizeof(HitRecord), cudaMemcpyDeviceToHost);
         CUDAMemory::free<HitRecord>(d_rec);
 
-        if (!rec.hit_object) return;
+        if (rec.object_id == -1) return;
+        if (is_disabled()) enable();
+    }
+
+    void select_scene_node(SceneNode node) {
+        std::lock_guard<std::mutex> lock(interface_mutex);
+        rec.object_id   = node.object_id;
+        rec.material_id = node.material_id;
+        if (rec.object_id == -1) return;
         if (is_disabled()) enable();
     }
 
@@ -90,6 +100,14 @@ public:
 
     Scene* get_scene() { return scene; }
     HitRecord& get_hit_record() { return rec; }
+
+    // SCENE OUTLINE ==========================================================
+
+    SceneOutline get_scene_outline() {
+        std::lock_guard<std::mutex> lock(interface_mutex);
+        outliner.build_outline();
+        return outliner.get_outline();
+    }
 
     // SPAWNING / DELETING ====================================================
 
@@ -137,13 +155,13 @@ public:
 
     void set_material(Material mat) {
         // scene->material_registry.update_material(
-        //     rec.material_index, std::move(mat)
+        //     rec.material_id, std::move(mat)
         // );
         requests->restart();
     }
 
     Material& get_material() {
-        return scene->material_registry.get_material(rec.material_index);
+        return scene->material_registry.get_material(rec.material_id);
     }
 
 private:
@@ -154,6 +172,7 @@ private:
     Scene*          scene    = nullptr;
 
     HitRecord rec;
+    SceneOutliner outliner;
     SelectionMaskConfig mask_cfg;
     ToolState tool_state = ToolState::SELECT;
 
@@ -162,15 +181,15 @@ private:
     std::atomic<bool> enabled { false };
     std::atomic<bool> teardown_pending { false };
 
-    size_t material_index() { return rec.material_index; }
-    size_t object_id()      { return rec.object_id;   }
+    size_t material_id() { return rec.material_id; }
+    size_t object_id()   { return rec.object_id;   }
 
     HittableRegistryEntry* hit_object() {
         return scene->hittables_registry.get_entry(object_id());
     }
 
     Material& host_material() {
-        return scene->material_registry.get_material(material_index());
+        return scene->material_registry.get_material(material_id());
     }
 
     void build_selection_mask() {

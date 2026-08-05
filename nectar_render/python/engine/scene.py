@@ -8,6 +8,8 @@ from nectar_render.python.hittable      import Hittable
 from nectar_render.python.engine.lights import Skylight
 
 SceneInterface: TypeAlias = root.SceneInterface
+SceneNode:      TypeAlias = root.SceneNode
+SceneOutline:   TypeAlias = root.SceneOutline
 
 class Scene(root.Scene):
     def __init__(

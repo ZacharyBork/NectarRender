@@ -13,13 +13,8 @@ class Cube:
 class HitRecord:
     def __init__(self) -> None:
         ...
-    def d_object_ptr(self) -> int:
-        ...
     @property
     def front_face(self) -> bool:
-        ...
-    @property
-    def hit_object(self) -> Hittable:
         ...
     @property
     def mat(self) -> _pathtracer.material.Material:

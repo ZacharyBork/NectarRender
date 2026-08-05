@@ -14,17 +14,29 @@ enum class HittableType : uint8_t {
     Null, Quad, Sphere, Cube, Mesh, ConstantMedium, ObjectLight
 };
 
+inline std::string hittabletype_to_string(HittableType type) {
+    switch (type) {
+        case HittableType::Null:           return "Null";
+        case HittableType::Quad:           return "Quad";
+        case HittableType::Sphere:         return "Sphere";
+        case HittableType::Cube:           return "Cube";
+        case HittableType::Mesh:           return "Mesh";
+        case HittableType::ConstantMedium: return "ConstantMedium";
+        case HittableType::ObjectLight:    return "ObjectLight";
+    }
+}
+
 #define FOR_EACH_HITTABLE_TYPE_HOST(X)   \
-    X(Quad,           h_quad)            \
-    X(Sphere,         h_sphere)          \
-    X(Cube,           h_cube)            \
-    X(Mesh,           h_mesh)            \
+    X(Quad,   h_quad)                    \
+    X(Sphere, h_sphere)                  \
+    X(Cube,   h_cube)                    \
+    X(Mesh,   h_mesh)                    \
 
 #define FOR_EACH_HITTABLE_TYPE_DEVICE(X) \
-    X(Quad,           d_quad)            \
-    X(Sphere,         d_sphere)          \
-    X(Cube,           d_cube)            \
-    X(Mesh,           d_mesh)            \
+    X(Quad,   d_quad)                    \
+    X(Sphere, d_sphere)                  \
+    X(Cube,   d_cube)                    \
+    X(Mesh,   d_mesh)                    \
 
 class Hittable {
 private:
@@ -59,9 +71,6 @@ private:
         }
     }
 
-    Hittable* self_ref = this;
-    Hittable* wrapped_object = nullptr;
-
     AABB bbox;
     Material mat;
     Transform xform, delta;
@@ -69,9 +78,11 @@ private:
     bool is_light_ = false;
     bool is_volumetric_ = false;
 
-    size_t material_index = 0UL;
-    size_t object_id      = 0UL;
+    size_t material_id = 0UL;
+    size_t object_id   = 0UL;
     
+    Hittable* wrapped_object = nullptr;
+
 public:
 
     // CONSTRUCTORS ===========================================================
@@ -93,14 +104,14 @@ public:
         Transform    xform,
         Transform    delta,
         size_t       object_id,
-        size_t       material_index,
+        size_t       material_id,
         Hittable*    wrapped_object,
         void*        obj
     ) : type(type),
         xform(xform),
         delta(delta),
         object_id(object_id),
-        material_index(material_index),
+        material_id(material_id),
         wrapped_object(wrapped_object)
     { 
         switch (type) {
@@ -268,7 +279,7 @@ public:
 
     __host__ Hittable* build() {
         return device_build<Hittable>(
-            type, xform, delta, object_id, material_index, 
+            type, xform, delta, object_id, material_id, 
             wrapped_object, core_ptr()
         );
     }
@@ -297,9 +308,9 @@ public:
 
     // ID UTILS ===============================================================
 
-    __host__ void set_material_index(size_t idx) { material_index = idx; }
-    __host__ __device__ size_t get_material_index() const { 
-        return material_index; 
+    __host__ void set_material_id(size_t idx) { material_id = idx; }
+    __host__ __device__ size_t get_material_id() const { 
+        return material_id; 
     }
 
     __host__ void set_object_id(size_t idx) { object_id = idx; }
@@ -312,7 +323,6 @@ public:
     __device__ bool hit_test(const Ray& ray, HitRecord& rec) const {
         Ray r = ray.to_object_space(xform);
         bool hit_obj = hit(r, Interval(EPS, FMAX), rec);
-        // if (hit_obj) rec.hit_object = self_ref;
         rec.to_world_space(xform, r, ray, true);
 
         return hit_obj;

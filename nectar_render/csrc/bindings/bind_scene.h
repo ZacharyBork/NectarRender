@@ -4,6 +4,7 @@
 #include <pybind11/stl.h>
 
 #include "scene/include/scene.h"
+#include "scene/include/outliner.h"
 #include "scene/include/interface.h"
 
 namespace py = pybind11;
@@ -38,6 +39,16 @@ void register_scene(py::module_& m) {
             py::keep_alive<1, 3>()
         );
 
+    py::class_<SceneNode>(m_scene, "SceneNode")
+        .def_readonly("object_id",   &SceneNode::object_id)
+        .def_readonly("parent_id",   &SceneNode::parent_id)
+        .def_readonly("material_id", &SceneNode::material_id)
+        .def_readonly("name",        &SceneNode::name)
+        .def_readonly("type_name",   &SceneNode::type_name);
+
+    py::class_<SceneOutline>(m_scene, "SceneOutline")
+        .def_readonly("nodes", &SceneOutline::nodes);
+
     py::class_<SceneInterface>(m_scene, "SceneInterface")
         .def("set_material", [](
             SceneInterface& self, 
@@ -50,22 +61,25 @@ void register_scene(py::module_& m) {
 
         .def("add_object", &SceneInterface::add_object, py::arg("obj"))
 
-        .def("query_scene",    &SceneInterface::query_scene)
-        .def("enable",         &SceneInterface::enable)
-        .def("disable",        &SceneInterface::disable)
-        .def("is_enabled",     &SceneInterface::is_enabled)
-        .def("is_disabled",    &SceneInterface::is_disabled)
+        .def("query_scene",       &SceneInterface::query_scene)
+        .def("select_scene_node", &SceneInterface::select_scene_node)
+        .def("enable",            &SceneInterface::enable)
+        .def("disable",           &SceneInterface::disable)
+        .def("is_enabled",        &SceneInterface::is_enabled)
+        .def("is_disabled",       &SceneInterface::is_disabled)
         
-        .def("get_transform",  &SceneInterface::get_transform)
-        .def("set_transform",  &SceneInterface::set_transform)
-        .def("get_material",   &SceneInterface::get_material,
+        .def("get_scene_outline", &SceneInterface::get_scene_outline)
+
+        .def("get_transform", &SceneInterface::get_transform)
+        .def("set_transform", &SceneInterface::set_transform)
+        .def("get_material",  &SceneInterface::get_material,
             return_policy::reference)
         .def("get_hit_record", &SceneInterface::get_hit_record, 
              return_policy::reference)
         
         .def("request_skylight_update", 
             &SceneInterface::request_skylight_update)
-        .def("get_skylight",   &SceneInterface::get_skylight,
+        .def("get_skylight", &SceneInterface::get_skylight,
             return_policy::reference)
         .def("swap_skylight", [](
             SceneInterface& self,

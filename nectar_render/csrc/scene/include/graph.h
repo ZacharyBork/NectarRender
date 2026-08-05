@@ -39,10 +39,9 @@ struct SceneGraph {
                         hit_anything = true;
 
                         rec = tmp_rec;
-                        rec.hit_object     = current;
-                        rec.object_id      = current->get_object_id();
-                        rec.material_index = current->get_material_index();
-                        rec.mat = materials[current->get_material_index()];
+                        rec.object_id = current->get_object_id();
+                        rec.material_id = current->get_material_id();
+                        rec.mat = materials[current->get_material_id()];
                         ray_t.max = tmp_rec.t;
                     }
                 }
