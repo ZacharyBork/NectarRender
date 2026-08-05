@@ -1,11 +1,13 @@
 import _pathtracer
-root = _pathtracer.engine
+root = _pathtracer.scene
 
-from typing import Self
+from typing import Self, TypeAlias
 from collections.abc import Sequence
 
 from nectar_render.python.hittable      import Hittable
 from nectar_render.python.engine.lights import Skylight
+
+SceneInterface: TypeAlias = root.SceneInterface
 
 class Scene(root.Scene):
     def __init__(

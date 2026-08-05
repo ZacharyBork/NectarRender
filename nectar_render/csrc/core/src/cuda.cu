@@ -2,7 +2,7 @@
 
 #include "light/include/skylight.h"
 #include "hittable/include/hittable.h"
-#include "engine/include/engine/scene.h"
+#include "scene/include/scene.h"
 
 // ############################################################################
 // DEVICE-SIDE OBJECT CONSTRUCTION

@@ -76,35 +76,6 @@ void register_engine(py::module_& m) {
         );
 
 // ############################################################################
-// SCENE
-// ############################################################################
-
-    py::classh<Scene>(m_engine, "Scene")
-        .def(py::init([](
-            py::list hittables,
-            py::list lights,
-            std::unique_ptr<Skylight> skylight
-        ) {
-            std::vector<Hittable*> obj_ptrs;
-            obj_ptrs.reserve(hittables.size());
-            for (auto& item : hittables)
-                obj_ptrs.push_back(item.cast<Hittable*>());
-
-            std::vector<Hittable*> light_ptrs;
-            light_ptrs.reserve(lights.size());
-            for (auto& item : lights)
-                light_ptrs.push_back(item.cast<Hittable*>());
-
-            return Scene(obj_ptrs, light_ptrs, std::move(*skylight));
-        }),
-            py::arg("hittables"), 
-            py::arg("lights"), 
-            py::arg("skylight"),
-            py::keep_alive<1, 2>(),
-            py::keep_alive<1, 3>()
-        );
-
-// ############################################################################
 // DENOISERS
 // ############################################################################
 

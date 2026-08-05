@@ -10,9 +10,10 @@
 #include "data/include/data.h"
 #include "host/include/host/utils.h"
 #include "hittable/include/hittable/hittable.h"
-#include "interface/include/scene_interface.h"
 
-#include "scene.h"
+#include "scene/include/interface.h"
+#include "scene/include/scene.h"
+
 #include "camera.h"
 #include "trace.h"
 #include "requests.h"

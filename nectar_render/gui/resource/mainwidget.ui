@@ -662,6 +662,27 @@
                </property>
                <item>
                 <widget class="QTreeWidget" name="outliner">
+                 <property name="alternatingRowColors">
+                  <bool>false</bool>
+                 </property>
+                 <property name="headerHidden">
+                  <bool>false</bool>
+                 </property>
+                 <property name="columnCount">
+                  <number>1</number>
+                 </property>
+                 <attribute name="headerVisible">
+                  <bool>true</bool>
+                 </attribute>
+                 <attribute name="headerCascadingSectionResizes">
+                  <bool>false</bool>
+                 </attribute>
+                 <attribute name="headerHighlightSections">
+                  <bool>false</bool>
+                 </attribute>
+                 <attribute name="headerShowSortIndicator" stdset="0">
+                  <bool>false</bool>
+                 </attribute>
                  <column>
                   <property name="text">
                    <string notr="true">1</string>
@@ -724,7 +745,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>396</width>
-                     <height>410</height>
+                     <height>414</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -1464,7 +1485,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>396</width>
-                     <height>410</height>
+                     <height>414</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -1761,6 +1782,13 @@
          </property>
          <property name="tickPosition">
           <enum>QSlider::TicksBothSides</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="test_button">
+         <property name="text">
+          <string>Test</string>
          </property>
         </widget>
        </item>

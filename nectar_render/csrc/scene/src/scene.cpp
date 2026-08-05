@@ -1,4 +1,4 @@
-#include "engine/include/engine/scene.h"
+#include "scene/include/scene.h"
 
 // ============================================================================
 // SCENE CLASS METHODS
@@ -66,19 +66,12 @@ void Scene::teardown() {
 }
 
 void Scene::build() {
-    material_registry.register_materials(hittables_registry.objects());
-    material_registry.build_device_materials();
-    h_graph.materials = material_registry.device_materials();
-
-    hittables_registry.build();
-    h_graph.objects   = hittables_registry.device_hittables();
-    h_graph.bvh_nodes = hittables_registry.device_bvh_nodes();
-    h_graph.n_lights  = hittables_registry.light_count();
-    h_graph.lights    = hittables_registry.device_lights();
+    build_materials_registry();
+    build_hittables_registry();
 
     h_graph.skylight = skylight.build();
 
-    CUDAMemory::allocate<SceneGraph>(graph);
+    CUDAMemory::allocate_if_null<SceneGraph>(graph);
     CUDAMemory::copy<SceneGraph>(graph, &h_graph);
 }
 
@@ -105,29 +98,34 @@ bool Scene::is_pending_update() {
 
 // UPDATING ===================================================================
 
-void Scene::rebuild_hittables_registry() {
+void Scene::add_hittable(std::unique_ptr<Hittable> hittable) {
+    material_registry.register_material(hittable.get());
+    hittables_registry.register_hittable(std::move(hittable));
+}
+
+void Scene::build_materials_registry() {
+    material_registry.destroy_device_materials();
+    material_registry.build_device_materials();
+    h_graph.materials = material_registry.device_materials();
+}
+
+void Scene::build_hittables_registry() {
     hittables_registry.build();
     h_graph.objects   = hittables_registry.device_hittables();
     h_graph.bvh_nodes = hittables_registry.device_bvh_nodes();
     h_graph.lights    = hittables_registry.device_lights();
 }
 
-void Scene::rebuild_materials_registry() {
-    material_registry.destroy_device_materials();
-    material_registry.build_device_materials();
-    h_graph.materials = material_registry.device_materials();
-}
-
 void Scene::update() {
     if (materials_build_pending.exchange(false, relaxed))
-        rebuild_materials_registry();
+        build_materials_registry();
 
     if (hittables_build_pending.exchange(false, relaxed))
-        rebuild_hittables_registry();
+        build_hittables_registry();
 
     if (skylight_update_pending.exchange(false, relaxed))
         h_graph.skylight = skylight.build();
 
-    if (!graph) CUDAMemory::allocate<SceneGraph>(graph);
+    CUDAMemory::allocate_if_null<SceneGraph>(graph);
     CUDAMemory::copy<SceneGraph>(graph, &h_graph);
 }

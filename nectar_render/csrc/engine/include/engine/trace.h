@@ -4,7 +4,7 @@
 
 #include "data/include/data.h"
 #include "engine/include/engine/camera.h"
-#include "engine/include/engine/scene.h"
+#include "scene/include/scene.h"
 #include "light/include/skylight.h"
 
 void trace_full(

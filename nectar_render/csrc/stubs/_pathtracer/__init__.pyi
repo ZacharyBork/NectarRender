@@ -8,7 +8,7 @@ from . import data
 from . import engine
 from . import hittable
 from . import host
-from . import interface
 from . import light
 from . import material
-__all__: list[str] = ['core', 'cuda', 'data', 'engine', 'hittable', 'host', 'interface', 'light', 'material']
+from . import scene
+__all__: list[str] = ['core', 'cuda', 'data', 'engine', 'hittable', 'host', 'light', 'material', 'scene']

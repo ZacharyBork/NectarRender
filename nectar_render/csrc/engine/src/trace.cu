@@ -2,38 +2,7 @@
 #include "engine/include/engine/pdf.h"
 
 // ============================================================================
-// TRACE SHADOW RAYS
-// ============================================================================
-
-__device__ Color trace_shadow_rays(
-    SceneGraph* scene,
-    HitRecord&  rec,
-    uint32_t    n_shadow_rays,
-    Generator&  gen
-) {
-    Color shadow_atten = Color::white();
-
-    for (int i = 0; i < n_shadow_rays; i++) {
-        Hittable* light = scene->lights[gen.random_int(0, scene->n_lights)];
-
-        Vector3 to_light  = light->random(rec.p, gen);
-        float   dist      = to_light.length();
-        Vector3 light_dir = to_light / dist;
-
-        HitRecord tmp_rec;
-        Ray r_shadow(rec.p, light_dir);
-        bool occluded = scene->hit(r_shadow, Interval(EPS, dist-EPS), tmp_rec);
-
-        if (occluded) {
-            shadow_atten -= 1.0f / (float)n_shadow_rays;
-        }
-    }
-
-    return shadow_atten;
-}
-
-// ============================================================================
-// TRACE SINGLE RAY
+// BRDF
 // ============================================================================
 
 __device__ bool sample_cosine_brdf(
@@ -48,7 +17,7 @@ __device__ bool sample_cosine_brdf(
     Vector3 direction;
     float   pdf_value;
 
-    if (scene->n_lights > 0) {
+    if (scene->lights) {
         Hittable** lights = reinterpret_cast<Hittable**>(scene->lights);
         MixturePDF pdf(srec.pdf, PDF::hittable(lights, rec.p));
         direction = pdf.generate(gen);
@@ -68,6 +37,10 @@ __device__ bool sample_cosine_brdf(
 
     return true;
 }
+
+// ============================================================================
+// TRACE SINGLE RAY
+// ============================================================================
 
 __device__ bool trace_ray(
     SceneGraph* scene,

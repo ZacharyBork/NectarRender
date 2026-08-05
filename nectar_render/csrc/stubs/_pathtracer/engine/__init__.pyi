@@ -3,13 +3,12 @@ Engine module.
 """
 from __future__ import annotations
 import _pathtracer.data
-import _pathtracer.interface
-import _pathtracer.light
+import _pathtracer.scene
 import collections.abc
 import typing
 from . import camera
 from . import denoise
-__all__: list[str] = ['EnginePollResponse', 'EngineRequests', 'EngineState', 'EngineType', 'RenderEngine', 'Scene', 'camera', 'denoise']
+__all__: list[str] = ['EnginePollResponse', 'EngineRequests', 'EngineState', 'EngineType', 'RenderEngine', 'camera', 'denoise']
 class EnginePollResponse:
     camera_params: camera.CameraParams
     should_update_camera: bool
@@ -121,7 +120,7 @@ class RenderEngine:
         ...
     def get_engine_type(self) -> EngineType:
         ...
-    def get_scene_interface(self) -> _pathtracer.interface.SceneInterface:
+    def get_scene_interface(self) -> _pathtracer.scene.SceneInterface:
         ...
     def get_state(self) -> EngineState:
         ...
@@ -141,7 +140,7 @@ class RenderEngine:
         ...
     def requests(self) -> EngineRequests:
         ...
-    def scene(self) -> Scene:
+    def scene(self) -> _pathtracer.scene.Scene:
         ...
     def set_engine_type(self, arg0: EngineType) -> None:
         ...
@@ -149,10 +148,7 @@ class RenderEngine:
         ...
     def set_n_samples(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
-    def set_scene(self, arg0: Scene) -> None:
+    def set_scene(self, arg0: _pathtracer.scene.Scene) -> None:
         ...
     def stream(self) -> _pathtracer.data.TransferStream:
-        ...
-class Scene:
-    def __init__(self, hittables: list, lights: list, skylight: _pathtracer.light.Skylight) -> None:
         ...

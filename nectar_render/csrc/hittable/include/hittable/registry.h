@@ -70,9 +70,9 @@ public:
     // DEVICE BUILD / DESTROY =================================================
     
     __host__ void build() {
-        if (d_ptr && !rebuild_pending.exchange(false, relaxed)) return;
-        if (!d_ptr || rebuild_pending.load(relaxed))
+        if (d_ptr && !rebuild_pending.load(relaxed)) return;
         destroy_device_hittable();
+        rebuild_pending.exchange(false, relaxed);
 
         d_ptr    = host_object->build();
         is_light = host_object->is_light();
@@ -104,14 +104,42 @@ public:
     // CONSTRUCTORS ===========================================================
 
     __host__ HittablesRegistry() { } 
-    __host__ HittablesRegistry(
-        std::vector<Hittable*>& hittables,
-        std::vector<Hittable*>& lights
-    ) {
-        n_lights = lights.size(); 
-        for (Hittable* light : lights) hittables.push_back(light);
-        n_objects = hittables.size();
-        register_hittables(hittables);
+    
+    // REGISTRATION ===========================================================
+
+    __host__ void register_hittable(Hittable* hittable) {
+        if (n_objects > MAX_REGISTRY_ENTRIES) 
+            throw std::runtime_error(
+                "Hittables registry exceeded maximum registry entries ["
+                + std::to_string(MAX_REGISTRY_ENTRIES) + "]. Exiting..."
+            );
+        
+        entries[n_objects] = HittableRegistryEntry{ hittable };
+        entries[n_objects].host_object->set_object_id(n_objects);
+        entries[n_objects].object_id = n_objects;
+        n_objects++;
+    }
+
+    __host__ void register_hittable(std::unique_ptr<Hittable> hittable) {
+        if (n_objects > MAX_REGISTRY_ENTRIES) 
+            throw std::runtime_error(
+                "Hittables registry exceeded maximum registry entries ["
+                + std::to_string(MAX_REGISTRY_ENTRIES) + "]. Exiting..."
+            );
+
+        Hittable* raw = hittable.get();
+        owned_hittables.push_back(std::move(hittable));
+
+        entries[n_objects] = HittableRegistryEntry{ raw };
+        entries[n_objects].host_object->set_object_id(n_objects);
+        entries[n_objects].object_id = n_objects;
+        n_objects++;
+    }
+
+    __host__ void register_hittables(std::vector<Hittable*>& hittables) {
+        for (size_t i = 0UL; i < hittables.size(); i++) {
+            register_hittable(hittables[i]);
+        }
     }
 
     // DEVICE BUILD / DESTROY =================================================
@@ -135,7 +163,6 @@ public:
     // INSPECTION =============================================================
 
     __host__ size_t object_count()   { return n_objects;   }
-    __host__ size_t light_count()    { return n_lights;    }
     __host__ size_t bvh_node_count() { return n_bvh_nodes; }
 
     __host__ BVHNode*   device_bvh_nodes() { return bvh_nodes;        }
@@ -159,41 +186,20 @@ public:
         return it->second;
     }
 
-    // UTILITIES ==============================================================
-
-    void for_each_entry(std::function<void(HittableRegistryEntry&)> func) {
-        for (size_t i = 0UL; i < n_objects; i++) func(entries[i]);
-    }
-
 private:
 
+    HittableRegistryEntry entries[MAX_REGISTRY_ENTRIES]; 
+    std::vector<std::unique_ptr<Hittable>> owned_hittables;   
     BVH<HittableRegistryEntry> bvh;
-
-    size_t n_objects   = 0UL;
-    size_t n_lights    = 0UL;
-    size_t n_bvh_nodes = 0UL;
-
-    HittableRegistryEntry entries[MAX_REGISTRY_ENTRIES];
     
-    BVHNode*   bvh_nodes = nullptr;
-    Hittable** d_lights_ptrs = nullptr;
+    size_t n_objects   = 0UL;
+    size_t n_bvh_nodes = 0UL;
+    
+    BVHNode*   bvh_nodes        = nullptr;
+    Hittable** d_lights_ptrs    = nullptr;
     Hittable** d_hittables_ptrs = nullptr;
     
     std::unordered_map<size_t, HittableRegistryEntry*> index_to_object;
-
-    __host__ void register_hittables(std::vector<Hittable*> hittables) {
-        for (size_t i = 0UL; i < hittables.size(); i++) {
-            if (i > MAX_REGISTRY_ENTRIES) 
-                throw std::runtime_error(
-                    "Hittables registry exceeded maximum registry entries ["
-                    + std::to_string(MAX_REGISTRY_ENTRIES) + "]. Exiting..."
-                );
-            
-            entries[i] = HittableRegistryEntry{ hittables[i] };
-            entries[i].host_object->set_object_id(i);
-            entries[i].object_id = i;
-        }
-    }
 
     __host__ void build_bvh() {
         std::vector<HittableRegistryEntry> hittables;
@@ -210,29 +216,37 @@ private:
             index_to_object[entries[i].object_id] = &entries[i];
         }
 
-        if (!bvh_nodes) CUDAMemory::allocate<BVHNode>(bvh_nodes, n_bvh_nodes);
+        if (bvh_nodes) { CUDAMemory::free(bvh_nodes); bvh_nodes = nullptr; }
+        CUDAMemory::allocate<BVHNode>(bvh_nodes, n_bvh_nodes);
         CUDAMemory::copy<BVHNode>(bvh_nodes, bvh.nodes.data(), n_bvh_nodes);
     }
 
     __host__ void build_device_hittables() {
-        std::vector<Hittable*> d_lights;    d_lights.reserve(n_lights);
+        std::vector<Hittable*> d_lights;
         std::vector<Hittable*> d_hittables; d_hittables.reserve(n_objects);
 
         for (size_t i = 0UL; i < n_objects; i++) {
-            HittableRegistryEntry& entry = entries[i];
-            entry.build();
-            d_hittables.push_back(entry.d_ptr);
-            if (entry.is_light) d_lights.push_back(entry.d_ptr);
+            entries[i].build(); 
+            d_hittables.push_back(entries[i].d_ptr);
+            if (entries[i].is_light) d_lights.push_back(entries[i].d_ptr);
         }
 
-        if (!d_hittables_ptrs)
-            CUDAMemory::allocate<Hittable*>(d_hittables_ptrs, n_objects);
+        if (d_hittables_ptrs) { 
+            CUDAMemory::free(d_hittables_ptrs);
+            d_hittables_ptrs = nullptr; 
+        }
+        CUDAMemory::allocate<Hittable*>(d_hittables_ptrs, n_objects);
         CUDAMemory::copy<Hittable*>(
             d_hittables_ptrs, d_hittables.data(), n_objects
         );
 
-        if (!d_lights_ptrs)
-            CUDAMemory::allocate<Hittable*>(d_lights_ptrs, n_lights);
+        size_t n_lights = d_lights.size();
+        if (n_lights == 0UL) return;
+        if (d_lights_ptrs) { 
+            CUDAMemory::free(d_lights_ptrs);
+            d_lights_ptrs = nullptr; 
+        }
+        CUDAMemory::allocate<Hittable*>(d_lights_ptrs, n_lights);
         CUDAMemory::copy<Hittable*>(d_lights_ptrs, d_lights.data(), n_lights);
     }
 

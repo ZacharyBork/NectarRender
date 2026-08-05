@@ -8,7 +8,9 @@
 class MaterialRegisty {
 public:
 
-    static constexpr size_t MAX_MATERIAL_COUNT = (size_t)4096;
+    static constexpr size_t MAX_MATERIAL_COUNT = 4096UL;
+
+    // CONSTRUCTORS / DESTRUCTORS =============================================
 
     __host__ ~MaterialRegisty() { }
 
@@ -22,9 +24,29 @@ public:
         h_materials.push_back(make_default_material());
     }
 
+    // REGISTRATION ===========================================================
+
+    __host__ void register_material(Hittable* obj) {
+        if (obj->get_material().material_type() == MaterialType::Null) {
+            obj->set_material_index((size_t)0);
+            return;
+        }
+
+        if (h_materials.size() >= MAX_MATERIAL_COUNT)
+            throw std::runtime_error(
+                "Maximum material count reached. Unable to register "
+                "additional materials."
+            );
+
+        obj->set_material_index(h_materials.size());
+        h_materials.push_back(std::move(obj->get_material()));
+    }
+
     __host__ void register_materials(std::vector<Hittable*> hittables) {
         for (Hittable* obj : hittables) register_material(obj);
     }
+
+    // PROPERTY ACCESS ========================================================
 
     __host__ Material** device_materials() { return d_material_ptrs;    }
     __host__ size_t material_count()       { return h_materials.size(); }
@@ -32,21 +54,25 @@ public:
     __host__ Material& get_material(size_t index) { 
         return h_materials[index]; 
     }
-
-    __host__ void update_material(size_t index, Material new_material) { 
-        h_materials[index].teardown();
-        h_materials[index] = std::move(new_material);        
-    }
     
     __host__ Material* get_device_ptr(size_t index) { 
         return d_materials[index];
     }
 
-    __host__ void destroy_device_materials() {
-        for (Material& m : h_materials) { m.destroy_device_material(); }
-        for (Material* m : d_materials) { if (m) CUDAMemory::free(m);  }
-        if (d_material_ptrs) CUDAMemory::free(d_material_ptrs);
+    // UPDATING  ==============================================================
 
+    __host__ void update_material(size_t index, Material new_material) { 
+        h_materials[index].teardown();
+        h_materials[index] = std::move(new_material);        
+    }
+
+    // BUILD / DESTROY ========================================================
+
+    __host__ void destroy_device_materials() {
+        if (!d_material_ptrs) return;
+        for (Material* m : d_materials) { if (m) CUDAMemory::free(m);  }
+        
+        CUDAMemory::free(d_material_ptrs);
         d_material_ptrs = nullptr;
         d_materials.clear();
     }
@@ -73,24 +99,6 @@ private:
     std::vector<Material>  h_materials{};
     std::vector<Material*> d_materials{};
     Material** d_material_ptrs = nullptr;
-
-    __host__ void register_material(Hittable* obj) {
-        if (obj->get_material().material_type() == MaterialType::Null) {
-            obj->set_material_index((size_t)0);
-            return;
-        }
-
-        if (h_materials.size() >= MAX_MATERIAL_COUNT)
-            throw std::runtime_error(
-                "Maximum material count reached. Unable to register "
-                "additional materials."
-            );
-
-        obj->set_material_index(h_materials.size());
-        h_materials.push_back(std::move(obj->get_material()));
-    }
-
-    
-    
+  
 };
 

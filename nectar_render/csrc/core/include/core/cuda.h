@@ -36,6 +36,11 @@ public:
     }
 
     template<typename T>
+    __host__ static void allocate_if_null(T*& d_ptr, size_t n_elements = 1) {    
+        if (!d_ptr) CUDAMemory::allocate(d_ptr, n_elements);
+    }
+
+    template<typename T>
     __host__ static void allocate_host(T*& h_ptr, size_t n_elements = 1) {    
         size_t n_bytes = n_elements * sizeof(T);
         cudaError_t err = cudaMallocHost(&h_ptr, n_bytes);

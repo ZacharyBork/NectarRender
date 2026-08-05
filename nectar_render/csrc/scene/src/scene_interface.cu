@@ -1,4 +1,4 @@
-#include "interface/include/scene_interface.h"
+#include "scene/include/interface.h"
 
 __global__ void mask_selected_kernel(
     uint8_t*      base_mask,

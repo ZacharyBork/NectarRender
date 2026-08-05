@@ -31,7 +31,7 @@ void register_hittable(py::module_& m) {
     py::class_<ObjectLight>   (m_hittable, "ObjectLight");
     py::class_<ConstantMedium>(m_hittable, "ConstantMedium");
     
-    py::class_<Hittable>(m_hittable, "Hittable")
+    py::classh<Hittable>(m_hittable, "Hittable")
         .def(py::init<>())
         
 

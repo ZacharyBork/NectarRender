@@ -91,7 +91,7 @@ public:
             shadow, depth, emission, object_id
         );
 
-        if (!d_aov_ptr) CUDAMemory::allocate<AOVs>(d_aov_ptr);
+        CUDAMemory::allocate_if_null<AOVs>(d_aov_ptr);
         CUDAMemory::copy<AOVs>(d_aov_ptr, &aovs_obj);
 
         return d_aov_ptr;

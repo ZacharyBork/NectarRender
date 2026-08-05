@@ -1,5 +1,5 @@
 """
-Interface module.
+Scene module.
 """
 from __future__ import annotations
 import _pathtracer.core
@@ -7,9 +7,12 @@ import _pathtracer.hittable
 import _pathtracer.light
 import _pathtracer.material
 import typing
-__all__: list[str] = ['SceneInterface']
+__all__: list[str] = ['Scene', 'SceneInterface']
+class Scene:
+    def __init__(self, hittables: list, lights: list, skylight: _pathtracer.light.Skylight) -> None:
+        ...
 class SceneInterface:
-    def add_object(self, arg0: _pathtracer.hittable.Hittable) -> None:
+    def add_object(self, obj: _pathtracer.hittable.Hittable) -> None:
         ...
     def disable(self) -> None:
         ...

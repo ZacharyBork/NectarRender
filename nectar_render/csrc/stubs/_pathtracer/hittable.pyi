@@ -28,7 +28,7 @@ class HitRecord:
     def n(self) -> _pathtracer.core.vector.Vector3:
         ...
     @property
-    def object_index(self) -> int:
+    def object_id(self) -> int:
         ...
     @property
     def p(self) -> _pathtracer.core.vector.Vector3:

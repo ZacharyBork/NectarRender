@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PySide6 import QtWidgets as W
 from PySide6.QtCore    import Qt, QFile, QObject, Slot
-from PySide6.QtGui     import QAction
+from PySide6.QtGui     import QAction, QKeySequence, QShortcut
 from PySide6.QtUiTools import QUiLoader
 
 from nectar_render import Camera, EngineType, EnginePollResponse
@@ -34,16 +34,16 @@ test_scene = Scene(
     skylight  = Skylight.hdri(
         asset_root.resolve().as_posix() + '/hdri/brown_photostudio.hdr'
     ),
-    lights    = [
-        Hittable.OBJECT_LIGHT(
-            Hittable.QUAD(
-                Vector3(1.0, 1, 0.0),
-                Vector3(0.0, 180.0, -45.0),
-                Vector3(1),
-                Material.LAMBERTIAN(Color.white())
-            ),
-            15.0, Color(1.0, 0.4, 0.2)
-        )
+    lights = [
+        # Hittable.OBJECT_LIGHT(
+        #     Hittable.QUAD(
+        #         Vector3(1.0, 1, 0.0),
+        #         Vector3(0.0, 180.0, -45.0),
+        #         Vector3(1),
+        #         Material.LAMBERTIAN(Color.white())
+        #     ),
+        #     15.0, Color(1.0, 1.0, 1.0)
+        # )
     ],
     hittables = [
         Hittable.QUAD( # Bottom
@@ -301,11 +301,15 @@ class Interface(QObject):
             match mode:
                 case 'viewport': 
                     engine_type = EngineType.VIEWPORT
+                    rm_viewport.setStyleSheet('background-color: #ff5e3a;')
+                    rm_pathtracer.setStyleSheet('background-color: #1f2128;')
                     rm_viewport.setEnabled(False)
                     rm_pathtracer.setEnabled(True)
                     progress_frame.setVisible(False)
                 case 'pathtracer': 
                     engine_type = EngineType.PATHTRACER
+                    rm_viewport.setStyleSheet('background-color: #1f2128;')
+                    rm_pathtracer.setStyleSheet('background-color: #ff5e3a;')
                     rm_viewport.setEnabled(True)
                     rm_pathtracer.setEnabled(False)
                     progress_frame.setVisible(True)
@@ -318,6 +322,13 @@ class Interface(QObject):
         rm_viewport.clicked.connect(lambda : set_render_mode('viewport'))
         rm_pathtracer.clicked.connect(lambda : set_render_mode('pathtracer'))
         rm_viewport.setEnabled(False)
+        
+        QShortcut(QKeySequence('Ctrl+1'), self.mainwidget).activated.connect(
+            lambda : set_render_mode('viewport')
+        )
+        QShortcut(QKeySequence('Ctrl+2'), self.mainwidget).activated.connect(
+            lambda : set_render_mode('pathtracer')
+        )
         
         set_render_mode('viewport')
         
@@ -417,6 +428,18 @@ class Interface(QObject):
         self.mainwidget = self._init_mainwidget()
         self.mainwidget.setWindowTitle('NectarRender')
         self.find = self.mainwidget.findChild
+        
+        
+        self.find(W.QPushButton, 'test_button').clicked.connect(
+            lambda : Bridge.scene_interface.add_object(
+                Hittable.SPHERE(
+                    Vector3(0.0, 0.0, 0.0),
+                    0.33, Material.PBR(Color.red(), 0.1, 1.0)
+                )
+            )
+        )
+        
+        
 
         self._build_viewport()
         self._build_control_bar()

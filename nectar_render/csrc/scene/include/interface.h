@@ -8,9 +8,9 @@
 #include "light/include/skylight.h"
 
 #include "data/include/data.h"
+#include "scene/include/scene.h"
 #include "engine/include/engine/trace.h"
 #include "engine/include/engine/camera.h"
-#include "engine/include/engine/scene.h"
 #include "engine/include/engine/requests.h"
 
 
@@ -34,7 +34,7 @@ enum class ToolState { SELECT, TRANSFORM };
 class SceneInterface {
 public:
 
-    /* CONSTRUCTORS */
+    // CONSTRUCTORS ===========================================================
 
     ~SceneInterface() = default;    
     SceneInterface(
@@ -45,7 +45,7 @@ public:
 
     void update_scene(Scene* new_scene) { scene = new_scene; }
 
-    /* UPDATE HANDLING */
+    // UPDATE HANDLING ========================================================
 
     void update() {
         if (!is_enabled()) return;
@@ -53,7 +53,7 @@ public:
         build_selection_mask();
     }
 
-    /* INTERACTION */
+    // INTERACTION ============================================================
 
     void query_scene(float u, float v) {
         std::lock_guard<std::mutex> lock(interface_mutex);
@@ -69,7 +69,7 @@ public:
         if (is_disabled()) enable();
     }
 
-    /* STATE CONTROL */
+    // STATE CONTROL ==========================================================
 
     void enable() {
         if (is_enabled()) return;
@@ -86,12 +86,21 @@ public:
         return teardown_pending.load(relaxed); 
     }
 
-    /* PROPERTY ACCESS */
+    // PROPERTY ACCESS ========================================================
 
     Scene* get_scene() { return scene; }
     HitRecord& get_hit_record() { return rec; }
 
-    /* TRANSFORM UTILS */
+    // SPAWNING / DELETING ====================================================
+
+    void add_object(std::unique_ptr<Hittable> obj) { 
+        std::lock_guard<std::mutex> lock(interface_mutex);
+        scene->add_hittable(std::move(obj));
+        scene->request_reset(true, true, false);
+        requests->restart();
+    }
+
+    // TRANSFORM UTILS ========================================================
 
     Transform get_transform() { 
         std::lock_guard<std::mutex> lock(interface_mutex);
@@ -106,7 +115,7 @@ public:
         requests->restart();
     }
 
-    /* SKYLIGHT */
+    // SKYLIGHT ===============================================================
 
     Skylight& get_skylight() { 
         std::lock_guard<std::mutex> lock(interface_mutex);
@@ -124,7 +133,7 @@ public:
         requests->restart();
     }
 
-    /* MATERIAL UTILS */
+    // MATERIAL UTILS =========================================================
 
     void set_material(Material mat) {
         // scene->material_registry.update_material(
