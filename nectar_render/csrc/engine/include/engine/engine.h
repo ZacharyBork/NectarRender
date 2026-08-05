@@ -142,6 +142,9 @@ private:
 
     Time::time_point last_poll_time{};
     static constexpr auto poll_interval = std::chrono::milliseconds(16);
+    static constexpr auto viewport_refresh_interval = (
+        std::chrono::milliseconds(33)
+    );
 
     void set_state(EngineState s);
     void poll_gui_updates();

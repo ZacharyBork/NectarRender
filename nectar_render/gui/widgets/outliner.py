@@ -1,7 +1,7 @@
 from typing  import Self
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
 
 from nectar_render.python import SceneOutline, SceneNode
 from nectar_render.gui    import utils
@@ -11,6 +11,8 @@ from nectar_render.gui.registry import WidgetRegistry
 class Outliner(W.QWidget):
     def __init__(self: Self, parent: W.QWidget | None = None) -> None:
         super().__init__(parent=parent)
+        WidgetRegistry.register_outliner(self)
+        
         self.setLayout(W.QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
@@ -51,7 +53,7 @@ class Outliner(W.QWidget):
         self.layout().addWidget(header)
         
         self.outline: SceneOutline | None = None
-        self.node_map: dict[int, SceneNode] = {}
+        self.node_map: dict[int, tuple[SceneNode, W.QTreeWidgetItem]] = {}
         
         self.tree = W.QTreeWidget()
         self.tree.setHeaderLabels(['ID', 'Name', 'Type'])
@@ -60,6 +62,11 @@ class Outliner(W.QWidget):
         self.tree.sortItems(0, Qt.SortOrder.AscendingOrder)
         
         self.tree.itemDoubleClicked.connect(self._select_tree_item)
+        
+        self.tree.header().setSectionResizeMode(
+            0, W.QHeaderView.ResizeMode.ResizeToContents
+        )
+        self.tree.header().setStretchLastSection(True)
         
         self.layout().addWidget(self.tree)
         self.refresh()
@@ -71,8 +78,9 @@ class Outliner(W.QWidget):
     ) -> None:
         id_string = item.text(0)
         if (id_string.isnumeric()):
-            node = self.node_map[int(id_string)]
+            node, _ = self.node_map[int(id_string)]
             Bridge.scene_interface.select_scene_node(node)
+            WidgetRegistry.viewport.readback_stream()
         
     def _toggle_outliner(self: Self) -> None:
         if self.tree.isVisible():
@@ -100,10 +108,22 @@ class Outliner(W.QWidget):
         
         self.outline = Bridge.scene_interface.get_scene_outline()
         for node in self.outline.nodes:
-            self.node_map[node.object_id] = node
             item = W.QTreeWidgetItem(
                 [str(node.object_id), node.name, node.type_name]
             )
             objects_root.addChild(item)
+            self.node_map[node.object_id] = (node, item)
 
         objects_root.setExpanded(True)
+
+    def set_selected(self: Self, object_id: int) -> None:
+        _, item = self.node_map[object_id]
+        parent = item.parent()
+        while parent is not None:
+            parent.setExpanded(True)
+            parent = parent.parent()
+        
+        self.tree.setCurrentItem(item)
+        self.tree.scrollToItem(item)
+
+

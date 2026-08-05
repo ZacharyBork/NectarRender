@@ -89,7 +89,9 @@ void RenderEngine::idle() {
             ) ? viewport() : render();
             
             switch (return_state) {
-                case RenderReturnState::WAITING: requests_.start(); break;
+                case RenderReturnState::WAITING: 
+                    std::this_thread::sleep_for(viewport_refresh_interval);    
+                    requests_.start(); continue;
                 case RenderReturnState::STOPPED:
                     set_state(ES::IDLE); 
                     with_gil_scoped_acquire(on_stopped); 

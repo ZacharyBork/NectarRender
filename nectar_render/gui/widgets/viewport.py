@@ -142,6 +142,9 @@ class ViewportWidget(W.QLabel):
     ) -> None:
         if self.object_info.is_enabled: self.object_info.destroy()
         Bridge.scene_interface.query_scene(*click_pos)
+        WidgetRegistry.outliner.set_selected(
+            Bridge.scene_interface.get_hit_record().object_id
+        )
         self.object_info.build()
       
 #### MOUSE UTILITIES ##########################################################

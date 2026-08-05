@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing     import TYPE_CHECKING, Self, Any
 if TYPE_CHECKING:
     from nectar_render.gui.interface import Interface
-    from nectar_render.gui.widgets import ViewportWidget
+    from nectar_render.gui.widgets import ViewportWidget, Outliner
     from nectar_render.gui.widgets.xform_controller import TransformGnomon
 
 ###############################################################################
@@ -47,6 +47,18 @@ class WidgetRegistryMeta(type):
     def transform_gnomon(cls: type[Self]) -> TransformGnomon | None: 
         return WidgetRegistryMeta._transform_gnomon
 
+#### SCENE OUTLINER ###########################################################
+    
+    _outliner: Outliner = None
+
+    @staticmethod
+    def register_outliner(instance: Outliner) -> None:
+        WidgetRegistryMeta._outliner = instance
+
+    @property
+    def outliner(cls: type[Self]) -> Outliner: 
+        return WidgetRegistryMeta._outliner
+    
 
 class WidgetRegistry(metaclass=WidgetRegistryMeta):
     

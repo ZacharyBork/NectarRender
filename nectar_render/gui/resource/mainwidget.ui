@@ -333,6 +333,28 @@
                  </layout>
                 </widget>
                </item>
+               <item row="9" column="0">
+                <widget class="QPushButton" name="save_render">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>40</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>Save current render to disk</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
              <widget class="QFrame" name="frame_6">
@@ -521,16 +543,6 @@
                    <widget class="QPushButton" name="refresh">
                     <property name="toolTip">
                      <string>Reset render</string>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="save_render">
-                    <property name="toolTip">
-                     <string>Save current render to disk</string>
                     </property>
                     <property name="text">
                      <string/>

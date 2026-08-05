@@ -278,8 +278,7 @@ class Interface(QObject):
             'play':        ('play',    (16, 16)),
             'pause':       ('pause',   (16, 16)),
             'stop':        ('stop',    (16, 16)),
-            'refresh':     ('refresh', (16, 16)),
-            'save_render': ('save',    (16, 16))
+            'refresh':     ('refresh', (16, 16))
         }
         
         for name, (file, size) in icon_paths.items():
@@ -412,6 +411,10 @@ class Interface(QObject):
         
         view_mode('fill')
         
+        save_btn = self.find(W.QPushButton, 'save_render')
+        utils.set_button_icon(save_btn, 'save', (24, 24))
+
+        
     def _init_outliner(self: Self) -> None:
         frame = self.find(W.QFrame, 'outliner_frame')
         self.outliner = Outliner(frame)
@@ -436,17 +439,13 @@ class Interface(QObject):
         self.find = self.mainwidget.findChild
         
         
-        # self.find(W.QPushButton, 'test_button').clicked.connect(
-        #     lambda : Bridge.scene_interface.add_object(
-        #         Hittable.SPHERE(
-        #             Vector3(0.0, 0.0, 0.0),
-        #             0.33, Material.PBR(Color.red(), 0.1, 1.0)
-        #         )
-        #     )
-        # )
-        
         self.find(W.QPushButton, 'test_button').clicked.connect(
-            lambda : self.outliner.refresh()
+            lambda : Bridge.scene_interface.add_object(
+                Hittable.SPHERE(
+                    Vector3(0.0, 0.0, 0.0),
+                    0.33, Material.PBR(Color.red(), 0.1, 1.0)
+                )
+            )
         )
         
 

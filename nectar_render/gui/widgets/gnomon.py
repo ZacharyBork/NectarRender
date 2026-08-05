@@ -27,9 +27,8 @@ class GnomonWidget(W.QWidget):
         ], dtype=np.float32)
 
     def update_rotation(self: Self) -> None:
-        self.rot = Bridge.camera.parameters().R.T().numpy()
-        self.rot = np.array(self.rot)
-        
+        R = Bridge.camera.parameters().R.T().numpy()
+        self.rot = np.array(R)
         self.update()
 
     def paintEvent(self: Self, event: QEvent) -> None:

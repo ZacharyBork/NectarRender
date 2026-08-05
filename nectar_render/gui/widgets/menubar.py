@@ -30,21 +30,30 @@ class MenuBar:
         
         # EDIT MENU
                 
-        edit_menu = self.bar.addMenu('&File')
+        edit_menu = self.bar.addMenu('&Edit')
 
 
         # SCENE MENU
         
         scene_menu = self.bar.addMenu('&Scene')
+        
+        scene_add_menu = W.QMenu('Add'); scene_menu.addMenu(scene_add_menu)
+        
+        self.add_action(
+            scene_add_menu, 'Reload', self.reload_scene, 'Reload current scene'
+        )
         self.add_action(
             scene_menu, 'Reload', self.reload_scene, 'Reload current scene'
         )
         
-        utils_menu = self.bar.addMenu('&Scene')
-        self.add_action(
-            scene_menu, 'Reload', self.reload_scene, 'Reload current scene'
-        )
-
+        # ENGINE MENU
+                        
+        engine_menu = self.bar.addMenu('&Engine')
+                
+        # HELP MENU
+                        
+        help_menu = self.bar.addMenu('&Help')
+        
 #### UTILS ####################################################################
 
     def add_action(
