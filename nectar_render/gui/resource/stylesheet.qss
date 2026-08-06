@@ -23,6 +23,7 @@ QMenuBar {
     background-color: #16181d;
     border-bottom: 1px solid #2a2d36;
     padding: 2px 4px;
+    color: white;
 }
 
 QMenuBar::item {

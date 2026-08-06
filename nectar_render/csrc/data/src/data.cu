@@ -15,6 +15,16 @@ void run_combine_data(DataView a, DataView b) {
     combine_data_kernel<<<grid, block>>>(a, b);
 }
 
+__global__ void overwrite_data_kernel(DataView a, DataView b) {
+    a.set_color(b.get_color());
+}
+
+void run_overwrite_data(DataView a, DataView b) {
+    dim3 block(BS2D, BS2D, 1);
+    dim3 grid((a.W + BS2D - 1) / BS2D, (a.H + BS2D - 1) / BS2D, 1);
+    combine_data_kernel<<<grid, block>>>(a, b);
+}
+
 __global__ void accumulate_samples_kernel(
     DataView a, 
     DataView b,

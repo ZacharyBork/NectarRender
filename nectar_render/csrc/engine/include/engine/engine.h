@@ -123,6 +123,8 @@ public:
     const uint32_t max_depth() const;
     void set_max_depth(uint32_t value);
 
+    void set_axis_grid_visible(const bool visible);
+
 private:
 
     Camera cam;
@@ -140,6 +142,8 @@ private:
     std::atomic<EngineType>  engine_type { EngineType::PATHTRACER };
     std::atomic<RenderMode>  render_mode { RenderMode::FULL       };
 
+    std::atomic<bool> show_axis_grid { true };
+
     Time::time_point last_poll_time{};
     static constexpr auto poll_interval = std::chrono::milliseconds(16);
     static constexpr auto viewport_refresh_interval = (
@@ -147,6 +151,7 @@ private:
     );
 
     void set_state(EngineState s);
+    void handle_render_return_state(RenderReturnState state);
     void poll_gui_updates();
     void reset();
 

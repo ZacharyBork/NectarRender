@@ -24,6 +24,7 @@ inline std::string hittabletype_to_string(HittableType type) {
         case HittableType::ConstantMedium: return "ConstantMedium";
         case HittableType::ObjectLight:    return "ObjectLight";
     }
+    return "UNKNOWN";
 }
 
 #define FOR_EACH_HITTABLE_TYPE_HOST(X)   \

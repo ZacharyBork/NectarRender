@@ -87,6 +87,7 @@ public:
 };
 
 void run_combine_data(DataView a, DataView b);
+void run_overwrite_data(DataView a, DataView b);
 void run_norm_by_samples(DataView data, uint32_t samples);
 void run_accumulate_samples(DataView a, DataView b,uint32_t current_sample);
 void data_to_image(DataView data, uint8_t* result);
@@ -168,6 +169,12 @@ public:
 
     void combine(DataObject& other) {
         if (enabled && other.enabled) run_combine_data(view(), other.view()); 
+    }
+
+    void overwrite(DataObject& other) {
+        CUDAMemory::copy<float>(
+            d_ptr, other.d_ptr, n_elements(), cudaMemcpyDeviceToDevice
+        );
     }
 
     void normalize_by_samples(uint32_t samples) {

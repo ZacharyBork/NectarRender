@@ -191,6 +191,8 @@ void register_engine(py::module_& m) {
         .def("max_depth",        &RenderEngine::max_depth)
         .def("set_max_depth",    &RenderEngine::set_max_depth)
 
+        .def("set_axis_grid_visible", &RenderEngine::set_axis_grid_visible)
+
         .def("get_scene_interface", &RenderEngine::get_scene_interface, 
              return_policy::reference);
 

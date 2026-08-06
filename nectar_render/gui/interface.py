@@ -46,19 +46,37 @@ test_scene = Scene(
         # )
     ],
     hittables = [
-        Hittable.QUAD( # Bottom
-            Vector3(0.0, -0.5, 0.0),
-            Vector3(0.0, 0.0, 0.0),
-            Vector3(100.0),
-            Material.PBR(
-                albedo=Texture.from_image(
-                    asset_root.resolve().as_posix() + '/tile.jpeg', 
-                    0.02
-                ), 
-                roughness=0.15, 
-                metallic=0.2
-            )
-        ),
+        # Hittable.QUAD( # Bottom
+        #     Vector3(0.0, -0.5, 0.0),
+        #     Vector3(0.0, 0.0, 0.0),
+        #     Vector3(100.0),
+        #     Material.PBR(
+        #         albedo=Texture.from_image(
+        #             asset_root.resolve().as_posix() + '/tile.jpeg', 
+        #             0.02
+        #         ), 
+        #         roughness=0.15, 
+        #         metallic=0.2
+        #     )
+        # ),
+        
+        
+        # Hittable.QUAD( # Bottom
+        #     Vector3(0.0, -0.5, 0.0),
+        #     Vector3(0.0, 0.0, 0.0),
+        #     Vector3(100.0),
+        #     Material.PBR(
+        #         albedo=Texture.from_image(
+        #             asset_root.resolve().as_posix() + '/tile.jpeg', 
+        #             0.02
+        #         ), 
+        #         roughness=0.15, 
+        #         metallic=0.2
+        #     )
+        # ),
+
+        
+        
         # Hittable.QUAD( # Top
         #     Vector3(0.0, 0.5, 0.0),
         #     Vector3(0.0, 180.0, 0.0),

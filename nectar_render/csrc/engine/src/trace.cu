@@ -1,42 +1,8 @@
 #include "engine/include/engine/trace.h"
 #include "engine/include/engine/pdf.h"
 
-// ============================================================================
-// BRDF
-// ============================================================================
-
-__device__ bool sample_cosine_brdf(
-    SceneGraph*    scene,
-    Ray&           ray,
-    Ray&           r_in,
-    Color&         atten,
-    HitRecord&     rec,
-    ScatterRecord& srec,
-    Generator&     gen
-) {
-    Vector3 direction;
-    float   pdf_value;
-
-    if (scene->lights) {
-        Hittable** lights = reinterpret_cast<Hittable**>(scene->lights);
-        MixturePDF pdf(srec.pdf, PDF::hittable(lights, rec.p));
-        direction = pdf.generate(gen);
-        pdf_value = pdf.value(direction);
-    } else {
-        direction = srec.pdf.generate(gen);
-        pdf_value = srec.pdf.value(direction);
-    }
-
-    if (pdf_value <= 0.0f) return false;
-    
-    ray = Ray(rec.p, direction, r_in.time());
-    Color brdf = rec.mat->evaluate(
-        rec, normalize(-r_in.direction()), direction
-    );
-    atten *= brdf / pdf_value;
-
-    return true;
-}
+#include "brdf.cu"
+#include "axis_grid.cu"
 
 // ============================================================================
 // TRACE SINGLE RAY
@@ -128,6 +94,7 @@ __global__ void trace_viewport_kernel(
     DeviceCamera* cam,
     SceneGraph*   scene,
     AOVs*         aovs,
+    bool          show_axis_grid,
     uint32_t      seed
 ) {
     ProcessIndex p_idx = get_process_index();
@@ -137,7 +104,18 @@ __global__ void trace_viewport_kernel(
     Ray ray = cam->get_ray_center(p_idx.x, p_idx.y);
     bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
 
-    if (!hit) { aovs->beauty += scene->skylight->sample(ray); return; }
+    if (!hit) {
+        Color grid_color; float grid_alpha;
+        if (show_axis_grid
+        && triplanar_grid(ray, FMAX, grid_color, grid_alpha)) {
+            Color sky = scene->skylight->sample(ray);
+            aovs->beauty += CG::lerp(sky, grid_color, grid_alpha);
+            return;
+        } else {
+            aovs->beauty += scene->skylight->sample(ray);
+            return;
+        }
+    }
 
     Vector3 light_vector = cam->p.position - rec.p;
     float light_dist = light_vector.length();
@@ -159,6 +137,7 @@ void trace_viewport(
     Camera&     cam,
     SceneGraph* scene,
     AOVs*       aovs,
+    bool        show_axis_grid,
     uint32_t    seed
 ) {
     dim3 block(BS2D, BS2D, 1);
@@ -168,7 +147,7 @@ void trace_viewport(
         1
     );
     trace_viewport_kernel<<<grid, block>>>(
-        cam.device_camera(), scene, aovs, seed
+        cam.device_camera(), scene, aovs, show_axis_grid, seed
     );
 }
 

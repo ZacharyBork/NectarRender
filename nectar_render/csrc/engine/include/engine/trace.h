@@ -20,6 +20,7 @@ void trace_viewport(
     Camera&     cam,
     SceneGraph* scene,
     AOVs*       aovs,
+    bool        show_axis_grid,
     uint32_t    seed
 );
 

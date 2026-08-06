@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 import numpy as np
 
 from PySide6 import QtWidgets as W
-from PySide6.QtGui import QPainter, QPen, QColor, QFont
+from PySide6.QtGui import QPainter, QPen, QColor, QFont, QBrush
 from PySide6.QtCore import QPointF, QEvent
 
 from nectar_render.python.core import Matrix3
@@ -16,7 +16,7 @@ class GnomonWidget(W.QWidget):
     def __init__(
         self:     Self, 
         viewport: ViewportWidget,
-        size:     int = 90
+        size:     int = 70
     ) -> None:
         super().__init__(viewport)
         self.setFixedSize(size, size)

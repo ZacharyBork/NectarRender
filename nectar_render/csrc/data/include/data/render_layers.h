@@ -115,6 +115,14 @@ public:
         }    
     }
 
+    __host__ void overwrite(RenderLayers& other) { 
+        std::array<DataObject*, N_RENDER_LAYERS> this_data = get_data();
+        std::array<DataObject*, N_RENDER_LAYERS> other_data = other.get_data();
+        for (int i = 0; i < N_RENDER_LAYERS; i++) {
+            this_data[i]->overwrite(*other_data[i]);
+        }    
+    }
+
     __host__ void accumulate(
         RenderLayers& other,
         uint32_t current_sample

@@ -63,12 +63,12 @@ RenderReturnState RenderEngine::viewport() {
     if (requests_.stop_pending())
         return RenderReturnState::STOPPED;
 
-    trace_viewport(cam, current_scene.graph, sample_aovs.aovs(), seed);
-
-    aovs.accumulate(sample_aovs, 1u);
     sample_aovs.clear();
-    cudaDeviceSynchronize();
-    with_gil_scoped_acquire(on_frame_finished, sample_idx);
+    trace_viewport(
+        cam, current_scene.graph, sample_aovs.aovs(), 
+        show_axis_grid.load(relaxed), seed
+    );
+    aovs.overwrite(sample_aovs);
     
     if (requests_.restart_pending())
         return RenderReturnState::RESTARTED;
@@ -88,25 +88,8 @@ void RenderEngine::idle() {
                 engine_type.load(relaxed) == EngineType::VIEWPORT
             ) ? viewport() : render();
             
-            switch (return_state) {
-                case RenderReturnState::WAITING: 
-                    std::this_thread::sleep_for(viewport_refresh_interval);    
-                    requests_.start(); continue;
-                case RenderReturnState::STOPPED:
-                    set_state(ES::IDLE); 
-                    with_gil_scoped_acquire(on_stopped); 
-                    continue;
-                case RenderReturnState::RESTARTED:
-                    requests_.start();
-                    with_gil_scoped_acquire(on_restarted);
-                    continue;
-                case RenderReturnState::FINISHED:
-                    set_state(ES::IDLE);
-                    with_gil_scoped_acquire(on_render_finished);
-                    continue;
-                
-            }
-            
+            handle_render_return_state(return_state);
+            continue;
         }
 
         scene_interface.update();
@@ -144,6 +127,10 @@ void RenderEngine::set_max_depth(uint32_t value) {
     reset();
 }
 
+void RenderEngine::set_axis_grid_visible(const bool visible) {
+    show_axis_grid.store(visible, relaxed);
+}
+
 // ============================================================================
 // SCENE INTERFACE UTILS
 // ============================================================================
@@ -157,6 +144,28 @@ SceneInterface& RenderEngine::get_scene_interface() { return scene_interface; }
 __host__ void RenderEngine::set_state(EngineState s) {
     state.store(s, relaxed);
 }
+
+void RenderEngine::handle_render_return_state(RenderReturnState state) {
+    switch (state) {
+        case RenderReturnState::WAITING:
+            cudaDeviceSynchronize(); requests_.start();
+            std::this_thread::sleep_for(viewport_refresh_interval);    
+            break;
+        case RenderReturnState::STOPPED:
+            set_state(ES::IDLE); 
+            with_gil_scoped_acquire(on_stopped); 
+            break;
+        case RenderReturnState::RESTARTED:
+            requests_.start();
+            with_gil_scoped_acquire(on_restarted);
+            break;
+        case RenderReturnState::FINISHED:
+            set_state(ES::IDLE);
+            with_gil_scoped_acquire(on_render_finished);
+            break;
+    }
+}
+
 
 void RenderEngine::poll_gui_updates() {
     auto now = Time::now();
@@ -174,8 +183,7 @@ void RenderEngine::poll_gui_updates() {
                 cam.update(response.camera_params);
                 render_mode.store(RenderMode::INTERACTIVE, relaxed);
             }
-            if (engine_type.load(relaxed) == EngineType::PATHTRACER)
-                requests_.restart();
+            requests_.restart();
         }
     } else if (render_mode.load(relaxed) == RenderMode::INTERACTIVE) {
         render_mode.store(RenderMode::FULL, relaxed);

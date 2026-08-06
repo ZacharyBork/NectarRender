@@ -8,9 +8,10 @@ from typing  import Self
 from collections.abc import Callable
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QAction
 
+from nectar_render.gui import utils
 from nectar_render.gui.bridge  import Bridge
 from nectar_render.python.cuda import cudaDeviceSynchronize
 
@@ -24,6 +25,14 @@ class MenuBar:
         
         file_menu = self.bar.addMenu('&File')
         self.add_action(
+            file_menu, 'Save scene', lambda : print('Not yet implemented.'), 
+            'Save current scene to disk.', 'Ctrl+S'
+        )
+        self.add_action(
+            file_menu, 'Load scene', lambda : print('Not yet implemented.'), 
+            'Load scene file from disk.'
+        )
+        self.add_action(
             file_menu, 'Quit', self._quit_application, 
             'Quit application', 'Ctrl+Q'
         )
@@ -32,6 +41,23 @@ class MenuBar:
                 
         edit_menu = self.bar.addMenu('&Edit')
 
+        # VIEW MENU
+                        
+        view_menu = self.bar.addMenu('&View')
+        view_menu.addSection('Axis Grid')
+        
+        
+        
+        show_axis_grid = self.add_action(
+            view_menu, 'Axis grid', 
+            lambda x : Bridge.ENGINE.set_axis_grid_visible(x), 
+            'Show axis aligned grid in the viewport.'
+        )
+        show_axis_grid.setCheckable(True)
+        show_axis_grid.setChecked(True)
+        
+        
+        
 
         # SCENE MENU
         
@@ -53,7 +79,12 @@ class MenuBar:
         # HELP MENU
                         
         help_menu = self.bar.addMenu('&Help')
-        
+        self.add_action(
+            help_menu, 'About', 
+            lambda : print('About page opened'), 
+            'Open info page.'
+        )
+
 #### UTILS ####################################################################
 
     def add_action(
@@ -63,12 +94,13 @@ class MenuBar:
         callback:   Callable [[], None],
         status_tip: str | None = None,
         shortcut:   str | None = None
-    ) -> None:
+    ) -> QAction:
         action = QAction(title, self.interface.mainwidget)
         action.triggered.connect(callback)
         if shortcut is not None: action.setShortcut(shortcut)
         if status_tip is not None: action.setStatusTip(status_tip)
         menu.addAction(action)
+        return action
 
 #### QUIT #####################################################################
 

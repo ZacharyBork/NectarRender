@@ -25,18 +25,16 @@ public:
     /* INDEX OPERATORS */
 
     __host__ __device__ float operator[](int i) const { 
-        auto& self = derived();
-        return self.e[i]; 
+        const VecType& self = derived(); return self.e[i]; 
     }
     __host__ __device__ float& operator[](int i) { 
-        auto& self = derived();
-        return self.e[i]; 
+        VecType& self = derived(); return self.e[i]; 
     }
 
     /* IN-PLACE MATH OPS */
 
     __host__ __device__ bool operator==(const VecType& v) {
-        auto& self = derived();
+        const VecType& self = derived();
         bool is_equal = true;
         #pragma unroll
         for (size_t i = 0; i < component_count<VecType>; ++i)
@@ -50,10 +48,10 @@ public:
     }
 
     __host__ __device__ VecType operator-() const { 
-        VecType result = derived();
+        const VecType& self = derived(); VecType result{};
         #pragma unroll
         for (size_t i = 0; i < component_count<VecType>; ++i)
-            result.e[i] = -result.e[i];
+            result.e[i] = -self.e[i];
         return result;
     }
 
@@ -100,7 +98,7 @@ public:
     }
 
     __host__ __device__ float length_squared() const {
-        auto& self = derived();
+        const VecType& self = derived();
         float out = self.e[0] * self.e[0] + self.e[1] * self.e[1];
         if constexpr (component_count<VecType> >= 3) 
             out += self.e[2] * self.e[2];
@@ -115,66 +113,64 @@ public:
 
     /* VALUE UTLITIES */
 
-    __host__ __device__ VecType& exp() const {
-        auto& self = derived();
+    __host__ __device__ VecType exp() const {
+        const VecType& self = derived(); VecType result{};
         #pragma unroll
         for (size_t i = 0; i < component_count<VecType>; ++i)
-            self.e[i] = expf(self.e[i]);
-        return self;
-    }
-
-    __host__ __device__ VecType& pow(float exponent = 2.0f) const {
-        VecType result = derived();
-        #pragma unroll
-        for (size_t i = 0; i < component_count<VecType>; ++i)
-            result.e[i] = powf(result.e[i], exponent);
+            result.e[i] = expf(self.e[i]);
         return result;
     }
 
-    __host__ __device__ VecType& minimum(const float other) const {
-        auto& self = derived();
+    __host__ __device__ VecType pow(float exponent = 2.0f) const {
+        const VecType& self = derived(); VecType result{};
         #pragma unroll
         for (size_t i = 0; i < component_count<VecType>; ++i)
-            self.e[i] = fminf(self.e[i], other);
-        return self;
+            result.e[i] = powf(self.e[i], exponent);
+        return result;
     }
 
-    __host__ __device__ VecType& minimum(const VecType& other) const {
-        auto& self = derived();
+    __host__ __device__ VecType minimum(const float other) const {
+        const VecType& self = derived(); VecType result{};
         #pragma unroll
         for (size_t i = 0; i < component_count<VecType>; ++i)
-            self.e[i] = fminf(self.e[i], other.e[i]);
-        return self;
+            result.e[i] = fminf(self.e[i], other);
+        return result;
     }
 
-    __host__ __device__ VecType& maximum(const float other) const {
-        auto& self = derived();
+    __host__ __device__ VecType minimum(const VecType& other) const {
+        const VecType& self = derived(); VecType result{};
         #pragma unroll
         for (size_t i = 0; i < component_count<VecType>; ++i)
-            self.e[i] = fmaxf(self.e[i], other);
-        return self;
+            result.e[i] = fminf(self.e[i], other.e[i]);
+        return result;
     }
 
-    __host__ __device__ VecType& maximum(const VecType& other) const {
-        auto& self = derived();
+    __host__ __device__ VecType maximum(const float other) const {
+        const VecType& self = derived(); VecType result{};
         #pragma unroll
         for (size_t i = 0; i < component_count<VecType>; ++i)
-            self.e[i] = fmaxf(self.e[i], other.e[i]);
-        return self;
+            result.e[i] = fmaxf(self.e[i], other);
+        return result;
     }
 
-    __host__ __device__ VecType& clamp(
+    __host__ __device__ VecType maximum(const VecType& other) const {
+        const VecType& self = derived(); VecType result{};
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = fmaxf(self.e[i], other.e[i]);
+        return result;
+    }
+
+    __host__ __device__ VecType clamp(
         const float min = -FMAX, 
         const float max =  FMAX
     ) const {
-        auto& self = derived();
+        const VecType& self = derived(); VecType result{};
         #pragma unroll
         for (size_t i = 0; i < component_count<VecType>; ++i)
-            self.e[i] = fmaxf(min, fminf(self.e[i], max));
-        return self;
+            result.e[i] = fmaxf(min, fminf(self.e[i], max));
+        return result;
     }
-
-private:
 
     __host__ __device__ VecType& derived() { 
         return static_cast<VecType&>(*this); 
