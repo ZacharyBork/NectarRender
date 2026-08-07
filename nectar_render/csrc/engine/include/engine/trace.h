@@ -7,13 +7,22 @@
 #include "scene/include/scene.h"
 #include "light/include/skylight.h"
 
+struct TraceConfig {
+    uint32_t sample_idx;
+    uint32_t ray_depth;
+    uint32_t seed;
+
+    // Russian roulette path termination
+    bool     do_rr_termination  = true;
+    uint32_t rr_start_bounce    = 3u;
+    float    rr_survival_chance = 0.95;
+};
+
 void trace_full(
     Camera&     cam,
     SceneGraph* scene,
     AOVs*       aovs,
-    uint32_t    sample_idx,
-    uint32_t    ray_depth,
-    uint32_t    seed
+    TraceConfig cfg
 );
 
 void trace_viewport(

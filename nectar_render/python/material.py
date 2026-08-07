@@ -71,8 +71,11 @@ class Material(root.Material):
         )
         
     @staticmethod
-    def DIELECTRIC(ior: float = 1.5) -> root.Material:
-        return root.Material.dielectric(ior)
+    def DIELECTRIC(
+        tint: Color = Color.white(), 
+        ior:  float = 1.5
+    ) -> root.Material:
+        return root.Material.dielectric(tint, ior)
     
     @staticmethod
     def EMISSIVE(

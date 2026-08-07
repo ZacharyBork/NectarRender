@@ -48,31 +48,35 @@ __global__ void trace_full_kernel(
     DeviceCamera* cam,
     SceneGraph*   scene,
     AOVs*         aovs,
-    uint32_t      sample_idx,
-    uint32_t      ray_depth,
-    uint32_t      seed
+    TraceConfig   cfg
 ) {
     ProcessIndex p_idx = get_process_index();
     if (p_idx.x >= cam->W || p_idx.y >= cam->H) return;
     uint32_t pixel_idx = p_idx.y * cam->W + p_idx.x;
 
     Color atten = Color::white();
-    Generator gen(seed, pixel_idx + sample_idx * (cam->W * cam->H));
+    Generator gen(cfg.seed, pixel_idx + cfg.sample_idx * (cam->W * cam->H));
     Ray ray = cam->get_ray(
-        p_idx.x, p_idx.y, pixel_idx, sample_idx, seed, gen
+        p_idx.x, p_idx.y, pixel_idx, cfg.sample_idx, cfg.seed, gen
     );
 
-    for (int bounce = 0; bounce < ray_depth; bounce++)
+    for (int bounce = 0; bounce < cfg.ray_depth; bounce++) {
         if (!trace_ray(scene, aovs, ray, atten, gen)) break;
+        
+        if (cfg.do_rr_termination && bounce >= cfg.rr_start_bounce) {
+            float survival = fmaxf(atten.r(), fmaxf(atten.g(), atten.b()));
+            survival = fminf(survival, cfg.rr_survival_chance);
+            if (gen.uniform() > survival) break;
+            atten *= 1.0f / survival;
+        }
+    }
 }
 
 void trace_full(
     Camera&     cam,
     SceneGraph* scene,
     AOVs*       aovs,
-    uint32_t    sample_idx,
-    uint32_t    ray_depth,
-    uint32_t    seed
+    TraceConfig cfg
 ) {
     dim3 block(BS2D, BS2D, 1);
     dim3 grid(
@@ -80,10 +84,7 @@ void trace_full(
         (cam.height() + BS2D - 1) / BS2D, 
         1
     );
-    trace_full_kernel<<<grid, block>>>(
-        cam.device_camera(), scene, aovs, sample_idx, ray_depth, seed
-    );
-
+    trace_full_kernel<<<grid, block>>>(cam.device_camera(), scene, aovs, cfg);
 }
 
 // ============================================================================

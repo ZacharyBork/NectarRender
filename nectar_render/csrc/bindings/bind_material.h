@@ -123,7 +123,10 @@ void register_material(py::module_& m) {
 
         /* DIELECTRIC */
 
-        .def_static("dielectric", &Material::dielectric, py::arg("ior") = 1.5f)
+        .def_static("dielectric", &Material::dielectric, 
+            py::arg("tint") = Color::white(),
+            py::arg("ior")  = 1.5f
+        )
 
         /* EMISSIVE */
 

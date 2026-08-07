@@ -47,7 +47,7 @@ template Perlin* device_build<Perlin>(
 // MATERIALS ================================================================== 
 
 template Lambertian* device_build<Lambertian>(TextureView);
-template Dielectric* device_build<Dielectric>(float);
+template Dielectric* device_build<Dielectric>(Color, float);
 template Emissive*   device_build<Emissive>(TextureView, float);
 template Isotropic*  device_build<Isotropic>(TextureView);
 

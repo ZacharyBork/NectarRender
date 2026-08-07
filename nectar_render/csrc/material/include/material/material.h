@@ -204,16 +204,18 @@ private:
 class Dielectric : public MaterialCore {
 public:
 
-    __device__ Dielectric(float ior = 1.5f) : ior(ior) {}
+    __device__ Dielectric(
+        const Color& tint = Color::white(),
+        float ior = 1.5f
+    ) : ior(ior), tint(tint) {}
 
     __device__ void update(MaterialCore* mat) {
         Dielectric* other = reinterpret_cast<Dielectric*>(mat);
-        ior = other->ior;
+        tint = other->tint;
+        ior  = other->ior;
     };
 
-    __device__ Color viewport_color(HitRecord& rec) {
-        return Color::black();
-    }
+    __device__ Color viewport_color(HitRecord& rec) { return tint; }
 
     __device__ NOINLINE bool scatter(
         HitRecord& rec,
@@ -221,7 +223,7 @@ public:
         ScatterRecord& srec,
         Generator& gen
     ) const { 
-        srec.atten    = Color::white();
+        srec.atten    = tint;
         srec.skip_pdf = true;
 
         float ri = rec.front_face ? (1.0f / ior) : ior;
@@ -255,6 +257,7 @@ public:
 private:
 
     float ior;
+    Color tint;
 
     __device__ static float reflectance(
         float cosine, 
@@ -483,9 +486,12 @@ public:
 
     // DIELECTRIC =============================================================
 
-    __host__ static Material dielectric(float ior = 1.5f) {
+    __host__ static Material dielectric(
+        const Color& tint,
+        float ior = 1.5f
+    ) {
         Material m(MaterialType::Dielectric); 
-        m.mat_dielectric = device_build<Dielectric>(ior);
+        m.mat_dielectric = device_build<Dielectric>(tint, ior);
         return m;
     }
 

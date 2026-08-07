@@ -40,7 +40,10 @@ RenderReturnState RenderEngine::render() {
         uint32_t depth = is_interactive() ? 2u : ray_depth;
         trace_full(
             cam, current_scene.graph, sample_aovs.aovs(), 
-            sample_idx, depth, seed
+            TraceConfig{ 
+                sample_idx, depth, seed, true, 3u, 
+                is_interactive() ? 0.15f : 0.95f
+            }
         );
 
         aovs.accumulate(sample_aovs, sample_idx);

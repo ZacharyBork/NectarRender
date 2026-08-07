@@ -16,7 +16,7 @@ class Lambertian(MaterialCore):
     pass
 class Material:
     @staticmethod
-    def dielectric(ior: typing.SupportsFloat | typing.SupportsIndex = 1.5) -> Material:
+    def dielectric(tint: _pathtracer.core.vector.Color = ..., ior: typing.SupportsFloat | typing.SupportsIndex = 1.5) -> Material:
         ...
     @staticmethod
     @typing.overload

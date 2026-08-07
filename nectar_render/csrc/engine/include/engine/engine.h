@@ -106,7 +106,7 @@ public:
         return get_render_mode() == RenderMode::INTERACTIVE; 
     }
 
-    /* ENGINE STATES */
+    /* RENDER RETURN STATES */
 
     RenderReturnState render();
     RenderReturnState viewport();

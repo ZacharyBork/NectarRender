@@ -63,7 +63,7 @@ test_scene = Scene(
         ),
         Hittable.SPHERE( # Back
             Vector3(0.8, 0.2, 1.1),
-            0.2, Material.DIELECTRIC(1.5)
+            0.2, Material.DIELECTRIC(Color.white(), 1.5)
         ),
         
         Hittable.MESH(
@@ -71,12 +71,7 @@ test_scene = Scene(
             Vector3(-0.6, 0.0, 0.1),
             Vector3(0.0, 40.0, 0.0),
             Vector3(1.0, 1.0, 1.0),
-            Material.DIELECTRIC(1.33)
-            # Material.PBR(
-            #     albedo    = Color(1.0, 0.6, 0.15),
-            #     roughness = 0.4,
-            #     metallic  = 1.0 
-            # )
+            Material.DIELECTRIC(Color(1.0, 0.5, 0.5), 1.5)
         ),
 
         Hittable.MESH(
