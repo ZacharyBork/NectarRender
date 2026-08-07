@@ -21,7 +21,7 @@ public:
         return AABB(Vector3(-0.5f), Vector3(0.5f));
     }
 
-    __device__ NOINLINE bool hit(
+    __device__ bool hit(
         const Ray& ray, 
         Interval   ray_t,
         HitRecord& rec,

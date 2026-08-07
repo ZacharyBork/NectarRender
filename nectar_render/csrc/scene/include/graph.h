@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 
 #include "light/include/skylight.h"
-#include "hittable/include/bvh/node.h"
+#include "hittable/include/bvh/bvh.h"
 #include "hittable/include/hittable/hittable.h"
 
 struct SceneGraph {
@@ -47,8 +47,19 @@ struct SceneGraph {
                 }
 
             } else {
-                stack[stack_ptr++] = node.left;
-                stack[stack_ptr++] = node.right;
+                const BVHNode& left_node  = bvh_nodes[node.left];
+                const BVHNode& right_node = bvh_nodes[node.right];
+
+                float t_left  = left_node.bbox.hit_t(ray, ray_t);
+                float t_right = right_node.bbox.hit_t(ray, ray_t);
+
+                bool left_is_near = t_left < t_right;
+                uint32_t near_idx = left_is_near ? node.left  : node.right;
+                uint32_t far_idx  = left_is_near ? node.right : node.left;
+                float    far_t    = left_is_near ? t_right    : t_left;
+
+                if (far_t < ray_t.max) stack[stack_ptr++] = far_idx;
+                stack[stack_ptr++] = near_idx;
             }
         }
         return hit_anything;

@@ -110,14 +110,13 @@ public:
 
     __device__ bool hit(const Ray& ray, Interval ray_t) const {
         const Vector3& ray_orig = ray.origin();
-        const Vector3& ray_dir  = ray.direction();
+        const Vector3& ray_inv_dir = ray.inverse_direction();
 
         for (int axis = 0; axis < 3; axis++) {
             const Interval& ax = axis_interval(axis);
-            const float adinv = 1.0f / ray_dir[axis];
 
-            float t0 = (ax.min - ray_orig[axis]) * adinv;
-            float t1 = (ax.max - ray_orig[axis]) * adinv;
+            float t0 = (ax.min - ray_orig[axis]) * ray_inv_dir[axis];
+            float t1 = (ax.max - ray_orig[axis]) * ray_inv_dir[axis];
 
             if (t0 < t1) {
                 if (t0 > ray_t.min) ray_t.min = t0;
@@ -131,6 +130,35 @@ public:
                 return false;
         }
         return true;
+    }
+
+    __device__ float hit_t(const Ray& ray, Interval ray_t) const {
+        const Vector3& ray_orig = ray.origin();
+        const Vector3& ray_inv_dir = ray.inverse_direction();
+
+        for (int axis = 0; axis < 3; axis++) {
+            const Interval& ax = axis_interval(axis);
+
+            float t0 = (ax.min - ray_orig[axis]) * ray_inv_dir[axis];
+            float t1 = (ax.max - ray_orig[axis]) * ray_inv_dir[axis];
+
+            if (t0 < t1) {
+                if (t0 > ray_t.min) ray_t.min = t0;
+                if (t1 < ray_t.max) ray_t.max = t1;
+            } else {
+                if (t1 > ray_t.min) ray_t.min = t1;
+                if (t0 < ray_t.max) ray_t.max = t0;
+            }
+
+            if (ray_t.max <= ray_t.min) return FMAX;
+        }
+
+        return ray_t.min;
+    }
+
+    __host__ __device__ float surface_area() const {
+        float dx = x.max - x.min, dy = y.max - y.min, dz = z.max - z.min;
+        return 2.0f * (dx * dy + dy * dz + dz * dx);
     }
 
     __host__ AABB* build() const {

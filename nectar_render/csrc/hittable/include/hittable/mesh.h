@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tiny_obj_loader.h"
-#include "hittable/include/bvh/node.h"
+#include "hittable/include/bvh/bvh.h"
 
 // ============================================================================
 // OBJ LOADING
@@ -273,8 +273,19 @@ public:
                     interpolate_hit(rec, v0, v1, v2, u, v);
                 }
             } else {
-                stack[stack_ptr++] = node.left;
-                stack[stack_ptr++] = node.right;
+                const BVHNode& left_node  = tri_nodes[node.left];
+                const BVHNode& right_node = tri_nodes[node.right];
+
+                float t_left  = left_node.bbox.hit_t(ray, ray_t);
+                float t_right = right_node.bbox.hit_t(ray, ray_t);
+
+                bool left_is_near = t_left < t_right;
+                uint32_t near_idx = left_is_near ? node.left  : node.right;
+                uint32_t far_idx  = left_is_near ? node.right : node.left;
+                float    far_t    = left_is_near ? t_right    : t_left;
+
+                if (far_t < ray_t.max) stack[stack_ptr++] = far_idx;
+                stack[stack_ptr++] = near_idx;
             }
         }
         return hit_anything;

@@ -4,7 +4,7 @@
 #include <unordered_map>
 
 #include "hittable/include/hittable/hittable.h"
-#include "hittable/include/bvh/node.h"
+#include "hittable/include/bvh/bvh.h"
 
 struct HittableRegistryEntry {
 public:

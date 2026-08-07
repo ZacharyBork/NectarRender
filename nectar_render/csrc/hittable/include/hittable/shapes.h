@@ -22,7 +22,7 @@ public:
         return Vector2(phi / PI2, theta / PI);
     };
 
-    __device__ NOINLINE bool hit(
+    __device__ bool hit(
         const Ray& ray, 
         Interval   ray_t,
         HitRecord& rec,
@@ -57,7 +57,7 @@ public:
         return true;
     }
 
-    __device__ float NOINLINE pdf_value(
+    __device__ NOINLINE float pdf_value(
         const Vector3& origin, 
         const Vector3& direction,
         const Transform& xform
@@ -75,7 +75,7 @@ public:
         return 1.0f / solid_angle;
     }
 
-    __device__ Vector3 NOINLINE random(
+    __device__ NOINLINE Vector3 random(
         const Vector3& origin, 
         Generator& gen,
         const Transform& xform

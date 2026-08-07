@@ -7,7 +7,7 @@
 #include "graph.h"
 
 #include "light/include/skylight.h"
-#include "hittable/include/bvh/node.h"
+#include "hittable/include/bvh/bvh.h"
 #include "hittable/include/hittable/hittable.h"
 #include "hittable/include/hittable/registry.h"
 #include "material/include/material/registry.h"

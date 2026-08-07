@@ -11,12 +11,19 @@ public:
     { }    
 
     __host__ __device__ Ray(
-        const Vector3& origin, const Vector3& direction, float time = 0.0f
-    ) : orig(origin), dir(direction), tm(time) { }
+        const Vector3& origin, 
+        const Vector3& direction, 
+        float time = 0.0f
+    ) : orig(origin), dir(direction), tm(time) { 
+        inv_dir = Vector3(1.0f / dir.x(), 1.0f / dir.y(), 1.0f / dir.z());
+    }
 
     __host__ __device__ float time()               const { return tm; }
     __host__ __device__ const Vector3& origin()    const { return orig; }
     __host__ __device__ const Vector3& direction() const { return dir; }
+    __host__ __device__ const Vector3& inverse_direction() const { 
+        return inv_dir; 
+    }
 
     __host__ __device__ const Vector3& rO() const { return orig; }
     __host__ __device__ const Vector3& rD() const { return dir; }
@@ -34,7 +41,7 @@ public:
 private:
 
     Vector3 orig;
-    Vector3 dir;
+    Vector3 dir, inv_dir;
     float   tm;
 
 };

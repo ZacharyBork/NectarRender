@@ -102,6 +102,10 @@ target_compile_options(nectar_cuda PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math>
 )
 
+target_compile_options(nectar_cuda PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:-Xptxas -v>
+)
+
 ##############################################################################
 # INSTALL PACKAGE
 ##############################################################################
