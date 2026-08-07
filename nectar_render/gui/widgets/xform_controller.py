@@ -2,13 +2,12 @@ from typing import Self
 from dataclasses import dataclass
 
 from PySide6 import QtWidgets as W
-from PySide6.QtGui import QColor, QPen, QPainter, QMouseEvent
+from PySide6.QtGui import QColor, QPen, QPainter
 from PySide6.QtCore import Qt, Slot, QPointF, QEvent, Signal, Slot
 
-from nectar_render import SceneInterface, Transform, Vector2, Vector3, Color
+from nectar_render import Transform, Vector3
 from nectar_render.gui.bridge   import Bridge
 from nectar_render.gui.registry import WidgetRegistry
-from nectar_render.gui          import utils
 from nectar_render.gui.widgets.vector import VectorWidget
 
 AXES = [

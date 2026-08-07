@@ -6,18 +6,20 @@ from pathlib import Path
 from dataclasses import dataclass, field
 
 from PySide6        import QtWidgets as W
-from PySide6.QtCore import Qt, QObject, QSize, QPointF, QTimer, QElapsedTimer
+from PySide6.QtCore import Qt, QSize, QPointF
 from PySide6.QtGui  import (
     QKeyEvent, QMouseEvent, QImage, QPixmap, QResizeEvent
 )
 
-from nectar_render import Vector2, Vector3, SceneInterface, CameraParams
+from nectar_render import SceneInterface
 from nectar_render.gui.widgets.object_info import ObjectInfo
 from nectar_render.gui.widgets.gnomon import GnomonWidget
 from nectar_render.gui.bridge   import Bridge
 from nectar_render.gui.registry import WidgetRegistry
 from nectar_render.gui.camera   import CameraController
 from nectar_render.gui.utils    import TimeKeeper
+
+from nectar_render.gui.settings_groups import CameraSettings
 
 ###############################################################################
 # UTILITIES
@@ -96,6 +98,7 @@ class ViewportWidget(W.QLabel):
         settings: W.QTabWidget
     ) -> None:
         super().__init__()
+        
         WidgetRegistry.register_viewport(self)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.settings = settings
@@ -106,7 +109,7 @@ class ViewportWidget(W.QLabel):
         
         self.buffer: FrameBuffer = None
         self.camera_controller = CameraController(
-            settings.findChild(W.QGroupBox, 'camera_settings')
+            settings.findChild(CameraSettings, 'camera_settings')
         )
                         
         self.object_info = ObjectInfo(self.settings)

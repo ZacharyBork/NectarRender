@@ -1,16 +1,15 @@
-import sys
-from typing  import Self
-from pathlib import Path
+from __future__ import annotations
+from typing     import TYPE_CHECKING, Self
+if TYPE_CHECKING:
+    from nectar_render.gui.settings_groups import CameraSettings
+    
 from dataclasses import dataclass, field
 
 from PySide6        import QtWidgets as W
-from PySide6.QtCore import Qt, Slot, QPointF, QObject
-from PySide6.QtGui  import (
-    QKeyEvent, QMouseEvent, QImage, QPixmap, QResizeEvent
-)
-from nectar_render import Vector3, CameraParams
-from nectar_render.gui.bridge  import Bridge
-from nectar_render.gui.widgets.vector import VectorWidget
+from PySide6.QtCore import Qt, QPointF
+from PySide6.QtGui  import QKeyEvent, QMouseEvent
+from nectar_render  import Vector3, CameraParams
+from nectar_render.gui.bridge import Bridge
 
 ###############################################################################
 # UPDATE DATACLASS
@@ -62,22 +61,12 @@ class CameraUpdateInfo:
 ###############################################################################
 
 class CameraController:
-    def __init__(self: Self, camera_settings: W.QGroupBox) -> None:
+    def __init__(self: Self, camera_settings: CameraSettings) -> None:
         super().__init__()
                 
         self.settings = camera_settings
         f = self.settings.findChild
-        
-        layout: W.QFormLayout = self.settings.layout()
-        
-        self.rotation = VectorWidget()
-        layout.insertRow(0, 'Rotation', self.rotation)
-        
-        self.translation = VectorWidget()
-        layout.insertRow(0, 'Translation', self.translation)
-        
-        
-        
+                
         self._looking = False
         self._curr_mouse_pos: QPointF | None = None
         self._prev_mouse_pos: QPointF | None = None
@@ -102,8 +91,8 @@ class CameraController:
 #### HOOKS ####################################################################
 
     def _on_camera_updated(self: Self, params: CameraParams) -> None:
-        self.translation.set_from_vector(params.position)
-        self.rotation.set_from_vector(params.rotation)
+        self.settings.translation.set_from_vector(params.position)
+        self.settings.rotation.set_from_vector(params.rotation)
 
 #### KEYPRESS UTILITIES #######################################################
 
@@ -139,7 +128,7 @@ class CameraController:
     
     def update_transforms(self: Self, delta_time: float) -> None:
         dT = delta_time
-        if not self.translation.is_locked:
+        if not self.settings.translation.is_locked:
             if self.is_held(Qt.Key.Key_W): self._cam_data.delta_p[2] -= 1.0 * dT
             if self.is_held(Qt.Key.Key_S): self._cam_data.delta_p[2] += 1.0 * dT
             if self.is_held(Qt.Key.Key_A): self._cam_data.delta_p[0] -= 1.0 * dT
@@ -147,7 +136,7 @@ class CameraController:
             if self.is_held(Qt.Key.Key_Q): self._cam_data.delta_p[1] -= 1.0 * dT
             if self.is_held(Qt.Key.Key_E): self._cam_data.delta_p[1] += 1.0 * dT
         
-        if not self.rotation.is_locked:
+        if not self.settings.rotation.is_locked:
             if self._looking and self._curr_mouse_pos is not None:
                 if self._prev_mouse_pos is not None:
                     self._cam_data.delta_r[1] += (
@@ -159,11 +148,11 @@ class CameraController:
                 self._prev_mouse_pos = self._curr_mouse_pos
                 
     def _parse_camera_settings(self: Self) -> None:
-        self._cam_data.focal_length   = self.focal_length.value()
-        self._cam_data.focus_distance = self.focus_distance.value()
-        self._cam_data.aperture       = self.aperture.value()
-        self._cam_data.sensor_width   = self.sensor_width.value()
-        self._cam_data.shutter_speed  = self.shutter_speed.value()
+        self._cam_data.focal_length   = self.settings.focal_length.value()
+        self._cam_data.focus_distance = self.settings.focus_distance.value()
+        self._cam_data.aperture       = self.settings.aperture.value()
+        self._cam_data.sensor_width   = self.settings.sensor_width.value()
+        self._cam_data.shutter_speed  = self.settings.shutter_speed.value()
         
     def poll_updates(self: Self) -> bool:
         self._parse_camera_settings()

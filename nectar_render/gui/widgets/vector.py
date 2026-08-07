@@ -1,9 +1,8 @@
 from typing import Self
 from PySide6 import QtWidgets as W
-from PySide6.QtCore import Slot, QPointF, Signal
+from PySide6.QtCore import Signal
 
-from nectar_render import SceneInterface, Transform, Vector2, Vector3, Color
-from nectar_render.gui.bridge import Bridge
+from nectar_render import Vector2, Vector3, Color
 from nectar_render.gui import utils
    
    

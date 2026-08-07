@@ -1,22 +1,8 @@
-import sys
 from typing  import Self
-from pathlib import Path
-
 from PySide6 import QtWidgets as W
-from PySide6.QtCore    import Qt, QFile, QObject, Slot
-from PySide6.QtGui     import QAction
-from PySide6.QtUiTools import QUiLoader
+from PySide6.QtCore import Qt, QObject
 
-from nectar_render import Camera, EnginePollResponse
-from nectar_render.gui         import utils
-from nectar_render.gui.utils   import TimeKeeper
-from nectar_render.gui.bridge  import Bridge
-from nectar_render.gui.widgets import (
-    ViewportWidget, ColorCorrection, ProgressBar, Profiler, MenuBar
-)
-
-from nectar_render.scenes.cornell_box import CornellBox
-
+from nectar_render.gui import utils
 
 class CollapsibleMenu(W.QFrame):
     def __init__(

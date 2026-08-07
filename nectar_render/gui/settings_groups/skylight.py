@@ -1,19 +1,8 @@
-import sys
 from typing  import Self
-from pathlib import Path
-
 from PySide6 import QtWidgets as W
-from PySide6.QtCore    import Qt, QFile, QObject, Slot
-from PySide6.QtGui     import QAction
-from PySide6.QtUiTools import QUiLoader
 
-from nectar_render import (
-    Skylight, SimpleSkylightConfig, HDRISkylightConfig
-)
-from nectar_render.gui          import utils
-from nectar_render.gui.utils    import TimeKeeper
-from nectar_render.gui.bridge   import Bridge
-from nectar_render.gui.registry import WidgetRegistry
+from nectar_render import Skylight
+from nectar_render.gui.bridge  import Bridge
 from nectar_render.gui.widgets import (
     CollapsibleMenu, SpinboxSlider, FileSelector, VectorWidget
 )
@@ -23,7 +12,6 @@ class SimpleSkylightSettings(W.QWidget):
         super().__init__()
         layout = W.QFormLayout()
         self.setLayout(layout)
-        self.layout().setContentsMargins(0, 0, 0, 0)
         
         self.start_color = VectorWidget([1.0, 1.0, 1.0], 0.0, 1.0)
         self.end_color   = VectorWidget([0.5, 0.7, 1.0], 0.0, 1.0)
@@ -80,6 +68,8 @@ class SkylightSettings(CollapsibleMenu):
         )
 
         settings_frame = W.QFrame()
+        settings_frame.setStyleSheet('padding: 2px;')
+
         layout = W.QFormLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         settings_frame.setLayout(layout)

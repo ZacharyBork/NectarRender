@@ -12,14 +12,14 @@ from nectar_render.gui          import utils
 from nectar_render.gui.utils    import TimeKeeper
 from nectar_render.gui.bridge   import Bridge
 from nectar_render.gui.registry import WidgetRegistry
+from nectar_render.gui.viewport import ViewportWidget
 from nectar_render.gui.widgets import (
-    ViewportWidget, ColorCorrection, ProgressBar, Profiler, MenuBar,
-    CollapsibleMenu, SpinboxSlider, Outliner
+    ProgressBar, Profiler, MenuBar, Outliner
 )
 
-from nectar_render.gui.settings_groups import SkylightSettings
-
-from nectar_render.scenes.cornell_box import CornellBox
+from nectar_render.gui.settings_groups import (
+    EngineSettings, CameraSettings, SkylightSettings, ColorCorrectionSettings
+)
 
 ###############################################################################
 # INTERFACE CLASS
@@ -34,85 +34,56 @@ test_scene = Scene(
     skylight  = Skylight.hdri(
         asset_root.resolve().as_posix() + '/hdri/brown_photostudio.hdr'
     ),
-    lights = [
-        # Hittable.OBJECT_LIGHT(
-        #     Hittable.QUAD(
-        #         Vector3(1.0, 1, 0.0),
-        #         Vector3(0.0, 180.0, -45.0),
-        #         Vector3(1),
-        #         Material.LAMBERTIAN(Color.white())
-        #     ),
-        #     15.0, Color(1.0, 1.0, 1.0)
-        # )
-    ],
+    lights = [],
     hittables = [
-        # Hittable.QUAD( # Bottom
-        #     Vector3(0.0, -0.5, 0.0),
-        #     Vector3(0.0, 0.0, 0.0),
-        #     Vector3(100.0),
-        #     Material.PBR(
-        #         albedo=Texture.from_image(
-        #             asset_root.resolve().as_posix() + '/tile.jpeg', 
-        #             0.02
-        #         ), 
-        #         roughness=0.15, 
-        #         metallic=0.2
-        #     )
-        # ),
         
-        
-        # Hittable.QUAD( # Bottom
-        #     Vector3(0.0, -0.5, 0.0),
-        #     Vector3(0.0, 0.0, 0.0),
-        #     Vector3(100.0),
-        #     Material.PBR(
-        #         albedo=Texture.from_image(
-        #             asset_root.resolve().as_posix() + '/tile.jpeg', 
-        #             0.02
-        #         ), 
-        #         roughness=0.15, 
-        #         metallic=0.2
-        #     )
-        # ),
+        Hittable.QUAD( # Bottom
+            Vector3(0.0, 0.0, 0.0),
+            Vector3(0.0, 0.0, 0.0),
+            Vector3(5.0),
+            Material.PBR(
+                albedo=Texture.from_image(
+                    asset_root.resolve().as_posix() + '/tile.jpeg', 
+                    0.5
+                ), 
+                roughness=0.15, 
+                metallic=0.2
+            )
+        ),
 
         
-        
-        # Hittable.QUAD( # Top
-        #     Vector3(0.0, 0.5, 0.0),
-        #     Vector3(0.0, 180.0, 0.0),
-        #     Vector3(1.0),
-        #     Material.LAMBERTIAN(Color.white())
-        # ),
-        # Hittable.QUAD( # Right
-        #     Vector3(0.5, 0.0, 0.0),
-        #     Vector3(0.0, 0.0, 90.0),
-        #     Vector3(1.0),
-        #     Material.LAMBERTIAN(Color.red())
-        # ),
-        # Hittable.QUAD( # Left
-        #     Vector3(-0.5, 0.0, 0.0),
-        #     Vector3(0.0, 0.0, -90.0),
-        #     Vector3(1.0),
-        #     Material.LAMBERTIAN(Color.green())
-        # ),
+
         Hittable.SPHERE( # Back
-            Vector3(0.5, -0.3, 0.0),
+            Vector3(0.5, 0.2, 0.0),
             0.2, Material.PBR(Color.white(), 0.1, 1.0)
         ),
         Hittable.SPHERE( # Back
-            Vector3(0.7, -0.3, 0.5),
+            Vector3(0.7, 0.2, 0.5),
             0.2, Material.PBR(Color.yellow())
         ),
         Hittable.SPHERE( # Back
-            Vector3(0.8, -0.3, 1.1),
+            Vector3(0.8, 0.2, 1.1),
             0.2, Material.DIELECTRIC(1.5)
         ),
         
         Hittable.MESH(
+            asset_root.resolve().as_posix() + '/dragon_93k_faces.obj',
+            Vector3(-0.6, 0.0, 0.1),
+            Vector3(0.0, 40.0, 0.0),
+            Vector3(1.0, 1.0, 1.0),
+            Material.DIELECTRIC(1.33)
+            # Material.PBR(
+            #     albedo    = Color(1.0, 0.6, 0.15),
+            #     roughness = 0.4,
+            #     metallic  = 1.0 
+            # )
+        ),
+
+        Hittable.MESH(
             asset_root.resolve().as_posix() + '/happy.obj',
-            Vector3(0.0, -0.8, 0.0),
-            Vector3(0.0, 45.0, 0.0),
-            Vector3(6.0, 6.0, 6.0),
+            Vector3(-1.5, -0.45, -0.4),
+            Vector3(0.0, 40.0, 0.0),
+            Vector3(9.0, 9.0, 9.0),
             Material.PBR(
                 albedo    = Color(1.0, 0.6, 0.15),
                 roughness = 0.4,
@@ -133,7 +104,6 @@ class Interface(QObject):
         self.progress_bar: ProgressBar = None
         self.outliner:        Outliner = None
         self.profiler:        Profiler = None
-        self.color_correction:  ColorCorrection = None
         
         self.camera = Camera(
             resolution   = (1024, 1028),
@@ -143,7 +113,7 @@ class Interface(QObject):
             focal_length = 3.0
         )
         self.scene = test_scene
-        self.max_depth: int = 6
+        self.max_depth: int = 5
         self.seed:      int = 42
 
         Bridge.init(self.camera, self.max_depth, self.seed)
@@ -214,19 +184,7 @@ class Interface(QObject):
         if not Bridge.is_rendering: return
         Bridge.requests.restart()
 
-    def set_n_samples(self: Self) -> None:
-        pass
-        # value = self.find(W.QSpinBox, 'n_samples').value()
-        # Bridge.queue_function(
-        #     lambda : Bridge.ENGINE.set_n_samples(value)
-        # )
 
-    def set_max_depth(self: Self) -> None:
-        pass
-        # value = self.find(W.QSpinBox, 'max_depth').value()
-        # Bridge.queue_function(
-            # lambda : Bridge.ENGINE.set_max_depth(value)
-        # )
             
     def _select_render_pass(self: Self, index: int) -> None:
         # TODO: Implement render pass switching
@@ -274,22 +232,6 @@ class Interface(QObject):
         connect_button('refresh', self.refresh)
         connect_button('save_render', self.viewport.save_image)
         
-        connect_spinbox = lambda name, fn : (
-            self.find(W.QSpinBox, name).editingFinished.connect(fn)
-        )
-        
-        connect_spinbox('n_samples', self.set_n_samples)
-        connect_spinbox('max_depth', self.set_max_depth)
-        
-        connect_groupbox = lambda name : (
-            self.find(W.QGroupBox, name).clicked.connect(
-                lambda : self.toggle_groupbox_widgets(name)
-            )
-        )
-
-        connect_groupbox('general_settings')
-        connect_groupbox('camera_settings')
-        connect_groupbox('color_correction_settings')
         
     def _build_control_bar(self: Self) -> None:        
         icon_paths = {
@@ -443,7 +385,10 @@ class Interface(QObject):
 
     def build_settings_tab(self: Self) -> None:
         frame = self.find(W.QFrame, 'settings_frame')
+        frame.layout().addWidget(EngineSettings())
+        frame.layout().addWidget(CameraSettings())
         frame.layout().addWidget(SkylightSettings())
+        frame.layout().addWidget(ColorCorrectionSettings())
         
         
 #### ENTRYPOINT ###############################################################
@@ -466,6 +411,7 @@ class Interface(QObject):
             )
         )
         
+        self.build_settings_tab()
 
         self._build_viewport()
         self._build_control_bar()
@@ -476,13 +422,10 @@ class Interface(QObject):
         self._init_toolbar()
         self._init_outliner()
         
-        self.build_settings_tab()
+        
         
         self.progress_bar = ProgressBar(
             self.find(W.QFrame, 'progress_frame').layout()
-        )
-        self.color_correction = ColorCorrection(
-            self.find(W.QGroupBox, 'color_correction_settings')
         )
         
         TimeKeeper.start()

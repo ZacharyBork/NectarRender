@@ -1,13 +1,9 @@
 from typing import Self
 
 from PySide6 import QtWidgets as W
-from PySide6.QtGui import QAction
-from PySide6.QtCore import Qt, QObject, Slot, Signal
 
 from nectar_render import Color, Material, Texture, TextureType
 from nectar_render.gui import utils
-from nectar_render.gui.bridge import Bridge
-from nectar_render.gui.registry import WidgetRegistry
 from nectar_render.gui.widgets.spinbox_slider import SpinboxSlider
 from nectar_render.gui.widgets.file_selector import FileSelector
 from nectar_render.gui.widgets.vector import VectorWidget

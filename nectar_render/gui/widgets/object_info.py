@@ -1,12 +1,11 @@
 from typing import Self
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore import Qt, QObject, Slot, Signal
+from PySide6.QtCore import QObject, Signal
 
-from nectar_render import SceneInterface, Color, MaterialType, Material as M
+from nectar_render import MaterialType
 from nectar_render.gui.bridge import Bridge
 from nectar_render.gui.widgets.materials import MatSettingsPBR
-from nectar_render.gui.widgets.vector import VectorWidget
 from nectar_render.gui.widgets.xform_controller import XformController
 
 class MaterialSettings(W.QGroupBox):

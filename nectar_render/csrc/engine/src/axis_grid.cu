@@ -15,7 +15,7 @@ __device__ bool axis_grid(
     Color  major_color,
     Color& grid_color, 
     float& grid_alpha,
-    float  line_width = 5e-4f
+    float  line_width = 1e-3f
 ) {
     float dir_axis = ray.direction()[axis];
     if (fabsf(dir_axis) < 1e-6f) return false;

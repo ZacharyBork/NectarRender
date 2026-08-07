@@ -1,7 +1,7 @@
 from typing  import Self
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt
 
 from nectar_render.python import SceneOutline, SceneNode
 from nectar_render.gui    import utils

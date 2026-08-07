@@ -8,10 +8,9 @@ from typing  import Self
 from collections.abc import Callable
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Slot
 from PySide6.QtGui import QAction
 
-from nectar_render.gui import utils
 from nectar_render.gui.bridge  import Bridge
 from nectar_render.python.cuda import cudaDeviceSynchronize
 

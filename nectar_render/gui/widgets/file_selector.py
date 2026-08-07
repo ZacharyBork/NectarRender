@@ -4,7 +4,6 @@ from PySide6 import QtWidgets as W
 from PySide6.QtCore import Signal
 
 from nectar_render.gui import utils
-from nectar_render.gui.registry import WidgetRegistry
 
 class FileSelector(W.QWidget):
     path_updated = Signal(str)

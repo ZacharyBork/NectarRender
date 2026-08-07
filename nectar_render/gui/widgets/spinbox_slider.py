@@ -11,6 +11,7 @@ class SpinboxSlider(W.QWidget):
         minimum: float = 0.0,
         maximum: float = 100.0,
         value:   float = 1.0,
+        decimals:  int = 2,
         parent:  W.QWidget | None = None
     ) -> None:
         super().__init__(parent=parent)
@@ -28,13 +29,22 @@ class SpinboxSlider(W.QWidget):
         self.slider.setMaximum(int(self.maximum * 100.0))
         self.slider.setValue(int(self.value * 100.0))
         self.slider.valueChanged.connect(self._slider)
+        self.slider.setSizePolicy(
+            W.QSizePolicy.Policy.MinimumExpanding,
+            W.QSizePolicy.Policy.Preferred
+        )
         self.layout().addWidget(self.slider)
         
         self.spinbox = W.QDoubleSpinBox()
+        self.spinbox.setDecimals(decimals)
         self.spinbox.setMinimum(self.minimum)
         self.spinbox.setMaximum(self.maximum)
         self.spinbox.setValue(self.value)
         self.spinbox.editingFinished.connect(self._spinbox)
+        self.spinbox.setSizePolicy(
+            W.QSizePolicy.Policy.Maximum,
+            W.QSizePolicy.Policy.Preferred
+        )
         self.layout().addWidget(self.spinbox)
 
     def get_value(self: Self) -> float:

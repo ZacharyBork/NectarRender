@@ -6,10 +6,9 @@ if TYPE_CHECKING:
 import numpy as np
 
 from PySide6 import QtWidgets as W
-from PySide6.QtGui import QPainter, QPen, QColor, QFont, QBrush
+from PySide6.QtGui import QPainter, QPen, QColor, QFont
 from PySide6.QtCore import QPointF, QEvent
 
-from nectar_render.python.core import Matrix3
 from nectar_render.gui.bridge import Bridge
 
 class GnomonWidget(W.QWidget):

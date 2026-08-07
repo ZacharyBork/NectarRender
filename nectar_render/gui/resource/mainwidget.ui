@@ -653,6 +653,12 @@
               <enum>Qt::Vertical</enum>
              </property>
              <widget class="QFrame" name="outliner_frame">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="frameShape">
                <enum>QFrame::StyledPanel</enum>
               </property>
@@ -726,8 +732,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>396</width>
-                     <height>364</height>
+                     <width>420</width>
+                     <height>530</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -828,25 +834,25 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>381</width>
-                     <height>616</height>
+                     <width>420</width>
+                     <height>530</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_7">
                     <property name="spacing">
-                     <number>3</number>
+                     <number>0</number>
                     </property>
                     <property name="leftMargin">
-                     <number>3</number>
+                     <number>0</number>
                     </property>
                     <property name="topMargin">
-                     <number>3</number>
+                     <number>0</number>
                     </property>
                     <property name="rightMargin">
-                     <number>3</number>
+                     <number>0</number>
                     </property>
                     <property name="bottomMargin">
-                     <number>3</number>
+                     <number>0</number>
                     </property>
                     <item>
                      <widget class="QFrame" name="settings_frame">
@@ -872,520 +878,6 @@
                        <property name="bottomMargin">
                         <number>3</number>
                        </property>
-                      </layout>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QGroupBox" name="general_settings">
-                      <property name="title">
-                       <string>General</string>
-                      </property>
-                      <property name="checkable">
-                       <bool>true</bool>
-                      </property>
-                      <layout class="QFormLayout" name="formLayout_2">
-                       <property name="verticalSpacing">
-                        <number>3</number>
-                       </property>
-                       <property name="leftMargin">
-                        <number>3</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>3</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>3</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>3</number>
-                       </property>
-                       <item row="0" column="0">
-                        <widget class="QLabel" name="label_6">
-                         <property name="text">
-                          <string>Samples per Pixel</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="1">
-                        <widget class="QSpinBox" name="n_samples">
-                         <property name="minimum">
-                          <number>1</number>
-                         </property>
-                         <property name="maximum">
-                          <number>99999</number>
-                         </property>
-                         <property name="value">
-                          <number>512</number>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="0">
-                        <widget class="QLabel" name="label_10">
-                         <property name="text">
-                          <string>Max Ray Depth</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="1">
-                        <widget class="QSpinBox" name="max_depth">
-                         <property name="minimum">
-                          <number>0</number>
-                         </property>
-                         <property name="maximum">
-                          <number>512</number>
-                         </property>
-                         <property name="value">
-                          <number>5</number>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QGroupBox" name="camera_settings">
-                      <property name="title">
-                       <string>Camera</string>
-                      </property>
-                      <property name="checkable">
-                       <bool>true</bool>
-                      </property>
-                      <layout class="QFormLayout" name="formLayout">
-                       <property name="horizontalSpacing">
-                        <number>6</number>
-                       </property>
-                       <property name="verticalSpacing">
-                        <number>3</number>
-                       </property>
-                       <property name="leftMargin">
-                        <number>3</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>3</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>3</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>3</number>
-                       </property>
-                       <item row="0" column="0">
-                        <widget class="QLabel" name="label">
-                         <property name="text">
-                          <string>Focal Length</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="1">
-                        <widget class="QDoubleSpinBox" name="focal_length">
-                         <property name="frame">
-                          <bool>true</bool>
-                         </property>
-                         <property name="buttonSymbols">
-                          <enum>QAbstractSpinBox::PlusMinus</enum>
-                         </property>
-                         <property name="decimals">
-                          <number>4</number>
-                         </property>
-                         <property name="minimum">
-                          <double>0.000100000000000</double>
-                         </property>
-                         <property name="maximum">
-                          <double>999.000000000000000</double>
-                         </property>
-                         <property name="value">
-                          <double>3.000000000000000</double>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="0">
-                        <widget class="QLabel" name="label_2">
-                         <property name="text">
-                          <string>Focus Distance</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="1">
-                        <widget class="QDoubleSpinBox" name="focus_distance">
-                         <property name="decimals">
-                          <number>4</number>
-                         </property>
-                         <property name="minimum">
-                          <double>0.000100000000000</double>
-                         </property>
-                         <property name="maximum">
-                          <double>32767.000000000000000</double>
-                         </property>
-                         <property name="value">
-                          <double>10.000000000000000</double>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="0">
-                        <widget class="QLabel" name="label_3">
-                         <property name="text">
-                          <string>Aperture</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="1">
-                        <widget class="QDoubleSpinBox" name="aperture">
-                         <property name="decimals">
-                          <number>4</number>
-                         </property>
-                         <property name="minimum">
-                          <double>0.000100000000000</double>
-                         </property>
-                         <property name="maximum">
-                          <double>1024.000000000000000</double>
-                         </property>
-                         <property name="singleStep">
-                          <double>0.010000000000000</double>
-                         </property>
-                         <property name="value">
-                          <double>0.010000000000000</double>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="0">
-                        <widget class="QLabel" name="label_4">
-                         <property name="text">
-                          <string>Sensor Width</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="1">
-                        <widget class="QDoubleSpinBox" name="sensor_width">
-                         <property name="decimals">
-                          <number>4</number>
-                         </property>
-                         <property name="minimum">
-                          <double>0.000100000000000</double>
-                         </property>
-                         <property name="maximum">
-                          <double>1024.000000000000000</double>
-                         </property>
-                         <property name="singleStep">
-                          <double>0.100000000000000</double>
-                         </property>
-                         <property name="value">
-                          <double>2.000000000000000</double>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="4" column="0">
-                        <widget class="QLabel" name="label_5">
-                         <property name="text">
-                          <string>Shutter Speed</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="4" column="1">
-                        <widget class="QDoubleSpinBox" name="shutter_speed">
-                         <property name="decimals">
-                          <number>4</number>
-                         </property>
-                         <property name="minimum">
-                          <double>0.000100000000000</double>
-                         </property>
-                         <property name="maximum">
-                          <double>999.990000000000009</double>
-                         </property>
-                         <property name="singleStep">
-                          <double>0.100000000000000</double>
-                         </property>
-                         <property name="value">
-                          <double>1.000000000000000</double>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QGroupBox" name="color_correction_settings">
-                      <property name="title">
-                       <string>Color Correction</string>
-                      </property>
-                      <property name="checkable">
-                       <bool>true</bool>
-                      </property>
-                      <layout class="QVBoxLayout" name="verticalLayout_14">
-                       <property name="leftMargin">
-                        <number>3</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>3</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>3</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>3</number>
-                       </property>
-                       <item>
-                        <widget class="QGroupBox" name="groupBox_2">
-                         <property name="title">
-                          <string>Image</string>
-                         </property>
-                         <property name="flat">
-                          <bool>true</bool>
-                         </property>
-                         <layout class="QFormLayout" name="formLayout_5">
-                          <property name="verticalSpacing">
-                           <number>3</number>
-                          </property>
-                          <property name="leftMargin">
-                           <number>3</number>
-                          </property>
-                          <property name="topMargin">
-                           <number>3</number>
-                          </property>
-                          <property name="rightMargin">
-                           <number>3</number>
-                          </property>
-                          <property name="bottomMargin">
-                           <number>3</number>
-                          </property>
-                          <item row="0" column="0">
-                           <widget class="QLabel" name="label_14">
-                            <property name="text">
-                             <string>To Gamma</string>
-                            </property>
-                           </widget>
-                          </item>
-                          <item row="0" column="1">
-                           <widget class="QCheckBox" name="linear_to_gamma">
-                            <property name="text">
-                             <string/>
-                            </property>
-                            <property name="checked">
-                             <bool>true</bool>
-                            </property>
-                           </widget>
-                          </item>
-                         </layout>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QGroupBox" name="groupBox_3">
-                         <property name="title">
-                          <string>Tonemapping</string>
-                         </property>
-                         <property name="flat">
-                          <bool>true</bool>
-                         </property>
-                         <layout class="QFormLayout" name="formLayout_6">
-                          <property name="verticalSpacing">
-                           <number>3</number>
-                          </property>
-                          <property name="leftMargin">
-                           <number>3</number>
-                          </property>
-                          <property name="topMargin">
-                           <number>3</number>
-                          </property>
-                          <property name="rightMargin">
-                           <number>3</number>
-                          </property>
-                          <property name="bottomMargin">
-                           <number>3</number>
-                          </property>
-                          <item row="0" column="0">
-                           <widget class="QCheckBox" name="enable_tonemap">
-                            <property name="text">
-                             <string>Enable</string>
-                            </property>
-                            <property name="checked">
-                             <bool>true</bool>
-                            </property>
-                           </widget>
-                          </item>
-                          <item row="0" column="1">
-                           <widget class="QComboBox" name="tonemap_method">
-                            <property name="currentText">
-                             <string/>
-                            </property>
-                           </widget>
-                          </item>
-                          <item row="1" column="0">
-                           <widget class="QLabel" name="label_12">
-                            <property name="text">
-                             <string>Blend</string>
-                            </property>
-                           </widget>
-                          </item>
-                          <item row="1" column="1">
-                           <layout class="QHBoxLayout" name="horizontalLayout">
-                            <item>
-                             <widget class="QSlider" name="tonemap_alpha">
-                              <property name="maximum">
-                               <number>100</number>
-                              </property>
-                              <property name="value">
-                               <number>100</number>
-                              </property>
-                              <property name="orientation">
-                               <enum>Qt::Horizontal</enum>
-                              </property>
-                              <property name="tickPosition">
-                               <enum>QSlider::TicksBelow</enum>
-                              </property>
-                              <property name="tickInterval">
-                               <number>10</number>
-                              </property>
-                             </widget>
-                            </item>
-                            <item>
-                             <widget class="QLabel" name="tonemap_blend_percent">
-                              <property name="sizePolicy">
-                               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                                <horstretch>0</horstretch>
-                                <verstretch>0</verstretch>
-                               </sizepolicy>
-                              </property>
-                              <property name="minimumSize">
-                               <size>
-                                <width>40</width>
-                                <height>0</height>
-                               </size>
-                              </property>
-                              <property name="text">
-                               <string>100%</string>
-                              </property>
-                              <property name="alignment">
-                               <set>Qt::AlignCenter</set>
-                              </property>
-                             </widget>
-                            </item>
-                           </layout>
-                          </item>
-                          <item row="2" column="0">
-                           <widget class="QLabel" name="label_15">
-                            <property name="text">
-                             <string>White Point</string>
-                            </property>
-                           </widget>
-                          </item>
-                          <item row="2" column="1">
-                           <widget class="QDoubleSpinBox" name="tonemap_white_point">
-                            <property name="singleStep">
-                             <double>0.200000000000000</double>
-                            </property>
-                            <property name="value">
-                             <double>1.000000000000000</double>
-                            </property>
-                           </widget>
-                          </item>
-                         </layout>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QGroupBox" name="white_balance_settings">
-                         <property name="title">
-                          <string>White Balance</string>
-                         </property>
-                         <layout class="QFormLayout" name="formLayout_7">
-                          <item row="0" column="0">
-                           <widget class="QLabel" name="label_16">
-                            <property name="text">
-                             <string>Enable</string>
-                            </property>
-                           </widget>
-                          </item>
-                          <item row="1" column="0">
-                           <widget class="QLabel" name="label_17">
-                            <property name="text">
-                             <string>Temperature</string>
-                            </property>
-                           </widget>
-                          </item>
-                          <item row="2" column="0">
-                           <widget class="QLabel" name="label_18">
-                            <property name="text">
-                             <string>Tint</string>
-                            </property>
-                           </widget>
-                          </item>
-                          <item row="1" column="1">
-                           <layout class="QHBoxLayout" name="horizontalLayout_4">
-                            <item>
-                             <widget class="QSlider" name="wb_temp">
-                              <property name="minimum">
-                               <number>1</number>
-                              </property>
-                              <property name="maximum">
-                               <number>12000</number>
-                              </property>
-                              <property name="value">
-                               <number>6800</number>
-                              </property>
-                              <property name="orientation">
-                               <enum>Qt::Horizontal</enum>
-                              </property>
-                              <property name="invertedAppearance">
-                               <bool>false</bool>
-                              </property>
-                              <property name="tickPosition">
-                               <enum>QSlider::TicksBothSides</enum>
-                              </property>
-                              <property name="tickInterval">
-                               <number>500</number>
-                              </property>
-                             </widget>
-                            </item>
-                            <item>
-                             <widget class="QLabel" name="wb_temp_label">
-                              <property name="text">
-                               <string>6800k</string>
-                              </property>
-                             </widget>
-                            </item>
-                           </layout>
-                          </item>
-                          <item row="2" column="1">
-                           <layout class="QHBoxLayout" name="horizontalLayout_5">
-                            <item>
-                             <widget class="QSlider" name="wb_tint">
-                              <property name="maximum">
-                               <number>500</number>
-                              </property>
-                              <property name="value">
-                               <number>100</number>
-                              </property>
-                              <property name="orientation">
-                               <enum>Qt::Horizontal</enum>
-                              </property>
-                              <property name="tickPosition">
-                               <enum>QSlider::TicksBelow</enum>
-                              </property>
-                              <property name="tickInterval">
-                               <number>25</number>
-                              </property>
-                             </widget>
-                            </item>
-                            <item>
-                             <widget class="QLabel" name="wb_tint_label">
-                              <property name="text">
-                               <string>1.0</string>
-                              </property>
-                             </widget>
-                            </item>
-                           </layout>
-                          </item>
-                          <item row="0" column="1">
-                           <widget class="QCheckBox" name="enable_white_balance">
-                            <property name="text">
-                             <string/>
-                            </property>
-                            <property name="checked">
-                             <bool>true</bool>
-                            </property>
-                           </widget>
-                          </item>
-                         </layout>
-                        </widget>
-                       </item>
                       </layout>
                      </widget>
                     </item>
@@ -1435,8 +927,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>396</width>
-                     <height>364</height>
+                     <width>420</width>
+                     <height>530</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_10">
