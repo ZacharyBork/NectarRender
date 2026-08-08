@@ -15,7 +15,7 @@ struct HDRISkylightConfig {
     float rotation = 0.0f;
     float intensity = 1.0f;
 
-    float* data_ptr = nullptr;
+    float* __restrict__ data_ptr;
     int C = 0, H = 0, W = 0;
 
 };
@@ -59,10 +59,13 @@ namespace Sky {
                 filepath, cfg.C, cfg.H, cfg.W
             );
             size_t n_elements = (size_t)(cfg.C * cfg.H * cfg.W);
-            CUDAMemory::allocate<float>(cfg.data_ptr, n_elements);
+            
+            float* d_ptr;
+            CUDAMemory::allocate<float>(d_ptr, n_elements);
             CUDAMemory::copy<float>(
-                cfg.data_ptr, image_data.data(), n_elements
+                d_ptr, image_data.data(), n_elements
             );
+            cfg.data_ptr = d_ptr;
         }
 
         __device__ static Color sample(

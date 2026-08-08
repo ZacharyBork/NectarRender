@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing     import TYPE_CHECKING, Self, Any
 if TYPE_CHECKING:
     from nectar_render.gui.interface import Interface
-    from nectar_render.gui.widgets import ViewportWidget, Outliner
+    from nectar_render.gui.viewport  import ViewportWidget
+    from nectar_render.gui.widgets   import Outliner
     from nectar_render.gui.widgets.xform_controller import TransformGnomon
 
 ###############################################################################

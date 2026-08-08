@@ -7,7 +7,7 @@ from PySide6.QtCore    import Qt, QFile, QObject, Slot
 from PySide6.QtGui     import QAction, QKeySequence, QShortcut
 from PySide6.QtUiTools import QUiLoader
 
-from nectar_render import Camera, EngineType, EnginePollResponse
+from nectar_render import Camera, EngineType, EnginePollResponse, LayerType
 from nectar_render.gui          import utils
 from nectar_render.gui.utils    import TimeKeeper
 from nectar_render.gui.bridge   import Bridge
@@ -18,7 +18,8 @@ from nectar_render.gui.widgets import (
 )
 
 from nectar_render.gui.settings_groups import (
-    EngineSettings, CameraSettings, SkylightSettings, ColorCorrectionSettings
+    EngineSettings, CameraSettings, StreamSettings, SkylightSettings, 
+    ColorCorrectionSettings
 )
 
 ###############################################################################
@@ -47,7 +48,7 @@ test_scene = Scene(
                     0.5
                 ), 
                 roughness=0.15, 
-                metallic=0.2
+                metallic=0.5
             )
         ),
 
@@ -104,7 +105,7 @@ class Interface(QObject):
             resolution   = (1024, 1028),
             position     = (0.0, 0.0, 2.0),
             rotation     = (0.0, 0.0, 0.0),
-            num_samples  = 1024,
+            num_samples  = 128,
             focal_length = 3.0
         )
         self.scene = test_scene
@@ -182,8 +183,12 @@ class Interface(QObject):
 
             
     def _select_render_pass(self: Self, index: int) -> None:
-        # TODO: Implement render pass switching
-        pass
+        layers = {
+            0: LayerType.BEAUTY,
+            1: LayerType.DIFFUSE,
+            2: LayerType.WORLD_NORMAL
+        }
+        Bridge.ENGINE.update_streaming_layer(layers[index])
 
 #### INITIALIZATION ###########################################################
 
@@ -244,11 +249,9 @@ class Interface(QObject):
         self.find(W.QPushButton, 'stop').setEnabled(False)
         
         render_pass = self.find(W.QComboBox, 'render_pass')
+        render_pass.addItems(['Beauty', 'Diffuse', 'Normal (WS)'])
         render_pass.currentIndexChanged.connect(self._select_render_pass)
-        render_pass.addItem('Beauty')
-        render_pass.addItem('Normal (WS)')
-        
-        
+                
         rm_viewport = self.find(W.QPushButton, 'render_mode_viewport')
         rm_pathtracer = self.find(W.QPushButton, 'render_mode_pathtracer')
         progress_frame = self.find(W.QFrame, 'progress_frame')
@@ -381,6 +384,7 @@ class Interface(QObject):
     def build_settings_tab(self: Self) -> None:
         frame = self.find(W.QFrame, 'settings_frame')
         frame.layout().addWidget(EngineSettings())
+        frame.layout().addWidget(StreamSettings())
         frame.layout().addWidget(CameraSettings())
         frame.layout().addWidget(SkylightSettings())
         frame.layout().addWidget(ColorCorrectionSettings())

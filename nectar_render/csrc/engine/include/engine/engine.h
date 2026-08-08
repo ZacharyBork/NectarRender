@@ -115,6 +115,7 @@ public:
     /* UTILITIES */
 
     void set_scene(Scene input_scene);
+    void update_streaming_layer(LayerType layer);
     SceneInterface& get_scene_interface();
 
     const uint32_t n_samples() const;

@@ -15,7 +15,7 @@ import numpy as np
 from PySide6.QtCore import QObject, Signal, Slot
 
 from nectar_render.python import (
-    Camera, Scene, SceneInterface, TransferStream, StreamConfig
+    Camera, Scene, SceneInterface, TransferStream, StreamConfig, RenderLayers
 )
 
 Engine: TypeAlias = root.RenderEngine
@@ -141,6 +141,10 @@ class BridgeMeta(type):
     @property
     def camera(cls: type[Self]) -> Camera: 
         return BridgeMeta.ENGINE.camera()
+
+    @property
+    def aovs(cls: type[Self]) -> RenderLayers: 
+        return BridgeMeta.ENGINE.layers()
 
 
 class Bridge(metaclass=BridgeMeta):

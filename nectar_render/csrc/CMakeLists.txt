@@ -20,6 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(OpenImageDenoise_DIR "/opt/oidn/lib/cmake/OpenImageDenoise-2.5.0")
 
 ##############################################################################
 # CLI OVERRIDE FOR CUDA ARCHITECTURE
@@ -35,6 +36,7 @@ set(CUDA_ARCHITECTURES "75" CACHE STRING "CUDA architectures to target")
 find_package(pybind11 REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 find_package(CUDA REQUIRED)
+find_package(OpenImageDenoise REQUIRED)
 
 ##############################################################################
 # GATHER SOURCES
@@ -63,20 +65,27 @@ set_target_properties(nectar_cuda PROPERTIES
 set_target_properties(_pathtracer 
     PROPERTIES CUDA_ARCHITECTURES 
     ${CUDA_ARCHITECTURES}
+    BUILD_RPATH "/opt/oidn/lib"
+    INSTALL_RPATH "/opt/oidn/lib"
 )
 
 ##############################################################################
 # LINK LIBRARIES
 ##############################################################################
 
-target_link_libraries(nectar_cuda PRIVATE CUDA::cudart cublas atomic)
+target_link_libraries(nectar_cuda PRIVATE 
+    CUDA::cudart 
+    cublas 
+    atomic
+    OpenImageDenoise
+)
 target_link_libraries(_pathtracer PRIVATE
     nectar_cuda
     CUDA::cudart
     cublas
     atomic
+    OpenImageDenoise
 )
-
 
 ##############################################################################
 # SETUP PACKAGE INCLUDES
@@ -102,9 +111,10 @@ target_compile_options(nectar_cuda PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math>
 )
 
-target_compile_options(nectar_cuda PRIVATE
-    $<$<COMPILE_LANGUAGE:CUDA>:-Xptxas -v>
-)
+# # Uncomment to include ptxas output in build log.
+# target_compile_options(nectar_cuda PRIVATE
+#     $<$<COMPILE_LANGUAGE:CUDA>:-Xptxas -v>
+# )
 
 ##############################################################################
 # INSTALL PACKAGE

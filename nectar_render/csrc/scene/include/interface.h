@@ -67,7 +67,6 @@ public:
         cudaMemcpy(&rec, d_rec, sizeof(HitRecord), cudaMemcpyDeviceToHost);
         CUDAMemory::free<HitRecord>(d_rec);
 
-        if (rec.object_id == -1) return;
         if (is_disabled()) enable();
     }
 
@@ -75,7 +74,6 @@ public:
         std::lock_guard<std::mutex> lock(interface_mutex);
         rec.object_id   = node.object_id;
         rec.material_id = node.material_id;
-        if (rec.object_id == -1) return;
         if (is_disabled()) enable();
     }
 

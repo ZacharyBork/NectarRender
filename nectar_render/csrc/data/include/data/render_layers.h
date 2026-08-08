@@ -6,34 +6,37 @@
 // RENDER LAYERS CLASS
 // ============================================================================
 
-const inline uint8_t N_RENDER_LAYERS = 8;
+const inline uint8_t N_RENDER_LAYERS = 9;
 
 enum class LayerType {
-    BEAUTY, DIFFUSE, SPECULAR, NORMAL, SHADOW, DEPTH, EMISSION, OBJECT_ID
+    BEAUTY, DIFFUSE, SPECULAR, OBJECT_NORMAL, WORLD_NORMAL, 
+    SHADOW, DEPTH, EMISSION, OBJECT_ID
 };
 
 struct RenderLayersConfig {
-    bool beauty    = true;
-    bool diffuse   = false;
-    bool specular  = false;
-    bool normal    = false;
-    bool shadow    = false;
-    bool depth     = false;
-    bool emission  = false;
-    bool object_id = false;
+    bool beauty        = true;
+    bool diffuse       = true;
+    bool world_normal  = true;
+    bool object_normal = false;
+    bool specular      = false;
+    bool shadow        = false;
+    bool depth         = false;
+    bool emission      = false;
+    bool object_id     = false;
 };
 
 struct AOVs {
     size_t H, W;
-    DataView beauty, diffuse, specular, normal, 
+    DataView beauty, diffuse, specular, world_normal, object_normal,
              shadow, depth, emission, object_id;
 
     __host__ AOVs(
         size_t H, size_t W,
         DataObject& beauty,
         DataObject& diffuse,
+        DataObject& world_normal,
+        DataObject& object_normal,
         DataObject& specular,
-        DataObject& normal,
         DataObject& shadow,
         DataObject& depth,
         DataObject& emission,
@@ -41,8 +44,9 @@ struct AOVs {
     ) : H(H), W(W),
         beauty(beauty.view()), 
         diffuse(diffuse.view()), 
+        world_normal(world_normal.view()), 
+        object_normal(object_normal.view()), 
         specular(specular.view()),
-        normal(normal.view()), 
         shadow(shadow.view()), 
         depth(depth.view()), 
         emission(emission.view()),
@@ -58,8 +62,9 @@ public:
 
     DataObject beauty;
     DataObject diffuse;
+    DataObject world_normal;
+    DataObject object_normal;
     DataObject specular;
-    DataObject normal;
     DataObject shadow;
     DataObject depth;
     DataObject emission;
@@ -87,8 +92,8 @@ public:
 
     __host__ AOVs* aovs() {
         AOVs aovs_obj(
-            H, W, beauty, diffuse, specular, normal, 
-            shadow, depth, emission, object_id
+            H, W, beauty, diffuse, world_normal, object_normal, 
+            specular, shadow, depth, emission, object_id
         );
 
         CUDAMemory::allocate_if_null<AOVs>(d_aov_ptr);
@@ -102,8 +107,8 @@ public:
 
     __host__ std::array<DataObject*, N_RENDER_LAYERS> get_data() {
         return {
-            &beauty, &diffuse, &specular, &normal,
-            &shadow, &depth, &emission, &object_id
+            &beauty, &diffuse, &world_normal, &object_normal,
+            &specular, &shadow, &depth, &emission, &object_id
         };
     }
 
@@ -147,14 +152,15 @@ public:
 
     __host__ DataObject* get_layer(LayerType layer_type) {
         switch (layer_type) {
-        case LayerType::BEAUTY:    return &beauty;
-        case LayerType::DIFFUSE:   return &diffuse;
-        case LayerType::SPECULAR:  return &specular;
-        case LayerType::NORMAL:    return &normal;
-        case LayerType::SHADOW:    return &shadow;
-        case LayerType::DEPTH:     return &depth;
-        case LayerType::EMISSION:  return &emission;
-        case LayerType::OBJECT_ID: return &object_id;
+        case LayerType::BEAUTY:        return &beauty;
+        case LayerType::DIFFUSE:       return &diffuse;
+        case LayerType::WORLD_NORMAL:  return &world_normal;
+        case LayerType::OBJECT_NORMAL: return &object_normal;
+        case LayerType::SPECULAR:      return &specular;
+        case LayerType::SHADOW:        return &shadow;
+        case LayerType::DEPTH:         return &depth;
+        case LayerType::EMISSION:      return &emission;
+        case LayerType::OBJECT_ID:     return &object_id;
         default:
             throw std::runtime_error(
                 "DataObject::get_layer() encountered invalid LayerType.");
@@ -170,14 +176,15 @@ private:
     }
 
     __host__ void build_layers() {
-        if (cfg.beauty)    beauty    = construct_data_object(3);
-        if (cfg.diffuse)   diffuse   = construct_data_object(3);
-        if (cfg.specular)  specular  = construct_data_object(3);
-        if (cfg.normal)    normal    = construct_data_object(3);
-        if (cfg.shadow)    shadow    = construct_data_object(1);
-        if (cfg.depth)     depth     = construct_data_object(1);
-        if (cfg.emission)  emission  = construct_data_object(3);
-        if (cfg.object_id) object_id = construct_data_object(3);
+        if (cfg.beauty)        beauty        = construct_data_object(3);
+        if (cfg.diffuse)       diffuse       = construct_data_object(3);
+        if (cfg.world_normal)  world_normal  = construct_data_object(3);
+        if (cfg.object_normal) object_normal = construct_data_object(3);
+        if (cfg.specular)      specular      = construct_data_object(3);
+        if (cfg.shadow)        shadow        = construct_data_object(1);
+        if (cfg.depth)         depth         = construct_data_object(1);
+        if (cfg.emission)      emission      = construct_data_object(3);
+        if (cfg.object_id)     object_id     = construct_data_object(3);
     }
 
 };

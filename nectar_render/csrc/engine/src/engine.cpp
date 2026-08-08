@@ -20,7 +20,17 @@ RenderEngine::RenderEngine(
     reset();
     cam.__construct(seed);
     transfer_stream.link(aovs.get_layer(LayerType::BEAUTY));
+
     transfer_stream.start();
+    transfer_stream.link_denoise_aux(
+        aovs.get_layer(LayerType::DIFFUSE),
+        aovs.get_layer(LayerType::WORLD_NORMAL)
+    );
+
+    // transfer_stream.link(aovs.get_layer(LayerType::WORLD_NORMAL));
+
+
+    
 }
 
 RenderEngine::~RenderEngine() { aovs.free_aovs(); }
@@ -37,7 +47,8 @@ RenderReturnState RenderEngine::render() {
         if (requests_.stop_pending())
             return RenderReturnState::STOPPED;
 
-        uint32_t depth = is_interactive() ? 2u : ray_depth;
+        // uint32_t depth = is_interactive() ? 2u : ray_depth;
+        uint32_t depth = ray_depth;
         trace_full(
             cam, current_scene.graph, sample_aovs.aovs(), 
             TraceConfig{ 
@@ -46,7 +57,10 @@ RenderReturnState RenderEngine::render() {
             }
         );
 
-        aovs.accumulate(sample_aovs, sample_idx);
+        transfer_stream.guarded([&](){ 
+            aovs.accumulate(sample_aovs, sample_idx);
+        });
+        
         sample_aovs.clear();
         
         cudaDeviceSynchronize(); sample_idx++;
@@ -71,7 +85,9 @@ RenderReturnState RenderEngine::viewport() {
         cam, current_scene.graph, sample_aovs.aovs(), 
         show_axis_grid.load(relaxed), seed
     );
-    aovs.overwrite(sample_aovs);
+    transfer_stream.guarded([&](){ 
+        aovs.overwrite(sample_aovs);
+    });
     
     if (requests_.restart_pending())
         return RenderReturnState::RESTARTED;
@@ -110,6 +126,10 @@ void RenderEngine::set_scene(Scene input_scene) {
     current_scene = std::move(input_scene);
     current_scene.build();
     scene_interface.update_scene(&current_scene);
+}
+
+void RenderEngine::update_streaming_layer(LayerType layer) {
+    transfer_stream.link(aovs.get_layer(layer));
 }
 
 // ============================================================================

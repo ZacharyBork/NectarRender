@@ -179,6 +179,8 @@ void register_engine(py::module_& m) {
         .def("stream",   &RenderEngine::stream,   return_policy::reference)
         .def("requests", &RenderEngine::requests, return_policy::reference)
 
+        .def("update_streaming_layer", &RenderEngine::update_streaming_layer)
+
         .def("get_state",        &RenderEngine::get_state)
         .def("is_idle",          &RenderEngine::is_idle)
         .def("is_rendering",     &RenderEngine::is_rendering)

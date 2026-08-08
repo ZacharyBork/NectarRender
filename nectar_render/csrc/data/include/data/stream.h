@@ -6,9 +6,111 @@
 #include "core/include/core.h"
 #include "data_object.h"
 
+#include <OpenImageDenoise/oidn.h>
+
+void planar_to_interleaved(DataView data, float* out, cudaStream_t stream);
+void interleaved_to_planar(float* in, DataView data, cudaStream_t stream);
+
+class OIDNDenoiser {
+public:
+    ~OIDNDenoiser() { destroy(); }
+
+    void setup(
+        size_t H, size_t W,
+        cudaStream_t stream,
+        bool clean_auxiliaries = true,
+        OIDNQuality quality = OIDN_QUALITY_DEFAULT,
+        float input_scale = 1.0f
+    ) {
+        destroy();
+        this->W = W; this->H = H;
+
+        int device_id = 0;
+        device = oidnNewCUDADevice(&device_id, &stream, 1);
+        oidnCommitDevice(device);
+
+        CUDAMemory::allocate<float>(color_buf,  W * H * 3);
+        CUDAMemory::allocate<float>(albedo_buf, W * H * 3);
+        CUDAMemory::allocate<float>(normal_buf, W * H * 3);
+        CUDAMemory::allocate<float>(output_buf, W * H * 3);
+
+        filter = oidnNewFilter(device, "RT");
+        oidnSetSharedFilterImage(
+            filter, "color",  color_buf,  OIDN_FORMAT_FLOAT3, W, H, 0, 0, 0
+        );
+        oidnSetSharedFilterImage(
+            filter, "albedo", albedo_buf, OIDN_FORMAT_FLOAT3, W, H, 0, 0, 0
+        );
+        oidnSetSharedFilterImage(
+            filter, "normal", normal_buf, OIDN_FORMAT_FLOAT3, W, H, 0, 0, 0
+        );
+        oidnSetSharedFilterImage(
+            filter, "output", output_buf, OIDN_FORMAT_FLOAT3, W, H, 0, 0, 0
+        );
+        
+        oidnSetFilterBool(filter, "hdr", true);
+        oidnSetFilterBool(filter, "cleanAux", clean_auxiliaries);
+        oidnSetFilterInt(filter, "quality", quality);
+        oidnSetFilterFloat(filter, "inputScale", input_scale);
+        oidnCommitFilter(filter);
+    }
+
+    void denoise(
+        DataView beauty, 
+        DataView albedo, 
+        DataView normal,
+        DataView out,
+        cudaStream_t stream
+    ) {
+        planar_to_interleaved(beauty, color_buf,  stream);
+        planar_to_interleaved(albedo, albedo_buf, stream);
+        planar_to_interleaved(normal, normal_buf, stream);
+
+        oidnExecuteFilterAsync(filter);
+
+        interleaved_to_planar(output_buf, out, stream);
+
+        const char* err = nullptr;
+        if (oidnGetDeviceError(device, &err) != OIDN_ERROR_NONE)
+            std::cerr << "OIDN error: " << err << std::endl;
+    }
+
+    void destroy() {
+        if (filter)     { oidnReleaseFilter(filter);    filter     = nullptr; }
+        if (device)     { oidnReleaseDevice(device);    device     = nullptr; }
+        if (color_buf)  { CUDAMemory::free(color_buf);  color_buf  = nullptr; }
+        if (albedo_buf) { CUDAMemory::free(albedo_buf); albedo_buf = nullptr; }
+        if (normal_buf) { CUDAMemory::free(normal_buf); normal_buf = nullptr; }
+        if (output_buf) { CUDAMemory::free(output_buf); output_buf = nullptr; }
+    }
+
+private:
+
+    size_t W = 0, H = 0;
+    OIDNDevice device = nullptr;
+    OIDNFilter filter = nullptr;
+    float *color_buf  = nullptr, 
+          *albedo_buf = nullptr, 
+          *normal_buf = nullptr, 
+          *output_buf = nullptr;
+
+};
+
+
+
+
+
+
 enum class StreamState { ACTIVE, INACTIVE, FROZEN };
 enum class TonemapMethod{ REINHARD, REINHARD_EXTENDED, ACES };
+enum class DenoiseFilterQuality{ DEFAULT, HIGH, BALANCED, FAST };
 struct StreamConfig {
+    bool apply_denoising = true;
+    bool denoise_clean_auxiliaries = true;
+    DenoiseFilterQuality denoise_quality = DenoiseFilterQuality::FAST;
+    float denoise_input_scale = 1.0f;
+
+
     bool linear_to_gamma = true;
 
     bool  apply_white_balance = true;
@@ -60,12 +162,11 @@ public:
     /* LINKING */
 
     void link(DataObject* obj) {
-        destroy();
         C = obj->C; H = obj->H; W = obj->W;
         data = obj;
     }
 
-    void unlink(DataObject* obj) { link(nullptr); }
+    void unlink() { C = H = W = 0UL; data = nullptr; }
     bool is_linked() const { return data != nullptr; }
 
     /* STREAM CONTROL */
@@ -99,6 +200,8 @@ public:
         set_state(StreamState::INACTIVE);
     }
 
+    StreamConfig get_config() { return stream_config.load(relaxed); }
+
     void update_config(StreamConfig cfg) {
         stream_config.store(cfg, relaxed);
     }
@@ -110,6 +213,12 @@ public:
             cudaStreamSynchronize(transfer_stream);
             set_state(StreamState::FROZEN);
         }
+        fn();
+    }
+
+    template<typename Func>
+    void guarded(Func&& fn) {
+        std::lock_guard<std::mutex> lock(readback_mutex);
         fn();
     }
 
@@ -140,11 +249,21 @@ public:
         std::lock_guard<std::mutex> lock(readback_mutex);
         if (is_frozen()) return buffer_ptr();
 
-        process_stream(
-            data->view(), image_buffer, 
-            stream_config.load(relaxed),
-            transfer_stream
-        );
+        DataView source = data->view();
+
+        if (get_config().apply_denoising 
+        &&  albedo_data && normal_data) {
+            denoiser.denoise(
+                data->view(), 
+                albedo_data->view(), 
+                normal_data->view(), 
+                denoised_output.view(),
+                transfer_stream
+            );
+            source = denoised_output.view();
+        }
+
+        process_stream(source, image_buffer, get_config(), transfer_stream);
         handle_overlay();
 
         cudaMemcpyAsync(
@@ -163,6 +282,52 @@ public:
         return n_elements() * sizeof(uint8_t); 
     }
 
+    /* DENOISING */
+
+    void link_denoise_aux(DataObject* albedo, DataObject* normal) {
+        albedo_data = albedo;
+        normal_data = normal;
+        denoised_output = DataObject(3, H, W);
+        rebuild_denoiser();
+    }
+
+    void enable_denoising() { 
+        StreamConfig cfg = get_config();
+        if (cfg.apply_denoising) return;
+        cfg.apply_denoising = true;
+        stream_config.store(cfg, relaxed);
+    }
+    void disable_denoising() {
+        StreamConfig cfg = get_config();
+        if (!cfg.apply_denoising) return;
+        cfg.apply_denoising = false;
+        stream_config.store(cfg, relaxed);
+    }
+
+    void rebuild_denoiser() {
+        OIDNQuality q = OIDN_QUALITY_DEFAULT;
+        StreamConfig cfg = get_config();
+        switch (cfg.denoise_quality) {
+            case DenoiseFilterQuality::DEFAULT: 
+                q = OIDN_QUALITY_DEFAULT; break;
+            case DenoiseFilterQuality::HIGH: 
+                q = OIDN_QUALITY_HIGH; break;
+            case DenoiseFilterQuality::BALANCED: 
+                q = OIDN_QUALITY_BALANCED; break;
+            case DenoiseFilterQuality::FAST: 
+                q = OIDN_QUALITY_FAST; break;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(readback_mutex);
+            denoiser.destroy();
+            denoiser.setup(
+                H, W, transfer_stream, cfg.denoise_clean_auxiliaries, 
+                q, cfg.denoise_input_scale
+            );
+        }
+    }
+
 private:
 
     std::mutex readback_mutex;
@@ -177,6 +342,11 @@ private:
     uint8_t* stream_buffer = nullptr;
     uint8_t* image_buffer  = nullptr;
     cudaStream_t transfer_stream;
+
+    DataObject* albedo_data = nullptr;
+    DataObject* normal_data = nullptr;
+    OIDNDenoiser denoiser;
+    DataObject denoised_output;
 
     Color overlay_color;
     uint8_t* overlay_mask = nullptr;
@@ -201,4 +371,5 @@ private:
     }
 
 };
+
 

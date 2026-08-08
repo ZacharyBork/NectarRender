@@ -12,10 +12,10 @@ __device__ bool trace_ray(
     SceneGraph* scene,
     AOVs*       aovs,
     Ray&        ray,
+    HitRecord&  rec,
     Color&      atten,
     Generator&  gen
 ) {
-    HitRecord rec;
     bool hit = scene->hit(ray, Interval(EPS, FMAX), rec);
 
     if (!hit) {
@@ -61,8 +61,14 @@ __global__ void trace_full_kernel(
     );
 
     for (int bounce = 0; bounce < cfg.ray_depth; bounce++) {
-        if (!trace_ray(scene, aovs, ray, atten, gen)) break;
+        HitRecord rec;
+        if (!trace_ray(scene, aovs, ray, rec, atten, gen)) break;
         
+        if (bounce == 0) {
+            aovs->diffuse      += atten;
+            aovs->world_normal += Color(rec.n);
+        }
+
         if (cfg.do_rr_termination && bounce >= cfg.rr_start_bounce) {
             float survival = fmaxf(atten.r(), fmaxf(atten.g(), atten.b()));
             survival = fminf(survival, cfg.rr_survival_chance);
@@ -132,6 +138,8 @@ __global__ void trace_viewport_kernel(
 
     Color col = rec.mat->viewport_color(rec);
     aovs->beauty += col * fmaxf(headlight, directional);
+    aovs->diffuse      += col;
+    aovs->world_normal += Color(rec.n);
 }
 
 void trace_viewport(

@@ -39,6 +39,11 @@ class MenuBar:
         # EDIT MENU
                 
         edit_menu = self.bar.addMenu('&Edit')
+        self.add_action(
+            edit_menu, 'Preferences', 
+            lambda : print('Preferences page opened'), 
+            'Open preferences.'
+        )
 
         # VIEW MENU
                         
