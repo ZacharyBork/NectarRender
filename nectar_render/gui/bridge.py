@@ -15,10 +15,9 @@ import numpy as np
 from PySide6.QtCore import QObject, Signal, Slot
 
 from nectar_render.python import (
-    Camera, Scene, SceneInterface, TransferStream, StreamConfig, RenderLayers
+    RenderEngine, Camera, Scene, SceneInterface, TransferStream, 
+    StreamConfig, RenderLayers
 )
-
-Engine: TypeAlias = root.RenderEngine
 
 ###############################################################################
 # SIGNAL INTERFACE
@@ -34,7 +33,7 @@ class SignalInterface(QObject):
     reset     = Signal()
     shutdown  = Signal()
         
-    def __init__(self: Self, engine: root.RenderEngine) -> None:
+    def __init__(self: Self, engine: RenderEngine) -> None:
         super().__init__()
         engine.on_render_started  = self.render_started.emit
         engine.on_render_finished = self.render_finished.emit
@@ -53,9 +52,9 @@ class SignalInterface(QObject):
         
 class ThreadWorker:
     THREAD: threading.Thread = None
-    ENGINE: Engine = None
+    ENGINE: RenderEngine = None
     
-    def __init__(self: Self, engine: Engine) -> None:
+    def __init__(self: Self, engine: RenderEngine) -> None:
         setattr(ThreadWorker, 'ENGINE', engine)
         
     @property
@@ -81,7 +80,7 @@ class ThreadWorker:
 ###############################################################################
 
 class BridgeMeta(type):
-    ENGINE: Engine = None
+    ENGINE: RenderEngine = None
     
     _stream_config: StreamConfig = None
     _thread:        ThreadWorker = None
@@ -89,7 +88,7 @@ class BridgeMeta(type):
     
     @staticmethod
     def init(camera: Camera, ray_depth: int, seed: int) -> None:
-        setattr(BridgeMeta, 'ENGINE', Engine(camera, ray_depth, seed))
+        setattr(BridgeMeta, 'ENGINE', RenderEngine(camera, ray_depth, seed))
         setattr(BridgeMeta, '_stream_config', StreamConfig())
         setattr(BridgeMeta, '_thread',  ThreadWorker(BridgeMeta.ENGINE))
         setattr(BridgeMeta, '_signals', SignalInterface(BridgeMeta.ENGINE))

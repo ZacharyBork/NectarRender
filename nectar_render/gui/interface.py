@@ -399,17 +399,7 @@ class Interface(QObject):
         self.mainwidget = self._init_mainwidget()
         self.mainwidget.setWindowTitle('NectarRender')
         self.find = self.mainwidget.findChild
-        
-        
-        self.find(W.QPushButton, 'test_button').clicked.connect(
-            lambda : Bridge.scene_interface.add_object(
-                Hittable.SPHERE(
-                    Vector3(0.0, 0.0, 0.0),
-                    0.33, Material.PBR(Color.red(), 0.1, 1.0)
-                )
-            )
-        )
-        
+
         self.build_settings_tab()
 
         self._build_viewport()
@@ -420,8 +410,6 @@ class Interface(QObject):
         self._init_timeline()
         self._init_toolbar()
         self._init_outliner()
-        
-        
         
         self.progress_bar = ProgressBar(
             self.find(W.QFrame, 'progress_frame').layout()

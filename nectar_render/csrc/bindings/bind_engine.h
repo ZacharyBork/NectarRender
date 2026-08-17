@@ -7,7 +7,6 @@
 #include "engine/include/engine/engine.h"
 #include "engine/include/engine/camera.h"
 #include "core/include/core/transform.h"
-#include "engine/include/engine/denoise.h"
 
 namespace py = pybind11;
 using return_policy = py::return_value_policy;
@@ -74,26 +73,6 @@ void register_engine(py::module_& m) {
         .def("project_to_screen", &Camera::project_to_screen, 
             py::arg("world_point")
         );
-
-// ############################################################################
-// DENOISERS
-// ############################################################################
-
-    auto m_denoise = m_engine.def_submodule("denoise", "Denoising submodule.");
-
-    py::class_<Denoiser>(m_denoise, "Denoiser").def("run", &Denoiser::run);
-
-    py::class_<TVDenoiser, Denoiser>(m_denoise, "TVDenoiser")
-        .def(py::init([](
-            const float weight, 
-            const uint32_t iterations
-        ) {
-            return TVDenoiser(weight, iterations);
-        }),
-            py::arg("weight")     = 1.0f,
-            py::arg("iterations") = 100
-        )
-        .def("run", &TVDenoiser::run);
 
 // ############################################################################
 // RENDER ENGINE CLASS

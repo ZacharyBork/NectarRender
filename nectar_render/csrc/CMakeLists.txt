@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(OpenImageDenoise_DIR "/opt/oidn/lib/cmake/OpenImageDenoise-2.5.0")
+set(OpenImageDenoise_DIR "$ENV{OIDN_DIR}")
 
 ##############################################################################
 # CLI OVERRIDE FOR CUDA ARCHITECTURE
