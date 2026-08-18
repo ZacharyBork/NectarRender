@@ -1,0 +1,519 @@
+#pragma once
+
+#include <array>
+#include <vector>
+#include <iostream>
+#include <type_traits>
+#include <cuda_runtime.h>
+
+#include "core/include/core/random.h"
+#include "core/include/core/constants.h"
+
+//=============================================================================
+// ABSTRACT PARENT
+//=============================================================================
+
+template <typename T>
+constexpr std::size_t component_count = std::extent_v<decltype(T::e)>;
+
+template<typename VecType>
+class Vector {
+public:
+
+    __host__ __device__ Vector() { }
+
+    /* INDEX OPERATORS */
+
+    __host__ __device__ float operator[](int i) const { 
+        const VecType& self = derived(); return self.e[i]; 
+    }
+    __host__ __device__ float& operator[](int i) { 
+        VecType& self = derived(); return self.e[i]; 
+    }
+
+    /* IN-PLACE MATH OPS */
+
+    __host__ __device__ bool operator==(const VecType& v) {
+        const VecType& self = derived();
+        bool is_equal = true;
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            if (self.e[i] != v.e[i]) is_equal = false;
+        return is_equal;
+    }
+
+    __host__ __device__ bool operator!=(const VecType& v) {
+        auto& self = derived();
+        return !(self==v);
+    }
+
+    __host__ __device__ VecType operator-() const { 
+        const VecType& self = derived(); VecType result{};
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = -self.e[i];
+        return result;
+    }
+
+    __host__ __device__ VecType& operator+=(const VecType& v) {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] += v.e[i];
+        return self;
+    }
+
+    __host__ __device__ VecType operator-=(const VecType& v) { 
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] -= v.e[i];
+        return self;
+    }
+
+    __host__ __device__ VecType& operator*=(const VecType& v) {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] *= v.e[i];
+        return self;
+    }
+
+    __host__ __device__ VecType& operator/=(const VecType& other) {
+        auto& self = derived();
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            self.e[i] /= (other.e[i] + FMIN);
+        return self;
+    }
+
+    __host__ __device__ VecType& operator/=(float t) {
+        return *this *= 1.0f / (t + FMIN);
+    }
+
+    /* INSPECTION UTILITIES */
+
+    __host__ __device__ float length() const {
+        return sqrtf(length_squared());
+    }
+
+    __host__ __device__ float length_squared() const {
+        const VecType& self = derived();
+        float out = self.e[0] * self.e[0] + self.e[1] * self.e[1];
+        if constexpr (component_count<VecType> >= 3) 
+            out += self.e[2] * self.e[2];
+        if constexpr (component_count<VecType> >= 4) 
+            out += self.e[3] * self.e[3];
+        return out;
+    }
+
+    __host__ __device__ bool near_zero(float eps = 1e-8) const {
+        return derived().length() < eps;
+    }
+
+    /* VALUE UTLITIES */
+
+    __host__ __device__ VecType exp() const {
+        const VecType& self = derived(); VecType result{};
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = expf(self.e[i]);
+        return result;
+    }
+
+    __host__ __device__ VecType pow(float exponent = 2.0f) const {
+        const VecType& self = derived(); VecType result{};
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = powf(self.e[i], exponent);
+        return result;
+    }
+
+    __host__ __device__ VecType minimum(const float other) const {
+        const VecType& self = derived(); VecType result{};
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = fminf(self.e[i], other);
+        return result;
+    }
+
+    __host__ __device__ VecType minimum(const VecType& other) const {
+        const VecType& self = derived(); VecType result{};
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = fminf(self.e[i], other.e[i]);
+        return result;
+    }
+
+    __host__ __device__ VecType maximum(const float other) const {
+        const VecType& self = derived(); VecType result{};
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = fmaxf(self.e[i], other);
+        return result;
+    }
+
+    __host__ __device__ VecType maximum(const VecType& other) const {
+        const VecType& self = derived(); VecType result{};
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = fmaxf(self.e[i], other.e[i]);
+        return result;
+    }
+
+    __host__ __device__ VecType clamp(
+        const float min = -FMAX, 
+        const float max =  FMAX
+    ) const {
+        const VecType& self = derived(); VecType result{};
+        #pragma unroll
+        for (size_t i = 0; i < component_count<VecType>; ++i)
+            result.e[i] = fmaxf(min, fminf(self.e[i], max));
+        return result;
+    }
+
+    __host__ __device__ VecType& derived() { 
+        return static_cast<VecType&>(*this); 
+    }
+
+    __host__ __device__ const VecType& derived() const { 
+        return static_cast<const VecType&>(*this); 
+    }
+};
+
+template<typename T>
+using is_vector = std::enable_if_t<std::is_base_of_v<Vector<T>, T>>;
+
+//=============================================================================
+// OPERATORS
+//=============================================================================
+
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator+(const T& u, const T& v) {
+    T result = u;
+    result += v;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator+(const T& u, float t) {
+    T result = u;
+    #pragma unroll
+    for (size_t i = 0; i < component_count<T>; ++i)
+        result.e[i] += t;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator+(float t, const T& u) { return u + t; }
+
+
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator-(const T& u, const T& v) {
+    T result = u;
+    result -= v;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator-(const T& u, float t) {
+    T result = u;
+    #pragma unroll
+    for (size_t i = 0; i < component_count<T>; ++i)
+        result.e[i] -= t;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator-(float t, const T& u) { return u - t; }
+
+
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator*(const T& u, const T& v) {
+    T result = u;
+    result *= v;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator*(const T& u, float t) {
+    T result = u;
+    #pragma unroll
+    for (size_t i = 0; i < component_count<T>; ++i)
+        result.e[i] *= t;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator*(float t, const T& u) { return u * t; }
+
+
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator/(const T& u, const T& v) {
+    T result = u;
+    result /= v;
+    return result;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator/(const T& u, float t) {
+    return (1.0f / t) * u;
+}
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T operator/(float t, const T& u) {
+    T result = u;
+    #pragma unroll
+    for (size_t i = 0; i < component_count<T>; ++i)
+        result.e[i] = t / u.e[i];
+    return result;
+}
+
+//=============================================================================
+// UTILITIES
+//=============================================================================
+
+template <typename T, typename = is_vector<T>>
+__host__ __device__ inline T normalize(const T& v) { return v / v.length(); }
+
+//=============================================================================
+// VECTOR2
+//=============================================================================
+
+template<typename VecType>
+class Vec2Core : public Vector<VecType> {
+public:
+    float e[2];
+
+    __host__ __device__ Vec2Core() : e{ 0, 0 } {}
+    __host__ __device__ Vec2Core(float e) : e{ e, e } {}
+    __host__ __device__ Vec2Core(float e0, float e1) : e{ e0, e1 } {}
+    
+    __host__ __device__ Vec2Core(const VecType& v) : e{ v[0], v[1] } {}
+
+    __host__ Vec2Core(std::array<float, 2> e) : e{e[0], e[1]} {}
+    __host__ Vec2Core(std::array<int,   2> e) : e{(float)e[0], (float)e[1]} {}
+    __host__ __device__ Vec2Core(float e[4]) : e{e[0], e[1]} {}
+
+    template <typename OtherType>
+    __host__ __device__ explicit Vec2Core(const Vec2Core<OtherType>& other)
+        : e{other.e[0], other.e[1]} {}
+
+    __host__ __device__ float x() const { return e[0]; }
+    __host__ __device__ float y() const { return e[1]; }
+    __host__ __device__ float u() const { return e[0]; }
+    __host__ __device__ float v() const { return e[1]; }
+
+    __device__ static VecType sample_square(Generator& gen) {
+        return VecType(gen.random_float()-0.5, gen.random_float()-0.5);
+    }
+
+    __device__ static VecType random_in_unit_disk(Generator& gen) {
+        while (true) {
+            VecType p = VecType(
+                gen.random_float(-1.0f, 1.0f), 
+                gen.random_float(-1.0f, 1.0f)
+            );
+            if (p.length_squared() < 1.0f) return p;
+        }
+    }
+};
+
+class Vector2 : public Vec2Core<Vector2> { using Vec2Core::Vec2Core; };
+class Point2  : public Vec2Core<Point2>  { using Vec2Core::Vec2Core; };
+
+//=============================================================================
+// VECTOR3
+//=============================================================================
+
+template<typename VecType>
+class Vec3Core : public Vector<VecType> {
+public:
+    float e[3];
+
+    __host__ __device__ Vec3Core() : e{ 0, 0, 0 } {}
+    __host__ __device__ Vec3Core(float e) : e{ e, e, e } {}
+    __host__ __device__ Vec3Core(
+        float e0, float e1, float e2
+    ) : e{ e0, e1, e2 } {}
+
+    __host__ __device__ Vec3Core(const VecType& v) : e{ v[0], v[1], v[2] } {}
+
+    __host__ Vec3Core(std::array<float, 3> e) : e{e[0], e[1], e[2]} {}
+    __host__ __device__ Vec3Core(float e[4]) : e{e[0], e[1], e[2]} {}
+    
+    template <typename OtherType>
+    __host__ __device__ explicit Vec3Core(const Vec3Core<OtherType>& other)
+        : e{other.e[0], other.e[1], other.e[2]} {}
+
+    __host__ std::array<float, 3> as_array() {
+        return std::array<float, 3>{ e[0], e[1], e[2] };
+    }
+
+    __host__ __device__ float x() const { return e[0]; }
+    __host__ __device__ float y() const { return e[1]; }
+    __host__ __device__ float z() const { return e[2]; }
+
+    __host__ __device__ float u() const { return e[0]; }
+    __host__ __device__ float v() const { return e[1]; }
+    __host__ __device__ float w() const { return e[2]; }
+
+    __device__ static VecType random(Generator& gen) {
+        return VecType(
+            gen.random_float(),
+            gen.random_float(), 
+            gen.random_float()
+        );
+    }
+
+    __device__ static VecType random(
+        float      min, 
+        float      max,
+        Generator& gen
+    ) {
+        return VecType(
+            gen.random_float(min, max), 
+            gen.random_float(min, max), 
+            gen.random_float(min, max)
+        );
+    }
+
+};
+
+class Vector3 : public Vec3Core<Vector3> { using Vec3Core::Vec3Core; };
+class Color   : public Vec3Core<Color>   { using Vec3Core::Vec3Core; 
+public:
+
+    bool is_rgb = true;
+
+    __host__ __device__ float r() const { return e[0]; }
+    __host__ __device__ float g() const { return e[1]; }
+    __host__ __device__ float b() const { return e[2]; }
+    __host__ __device__ float h() const { return e[0]; }
+    __host__ __device__ float s() const { return e[1]; }
+    __host__ __device__ float v() const { return e[2]; }
+
+    __host__ __device__ static Color black()  {return Color(0.0f, 0.0f, 0.0f);}
+    __host__ __device__ static Color white()  {return Color(1.0f, 1.0f, 1.0f);}
+    __host__ __device__ static Color red()    {return Color(1.0f, 0.0f, 0.0f);}
+    __host__ __device__ static Color green()  {return Color(0.0f, 1.0f, 0.0f);}
+    __host__ __device__ static Color blue()   {return Color(0.0f, 0.0f, 1.0f);}
+    __host__ __device__ static Color purple() {return Color(1.0f, 0.0f, 1.0f);}
+    __host__ __device__ static Color yellow() {return Color(1.0f, 1.0f, 0.0f);}
+    __host__ __device__ static Color teal()   {return Color(0.0f, 1.0f, 1.0f);}
+
+    __host__ __device__ Vector3 as_vector() { return Vector3(e); }
+
+    __host__ __device__ void rgb_to_hsv() {
+        if (!is_rgb) return;
+        is_rgb = !is_rgb;
+
+        float cmax = fmaxf(fmaxf(r(), g()), b());
+        float cmin = fminf(fminf(r(), g()), b());
+        float delta = cmax - cmin;
+
+        float h = 0.0f;
+        float s = (cmax == 0.0f) ? 0.0f : delta / cmax;
+        float v = cmax;
+        
+        if (delta != 0.0f) {
+            if (cmax == r()) h = fmodf((g() - b()) / delta, 6.0f);
+            if (cmax == g()) h = (b() - r()) / delta + 2.0f; 
+            else h = (r() - g()) / delta + 4.0f;
+        }
+
+        h /= 6.0f;
+        if (h < 0.0f) h += 1.0f;
+
+        e[0] = h; e[1] = s; e[2] = v;
+    }
+
+    __host__ __device__ void hsv_to_rgb() {
+        if (!is_rgb) return;
+        is_rgb = !is_rgb;
+
+        float h = r();
+        float s = g();
+        float v = b();
+
+        if (s == 0.0f) {
+            e[0] = e[1] = e[2] = v;
+            return;
+        }
+
+        float i = floorf(h * 6.0f);
+        float f = h * 6.0f - i;
+        float p = v * (1.0f - s);
+        float q = v * (1.0f - f * s);
+        float t = v * (1.0f - (1.0f - f) * s);
+
+        switch ((int)i % 6) {
+            case 0: e[0] = v; e[1] = t; e[2] = p; break;
+            case 1: e[0] = q; e[1] = v; e[2] = p; break;
+            case 2: e[0] = p; e[1] = v; e[2] = t; break;
+            case 3: e[0] = p; e[1] = q; e[2] = v; break;
+            case 4: e[0] = t; e[1] = p; e[2] = v; break;
+            case 5: e[0] = v; e[1] = p; e[2] = q; break;
+        }
+    }
+};
+
+// MATH =======================================================================
+
+__host__ __device__ inline float dot(const Vector3& u, const Vector3& v) {
+    return u.e[0] * v.e[0]
+         + u.e[1] * v.e[1]
+         + u.e[2] * v.e[2];
+}
+
+__host__ __device__ inline Vector3 cross(const Vector3& u, const Vector3& v) {
+    return Vector3(
+        u.e[1] * v.e[2] - u.e[2] * v.e[1],
+        u.e[2] * v.e[0] - u.e[0] * v.e[2],
+        u.e[0] * v.e[1] - u.e[1] * v.e[0]
+    );
+}
+
+__host__ __device__ inline Vector3 reflect(
+    const Vector3& v,
+    const Vector3& n
+) { 
+    return v - 2.0f * dot(v, n) * n; 
+}
+
+__host__ __device__ inline Vector3 refract(
+    const Vector3& uv,
+    const Vector3& n,
+    float ior
+) { 
+    float cos_theta = fminf(dot(-uv, n), 1.0f);
+    Vector3 perp =  ior * (uv + cos_theta * n);
+    Vector3 parallel = -sqrtf(fabsf(1.0 - perp.length_squared())) * n;
+    return perp + parallel;
+}
+
+// CREATION ===================================================================
+
+__device__ inline Vector3 random_unit_vector(Generator& gen) {
+    while (true) {
+        auto p = Vector3::random(-1.0f, 1.0f, gen);
+        auto lensq = p.length_squared();
+        if (1e-160 < lensq && lensq <= 1)
+            return p / sqrt(lensq);
+    }
+}
+
+__device__ inline Vector3 random_on_hemisphere(
+    const Vector3& normal,
+    Generator& gen
+) {
+    Vector3 on_unit_sphere = random_unit_vector(gen);
+    if (dot(on_unit_sphere, normal) > 0.0f)
+        return on_unit_sphere;
+    else
+        return -on_unit_sphere;
+}
+
+__device__ inline Vector3 random_cosine_direction(Generator& gen) {
+    float r1 = gen.random_float();
+    float r2 = gen.random_float();
+
+    float phi = PI2 * r1;
+    float x = cosf(phi) * sqrtf(r2);
+    float y = sinf(phi) * sqrtf(r2);
+    float z = sqrtf(1.0f - r2);
+
+    return Vector3(x, y, z);
+}
