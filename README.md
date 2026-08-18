@@ -14,7 +14,7 @@
     <img src="https://img.shields.io/badge/PySide6-6.11+-008000.svg?style=flat&logo=qt" alt="PySide6 Version"></a>
 </p>
 
-<h4>A physically-based CUDA path-tracing engine with a live, editable scene viewport. Built in C++/CUDA, with a PySide6 desktop GUI wired through pybind11.</h4>
+<h4>A physically-based path-tracing engine with a live, editable scene viewport. Built in C++/CUDA, with a PySide6 desktop GUI wired through pybind11.</h4>
 </div>
 
 <p align="center">
@@ -146,16 +146,28 @@ export OIDN_DIR=/path/to/your/oidn/install
 pip install -e .
 ```
 
-### Once Built
-```bash
-python -m nectar_render.gui
-```
 ### Building pybind11 Stubs
 **Pre-generated stubs are included by default.** Rebuilding is only required when changes are made to the C++ source code which alter bound components.
 
 ```bash
 make -C build stubgen
 ```
+
+## Usage
+
+The following usage guide is temporary, and will be updated once the saving/loading mechanism is more fleshed out.
+
+1. Locate the temporary configuration file called `config.py` in the repository root.
+2. Use this file to define the scene, camera, and some default settings for the engine.
+3. After you have finished editing the config file, save the file, overwriting the original.
+4. Run the GUI using the following command:
+```bash
+python -m nectar_render.gui
+```
+
+### Camera Controls
+
+Camera position is controlled with `W`, `A`, `S`, and `D` for forward, left, backward, and right movement respectively. The camera can be rotated by right clicking with your mouse in the viewport, and dragging in the direction you would like the camera to rotate.
 
 ## Known Limitations
 

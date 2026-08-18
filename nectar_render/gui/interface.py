@@ -3,11 +3,14 @@ from typing  import Self
 from pathlib import Path
 
 from PySide6 import QtWidgets as W
-from PySide6.QtCore    import Qt, QFile, QObject, Slot
-from PySide6.QtGui     import QAction, QKeySequence, QShortcut
+from PySide6.QtCore    import QFile, QObject, Slot
+from PySide6.QtGui     import QKeySequence, QShortcut
 from PySide6.QtUiTools import QUiLoader
 
-from nectar_render import Camera, EngineType, EnginePollResponse, LayerType
+from nectar_render import (
+    Scene, Camera, EngineType, EnginePollResponse, LayerType
+)
+
 from nectar_render.gui          import utils
 from nectar_render.gui.utils    import TimeKeeper
 from nectar_render.gui.bridge   import Bridge
@@ -23,96 +26,32 @@ from nectar_render.gui.settings_groups import (
 )
 
 ###############################################################################
-# INTERFACE CLASS
+# SCENE LOADER
 ###############################################################################
 
-from nectar_render.python import (
-    Hittable, Vector3, Color, Material, Scene, Skylight, Texture
-)
-asset_root = Path(__file__).parent.parent.parent / 'tmp/assets'
+from types import ModuleType
 
-test_scene = Scene(
-    skylight  = Skylight.hdri(
-        asset_root.resolve().as_posix() + '/hdri/brown_photostudio.hdr'
-    ),
-    lights = [],
-    hittables = [
-        
-        Hittable.QUAD( # Bottom
-            Vector3(0.0, 0.0, 0.0),
-            Vector3(0.0, 0.0, 0.0),
-            Vector3(5.0),
-            Material.PBR(
-                albedo=Texture.from_image(
-                    asset_root.resolve().as_posix() + '/tile.jpeg', 
-                    0.5
-                ), 
-                roughness=0.15, 
-                metallic=0.5
-            )
-        ),
-
-        
-
-        Hittable.SPHERE( # Back
-            Vector3(0.5, 0.2, 0.0),
-            0.2, Material.PBR(Color.white(), 0.1, 1.0)
-        ),
-        Hittable.SPHERE( # Back
-            Vector3(0.7, 0.2, 0.5),
-            0.2, Material.PBR(Color.yellow())
-        ),
-        Hittable.SPHERE( # Back
-            Vector3(0.8, 0.2, 1.1),
-            0.2, Material.DIELECTRIC(Color.white(), 1.5)
-        ),
-
-        Hittable.MESH(
-            asset_root.resolve().as_posix() + '/happy.obj',
-            Vector3(-0.15, -0.35, 0.0),
-            Vector3(0.0, 40.0, 0.0),
-            Vector3(7.0, 7.0, 7.0),
-            Material.PBR(
-                albedo    = Color(1.0, 0.6, 0.15),
-                roughness = 0.4,
-                metallic  = 1.0 
-            )
-        )
-
-        # Hittable.MESH(
-        #     asset_root.resolve().as_posix() + '/dragon_93k_faces.obj',
-        #     Vector3(-0.6, 0.0, 0.1),
-        #     Vector3(0.0, 40.0, 0.0),
-        #     Vector3(1.0, 1.0, 1.0),
-        #     Material.PBR(
-        #         albedo    = Color(1.0, 0.6, 0.15),
-        #         roughness = 0.4,
-        #         metallic  = 1.0 
-        #     )
-        # ),
+def load_config() -> ModuleType:
+    '''Temporary configuration loading utility.
     
-        # Hittable.MESH(
-        #     asset_root.resolve().as_posix() + '/dragon_93k_faces.obj',
-        #     Vector3(-0.6, 0.0, 0.1),
-        #     Vector3(0.0, 40.0, 0.0),
-        #     Vector3(1.0, 1.0, 1.0),
-        #     Material.DIELECTRIC(Color(1.0, 0.5, 0.5), 1.5)
-        # ),
+    Loads config.py file in repo root and returns as ModuleType object.
+    '''
+    import importlib.util
+    scene_file  = Path(__file__).parent.parent.parent.resolve() / 'config.py'
+    module_name = 'm_config_nr'
+    spec = importlib.util.spec_from_file_location(
+        module_name, scene_file.as_posix()
+    )
 
-        # Hittable.MESH(
-        #     asset_root.resolve().as_posix() + '/happy.obj',
-        #     Vector3(-1.5, -0.45, -0.4),
-        #     Vector3(0.0, 40.0, 0.0),
-        #     Vector3(9.0, 9.0, 9.0),
-        #     Material.PBR(
-        #         albedo    = Color(1.0, 0.6, 0.15),
-        #         roughness = 0.4,
-        #         metallic  = 1.0 
-        #     )
-        # )
-        
-    ]
-)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    sys.modules[module_name] = module
+
+    return module
+
+###############################################################################
+# INTERFACE CLASS
+###############################################################################
 
 class Interface(QObject):    
     def __init__(self: Self) -> None:
@@ -124,17 +63,13 @@ class Interface(QObject):
         self.progress_bar: ProgressBar = None
         self.outliner:        Outliner = None
         self.profiler:        Profiler = None
+
+        cfg = load_config()
         
-        self.camera = Camera(
-            resolution   = (1024, 1028),
-            position     = (0.0, 0.0, 2.0),
-            rotation     = (0.0, 0.0, 0.0),
-            num_samples  = 128,
-            focal_length = 3.0
-        )
-        self.scene = test_scene
-        self.max_depth: int = 5
-        self.seed:      int = 42
+        self.camera: Camera = cfg.CAMERA
+        self.scene:   Scene = cfg.SCENE
+        self.max_depth: int = cfg.MAX_DEPTH
+        self.seed:      int = cfg.SEED
 
         Bridge.init(self.camera, self.max_depth, self.seed)
         Bridge.set_scene(self.scene)
