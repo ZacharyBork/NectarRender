@@ -17,6 +17,10 @@
 <h4>A physically-based CUDA path-tracing engine with a live, editable scene viewport. Built in C++/CUDA, with a PySide6 desktop GUI wired through pybind11.</h4>
 </div>
 
+<p align="center">
+<img src="docs/resources/header.png" alt="An image showing the user interface with a fully converged render of three spheres and a gold Stanford happy Buddha statue with aggressive depth of field.">
+</p>
+
 ## Description
 
 NectarRender is not a toy path-tracer. It is a complete render engine with two fully interactive back ends (raster-style preview renderer + a full Monte Carlo path tracer), real BVH and SAH construction, live scene editing (object selection, transformation, and runtime object addition), and AI denoising via Intel Open Image Denoise, all running through a threaded engine architecture with a comprehensive inbuilt state machine.
@@ -26,7 +30,7 @@ NectarRender is not a toy path-tracer. It is a complete render engine with two f
 ### Rendering
 
 - Physically-based Monte Carlo path tracing engine with multiple importance sampling.
-- PBR metal-rougness material model, with additional support for true Lambertian, Dielectric, Emissive, and Isotropic (volumetric) materials.
+- PBR metal-roughness material model, with additional support for true Lambertian, Dielectric, Emissive, and Isotropic (volumetric) materials.
 - HDRI environment lighting with bilinear-filtered equirectangular sampling.
 - Physically-based camera model.
 - ACES / Reinhard / Reinhard-Extended tonemapping, Kelvin-based white balance, and full color grading toolset, all implemented as dedicated CUDA kernels.
@@ -34,12 +38,20 @@ NectarRender is not a toy path-tracer. It is a complete render engine with two f
 
 ### Interactive Viewport
 
-- Includes a separate, lightweight raster-style preview mode for real-time scene naviation. Render modes can be switched live from the UI without the need to restart the engine.
+- Scene outliner, camera / skylight / color-correction settings panels, all backed by a full engine state machine.
+- Runtime scene editing. Objects can be added to live scenes without a full reload.
+- Includes a separate, lightweight raster-style preview mode for real-time scene navigation. Render modes can be switched live from the UI without the need to restart the engine.
+
+<p align="center">
+<img src="docs/resources/mode_switch.gif" alt="Demonstration of render mode switching. The viewport starts in the lightweight raster engine, then changes to the full path tracer with a click of a button.">
+</p>
+
 - Live object selection with screen space outline overlay, backed by a persistent object ID system which survives BVH rebuilds.
 - Screen-space projected 3d transformation gizmo for live object manipulation.
-- Runtime scene editing. Objects can be added to live scenes without a full reload.
-- Scene outliner, camera / skylight / color-correction settings panels, all backed by a full engine state machine.
 
+<p align="center">
+<img src="docs/resources/object_manipulation.gif" alt="Dragging a dielectric sphere with the transform gizmo. Refraction and reflection update live in real time">
+</p>
 ### Engine Architecture
 
 - Custom templated BVH with binned Surface Area Heuristic (SAH) construction and near-first traversal ordering.
@@ -90,8 +102,6 @@ my_scene = Scene(
     ]
 )
 ```
-
-## Screenshots
 
 ## Tech Stack
 
@@ -166,5 +176,5 @@ Third-party components are used under their own licenses (see [THIRD_PARTY_LICEN
 
 ## Acknowledgements
 
-The core architecture of this path-tracing engine is based loosely on the fantanstic [Ray Tracing in One Weekend](https://raytracing.github.io/) book series by Peter Shirley, Trevor D. Black, and Steve Hollasch. A huge thank you goes out to them for making such an invaluable resource available free of charge.
+The core architecture of this path-tracing engine is based loosely on the fantastic [Ray Tracing in One Weekend](https://raytracing.github.io/) book series by Peter Shirley, Trevor D. Black, and Steve Hollasch. A huge thank you goes out to them for making such an invaluable resource available free of charge.
 

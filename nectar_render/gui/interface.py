@@ -66,26 +66,50 @@ test_scene = Scene(
             Vector3(0.8, 0.2, 1.1),
             0.2, Material.DIELECTRIC(Color.white(), 1.5)
         ),
-        
-        Hittable.MESH(
-            asset_root.resolve().as_posix() + '/dragon_93k_faces.obj',
-            Vector3(-0.6, 0.0, 0.1),
-            Vector3(0.0, 40.0, 0.0),
-            Vector3(1.0, 1.0, 1.0),
-            Material.DIELECTRIC(Color(1.0, 0.5, 0.5), 1.5)
-        ),
 
         Hittable.MESH(
             asset_root.resolve().as_posix() + '/happy.obj',
-            Vector3(-1.5, -0.45, -0.4),
+            Vector3(-0.15, -0.35, 0.0),
             Vector3(0.0, 40.0, 0.0),
-            Vector3(9.0, 9.0, 9.0),
+            Vector3(7.0, 7.0, 7.0),
             Material.PBR(
                 albedo    = Color(1.0, 0.6, 0.15),
                 roughness = 0.4,
                 metallic  = 1.0 
             )
         )
+
+        # Hittable.MESH(
+        #     asset_root.resolve().as_posix() + '/dragon_93k_faces.obj',
+        #     Vector3(-0.6, 0.0, 0.1),
+        #     Vector3(0.0, 40.0, 0.0),
+        #     Vector3(1.0, 1.0, 1.0),
+        #     Material.PBR(
+        #         albedo    = Color(1.0, 0.6, 0.15),
+        #         roughness = 0.4,
+        #         metallic  = 1.0 
+        #     )
+        # ),
+    
+        # Hittable.MESH(
+        #     asset_root.resolve().as_posix() + '/dragon_93k_faces.obj',
+        #     Vector3(-0.6, 0.0, 0.1),
+        #     Vector3(0.0, 40.0, 0.0),
+        #     Vector3(1.0, 1.0, 1.0),
+        #     Material.DIELECTRIC(Color(1.0, 0.5, 0.5), 1.5)
+        # ),
+
+        # Hittable.MESH(
+        #     asset_root.resolve().as_posix() + '/happy.obj',
+        #     Vector3(-1.5, -0.45, -0.4),
+        #     Vector3(0.0, 40.0, 0.0),
+        #     Vector3(9.0, 9.0, 9.0),
+        #     Material.PBR(
+        #         albedo    = Color(1.0, 0.6, 0.15),
+        #         roughness = 0.4,
+        #         metallic  = 1.0 
+        #     )
+        # )
         
     ]
 )
