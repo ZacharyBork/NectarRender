@@ -52,6 +52,7 @@ NectarRender is not a toy path-tracer. It is a complete render engine with two f
 <p align="center">
 <img src="docs/resources/object_manipulation.gif" alt="Dragging a dielectric sphere with the transform gizmo. Refraction and reflection update live in real time">
 </p>
+
 ### Engine Architecture
 
 - Custom templated BVH with binned Surface Area Heuristic (SAH) construction and near-first traversal ordering.
